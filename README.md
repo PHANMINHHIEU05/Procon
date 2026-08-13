@@ -19,16 +19,16 @@ multi-module project.
 - `bot-benchmark`: offline benchmarks and scenarios
 - `bot-app`: application entry point
 
-Only `bot-domain` and `bot-rules` contain game logic in the current development
-phase. The remaining modules establish build boundaries for later phases.
+`bot-domain`, `bot-rules`, and `bot-engine` contain the current implementation.
+The remaining modules establish build boundaries for later phases.
 
 ## Current Phase
 
-`M1 — Core Game Domain + Movement/Fuel/Traffic Rules`
+`M2 — Exact Deterministic Day Simulator + Plan Validator`
 
-This phase provides agent and action domain primitives, movement and fuel
-rules, exact traffic classification, day configuration, and static match
-concepts. The validated EVEN-R map foundation from M0 remains unchanged.
+This phase adds exact day simulation, fail-closed plan validation, Udon and
+REFUEL execution, road occupancy contribution, and an immutable timeline
+trace. Live server parity is deferred until protocol integration.
 
 ## Build
 
