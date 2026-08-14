@@ -10,4 +10,27 @@
     </parent>
     <artifactId>bot-runtime</artifactId>
     <name>HEXUDON Bot Runtime</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>vn.ptit.procon</groupId>
+            <artifactId>bot-engine</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>vn.ptit.procon</groupId>
+            <artifactId>bot-planner</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>vn.ptit.procon</groupId>
+            <artifactId>bot-protocol</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

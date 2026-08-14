@@ -12,7 +12,6 @@ import vn.ptit.procon.domain.agent.InitialAgent;
 import vn.ptit.procon.domain.map.HexMap;
 import vn.ptit.procon.domain.map.Position;
 import vn.ptit.procon.domain.map.Terrain;
-import vn.ptit.procon.domain.traffic.TrafficThresholds;
 import vn.ptit.procon.domain.udon.BrandId;
 import vn.ptit.procon.domain.udon.UdonSpot;
 
@@ -75,8 +74,7 @@ class MatchDomainTest {
                 new DayStepBudgets(new int[] {30}),
                 agents,
                 new FuelCapacity(10),
-                spots,
-                TrafficThresholds.of(10, 20));
+                spots);
 
         agents.clear();
         spots.clear();
@@ -96,7 +94,6 @@ class MatchDomainTest {
         HexMap map = new HexMap(2, 1, new Terrain[] {Terrain.PLAIN, Terrain.ROAD});
         DayStepBudgets budgets = new DayStepBudgets(new int[] {30});
         FuelCapacity capacity = new FuelCapacity(10);
-        TrafficThresholds thresholds = TrafficThresholds.of(10, 20);
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -105,8 +102,7 @@ class MatchDomainTest {
                         budgets,
                         List.of(new InitialAgent(new AgentId(0), new Position(2))),
                         capacity,
-                        List.of(),
-                        thresholds));
+                        List.of()));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new StaticMatchData(
@@ -114,8 +110,7 @@ class MatchDomainTest {
                         budgets,
                         List.of(),
                         capacity,
-                        List.of(new UdonSpot(new BrandId("brand-a"), new Position(1), 3)),
-                        thresholds));
+                        List.of(new UdonSpot(new BrandId("brand-a"), new Position(1), 3))));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new StaticMatchData(
@@ -123,7 +118,6 @@ class MatchDomainTest {
                         budgets,
                         List.of(),
                         capacity,
-                        List.of(new UdonSpot(new BrandId("brand-a"), new Position(2), 3)),
-                        thresholds));
+                        List.of(new UdonSpot(new BrandId("brand-a"), new Position(2), 3))));
     }
 }

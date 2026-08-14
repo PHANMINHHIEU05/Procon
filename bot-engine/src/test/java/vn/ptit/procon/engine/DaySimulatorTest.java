@@ -35,7 +35,6 @@ import vn.ptit.procon.domain.match.DayIndex;
 import vn.ptit.procon.domain.match.DayStepBudgets;
 import vn.ptit.procon.domain.match.StaticMatchData;
 import vn.ptit.procon.domain.traffic.TrafficStatus;
-import vn.ptit.procon.domain.traffic.TrafficThresholds;
 import vn.ptit.procon.domain.udon.BrandId;
 import vn.ptit.procon.domain.udon.UdonSpot;
 
@@ -43,7 +42,6 @@ class DaySimulatorTest {
 
     private static final AgentId PATROL_ID = new AgentId(0);
     private static final AgentId REFUEL_ID = new AgentId(1);
-    private static final TrafficThresholds THRESHOLDS = TrafficThresholds.of(10, 20);
 
     @ParameterizedTest
     @MethodSource("officialMoveCases")
@@ -501,8 +499,7 @@ class DaySimulatorTest {
                 new DayStepBudgets(new int[] {2}),
                 List.of(new InitialAgent(PATROL_ID, new Position(0))),
                 new FuelCapacity(5),
-                List.of(spot),
-                THRESHOLDS);
+                List.of(spot));
         DayState state = new DayState(matchData, new DayIndex(0), agents, traffic, stock);
 
         agents.clear();
@@ -655,8 +652,7 @@ class DaySimulatorTest {
                 new DayStepBudgets(new int[] {steps}),
                 initialAgents,
                 new FuelCapacity(5),
-                spots,
-                THRESHOLDS);
+                spots);
         return new DayState(staticData, new DayIndex(0), agents, traffic, stock);
     }
 }

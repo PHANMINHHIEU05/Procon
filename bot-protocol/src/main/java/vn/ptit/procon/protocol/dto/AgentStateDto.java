@@ -1,0 +1,7 @@
+package vn.ptit.procon.protocol.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record AgentStateDto(Integer kind, Integer pos, Integer fuel) {
+}

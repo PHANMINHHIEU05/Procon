@@ -6,7 +6,6 @@ import vn.ptit.procon.domain.agent.FuelCapacity;
 import vn.ptit.procon.domain.agent.InitialAgent;
 import vn.ptit.procon.domain.map.HexMap;
 import vn.ptit.procon.domain.map.Terrain;
-import vn.ptit.procon.domain.traffic.TrafficThresholds;
 import vn.ptit.procon.domain.udon.UdonSpot;
 
 /** Immutable semantic setup data, independent from server serialization. */
@@ -15,8 +14,7 @@ public record StaticMatchData(
         DayStepBudgets dayStepBudgets,
         List<InitialAgent> initialAgents,
         FuelCapacity patrolFuelCapacity,
-        List<UdonSpot> udonSpots,
-        TrafficThresholds trafficThresholds) {
+        List<UdonSpot> udonSpots) {
 
     public StaticMatchData {
         Objects.requireNonNull(map, "Map must not be null");
@@ -25,7 +23,6 @@ public record StaticMatchData(
                 Objects.requireNonNull(initialAgents, "Initial agents must not be null"));
         Objects.requireNonNull(patrolFuelCapacity, "PATROL fuel capacity must not be null");
         udonSpots = List.copyOf(Objects.requireNonNull(udonSpots, "Udon spots must not be null"));
-        Objects.requireNonNull(trafficThresholds, "Traffic thresholds must not be null");
 
         for (InitialAgent initialAgent : initialAgents) {
             if (!map.contains(initialAgent.position())) {

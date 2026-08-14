@@ -10,4 +10,26 @@
     </parent>
     <artifactId>bot-protocol</artifactId>
     <name>HEXUDON Bot Protocol</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>vn.ptit.procon</groupId>
+            <artifactId>bot-domain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>vn.ptit.procon</groupId>
+            <artifactId>bot-engine</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>
