@@ -103,16 +103,19 @@ class DaySimulatorTest {
                 Map.of());
 
         ValidDaySimulationResult result = valid(
-                simulate(state, plan(PATROL_ID, new MoveAction(Direction.RIGHT))));
+                simulate(state, plan(PATROL_ID,
+                        new MoveAction(Direction.RIGHT), new WaitAction(3))));
 
         assertEquals(new Position(0), result.timeline().get(0).agents().get(PATROL_ID).position());
         assertEquals(new Position(1), result.timeline().get(1).agents().get(PATROL_ID).position());
         assertEquals(new Position(1), result.timeline().get(4).agents().get(PATROL_ID).position());
-        assertEquals(3, result.stepUsage().get(PATROL_ID).automaticWaitSteps());
+        assertEquals(5, result.stepUsage().get(PATROL_ID).explicitSteps());
+        assertEquals(AgentActivity.WAITING,
+                result.timeline().get(4).agents().get(PATROL_ID).activity());
     }
 
     @Test
-    void waitAndAutomaticWaitPreservePositionFuelAndRoadOccupancy() {
+    void explicitWaitPreservesPositionFuelAndRoadOccupancy() {
         DayState state = state(
                 new Terrain[] {Terrain.ROAD},
                 AgentState.patrol(PATROL_ID, new Position(0), 4),
@@ -121,19 +124,67 @@ class DaySimulatorTest {
                 Map.of());
 
         ValidDaySimulationResult result = valid(
-                simulate(state, plan(PATROL_ID, new WaitAction(1))));
+                simulate(state, plan(PATROL_ID, new WaitAction(4))));
 
         AgentState finalAgent = result.finalAgents().getFirst();
         assertEquals(new Position(0), finalAgent.position());
         assertEquals(new FiniteFuel(4), finalAgent.fuel());
-        assertEquals(new AgentStepUsage(1, 3), result.stepUsage().get(PATROL_ID));
+        assertEquals(new AgentStepUsage(4), result.stepUsage().get(PATROL_ID));
         assertEquals(4, result.roadStoppedSteps().get(new Position(0)));
-        assertEquals(1, result.events().stream()
-                .filter(event -> event instanceof WaitStepEvent wait && !wait.automatic())
-                .count());
-        assertEquals(3, result.events().stream()
-                .filter(event -> event instanceof WaitStepEvent wait && wait.automatic())
-                .count());
+        assertEquals(4, result.events().stream().filter(WaitStepEvent.class::isInstance).count());
+    }
+
+    @Test
+    void liveBugShapeRejectsUnderfilledPlanAndValidatorAgrees() {
+        DayState state = state(
+                new Terrain[] {Terrain.PLAIN, Terrain.PLAIN},
+                AgentState.patrol(PATROL_ID, new Position(0), 5),
+                30,
+                Map.of(),
+                Map.of());
+        TeamPlan underfilled = plan(PATROL_ID, new MoveAction(Direction.RIGHT));
+
+        InvalidDaySimulationResult result = invalid(simulate(state, underfilled));
+
+        assertEquals(SimulationFailureCode.STEP_UNDERFLOW, result.failure().code());
+        assertEquals(2, result.failure().step());
+        PlanValidation validation = new PlanValidator().validate(state, underfilled);
+        assertFalse(validation.valid());
+        assertEquals(SimulationFailureCode.STEP_UNDERFLOW,
+                validation.failure().orElseThrow().code());
+    }
+
+    @Test
+    void explicitlyPaddedPlanConsumesThirtyStepsAndRetainsMoveOutcome() {
+        DayState state = state(
+                new Terrain[] {Terrain.PLAIN, Terrain.PLAIN},
+                AgentState.patrol(PATROL_ID, new Position(0), 5),
+                30,
+                Map.of(),
+                Map.of());
+
+        ValidDaySimulationResult result = valid(simulate(
+                state,
+                plan(PATROL_ID, new MoveAction(Direction.RIGHT), new WaitAction(28))));
+
+        assertEquals(30, result.timeline().size());
+        assertEquals(new Position(1), result.finalAgents().getFirst().position());
+        assertEquals(new FiniteFuel(4), result.finalAgents().getFirst().fuel());
+        assertEquals(new AgentStepUsage(30), result.stepUsage().get(PATROL_ID));
+        assertEquals(28, result.events().stream().filter(WaitStepEvent.class::isInstance).count());
+    }
+
+    @Test
+    void explicitDurationBeyondThirtyStepsRemainsOverflow() {
+        DayState state = state(
+                new Terrain[] {Terrain.PLAIN},
+                AgentState.patrol(PATROL_ID, new Position(0), 5),
+                30,
+                Map.of(),
+                Map.of());
+
+        assertFailure(state, plan(PATROL_ID, new WaitAction(31)),
+                SimulationFailureCode.STEP_OVERFLOW);
     }
 
     @Test
@@ -242,7 +293,8 @@ class DaySimulatorTest {
                 Map.of(new Position(1), TrafficStatus.CLEAR),
                 Map.of());
         ValidDaySimulationResult entered = valid(simulate(
-                enteringRoad, plan(PATROL_ID, new MoveAction(Direction.RIGHT))));
+                enteringRoad, plan(PATROL_ID,
+                        new MoveAction(Direction.RIGHT), new WaitAction(2))));
 
         assertEquals(3, entered.roadStoppedSteps().get(new Position(1)));
 
@@ -253,7 +305,8 @@ class DaySimulatorTest {
                 Map.of(new Position(0), TrafficStatus.CONGESTED),
                 Map.of());
         ValidDaySimulationResult left = valid(simulate(
-                leavingRoad, plan(PATROL_ID, new MoveAction(Direction.RIGHT))));
+                leavingRoad, plan(PATROL_ID,
+                        new MoveAction(Direction.RIGHT), new WaitAction(1))));
 
         assertEquals(1, left.roadStoppedSteps().get(new Position(0)));
     }
@@ -270,7 +323,7 @@ class DaySimulatorTest {
                 Map.of());
         TeamPlan plan = plans(Map.of(
                 PATROL_ID, List.of(new WaitAction(2), new MoveAction(Direction.RIGHT)),
-                REFUEL_ID, List.of(new MoveAction(Direction.LEFT))));
+                REFUEL_ID, List.of(new MoveAction(Direction.LEFT), new WaitAction(1))));
 
         ValidDaySimulationResult result = valid(new DaySimulator().simulate(state, plan));
 
@@ -280,6 +333,221 @@ class DaySimulatorTest {
         assertEquals(1, result.events().stream().filter(RefueledEvent.class::isInstance).count());
         assertEquals(new Position(0), result.timeline().get(1).agents().get(REFUEL_ID).position());
         assertEquals(new Position(1), result.timeline().get(2).agents().get(PATROL_ID).position());
+    }
+
+    @Test
+    void multiStepArrivalRefillsExactlyOnCompletionStep() {
+        DayState state = state(
+                new Terrain[] {Terrain.PLAIN, Terrain.PLAIN},
+                List.of(
+                        AgentState.patrol(PATROL_ID, new Position(0), 4),
+                        AgentState.refuel(REFUEL_ID, new Position(1))),
+                2,
+                Map.of(),
+                Map.of());
+        TeamPlan plan = plans(Map.of(
+                PATROL_ID, List.of(new MoveAction(Direction.RIGHT)),
+                REFUEL_ID, List.of(new WaitAction(2))));
+
+        ValidDaySimulationResult result = valid(simulate(state, plan));
+
+        assertEquals(new Position(0), result.timeline().get(0).agents().get(PATROL_ID).position());
+        assertEquals(new FiniteFuel(3), result.timeline().get(0).agents().get(PATROL_ID).fuel());
+        assertEquals(new Position(1), result.timeline().get(1).agents().get(PATROL_ID).position());
+        assertEquals(new FiniteFuel(5), result.timeline().get(1).agents().get(PATROL_ID).fuel());
+        RefueledEvent refuel = assertInstanceOf(
+                RefueledEvent.class,
+                result.events().stream().filter(RefueledEvent.class::isInstance)
+                        .findFirst().orElseThrow());
+        assertEquals(2, refuel.step());
+        assertEquals(3, refuel.before());
+        assertEquals(5, refuel.after());
+    }
+
+    @Test
+    void movingRefuelDoesNotRefillPatrolFromRetainedSource() {
+        DayState state = state(
+                new Terrain[] {Terrain.PLAIN, Terrain.PLAIN},
+                List.of(
+                        AgentState.patrol(PATROL_ID, new Position(1), 1),
+                        AgentState.refuel(REFUEL_ID, new Position(1))),
+                2,
+                Map.of(),
+                Map.of());
+        TeamPlan plan = plans(Map.of(
+                PATROL_ID, List.of(new WaitAction(2)),
+                REFUEL_ID, List.of(new MoveAction(Direction.LEFT))));
+
+        ValidDaySimulationResult result = valid(simulate(state, plan));
+
+        assertEquals(new Position(1), result.timeline().get(0).agents().get(REFUEL_ID).position());
+        assertEquals(AgentActivity.MOVING,
+                result.timeline().get(0).agents().get(REFUEL_ID).activity());
+        assertEquals(new FiniteFuel(1), result.finalAgents().getFirst().fuel());
+        assertEquals(0, result.events().stream().filter(RefueledEvent.class::isInstance).count());
+    }
+
+    @Test
+    void simultaneousPatrolAndRefuelArrivalsCanRefillAtDestination() {
+        DayState state = state(
+                new Terrain[] {Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN},
+                List.of(
+                        AgentState.patrol(PATROL_ID, new Position(0), 3),
+                        AgentState.refuel(REFUEL_ID, new Position(2))),
+                2,
+                Map.of(),
+                Map.of());
+        TeamPlan plan = plans(Map.of(
+                PATROL_ID, List.of(new MoveAction(Direction.RIGHT)),
+                REFUEL_ID, List.of(new MoveAction(Direction.LEFT))));
+
+        ValidDaySimulationResult result = valid(simulate(state, plan));
+
+        RefueledEvent refuel = result.events().stream()
+                .filter(RefueledEvent.class::isInstance)
+                .map(RefueledEvent.class::cast)
+                .findFirst()
+                .orElseThrow();
+        assertEquals(2, refuel.step());
+        assertEquals(new Position(1), refuel.position());
+        assertEquals(new FiniteFuel(5), result.finalAgents().getFirst().fuel());
+    }
+
+    @Test
+    void incidentalPatrolArrivalMatchesLiveFuelArithmetic() {
+        AgentId intendedPatrol = new AgentId(2);
+        Terrain[] terrain = {
+            Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN,
+            Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN
+        };
+        List<AgentState> agents = List.of(
+                AgentState.patrol(PATROL_ID, new Position(0), 23),
+                AgentState.refuel(REFUEL_ID, new Position(1)),
+                AgentState.patrol(intendedPatrol, new Position(1), 42));
+        StaticMatchData matchData = new StaticMatchData(
+                new HexMap(terrain.length, 1, terrain),
+                new DayStepBudgets(new int[] {18}),
+                agents.stream().map(agent -> new InitialAgent(agent.id(), agent.position())).toList(),
+                new FuelCapacity(60),
+                List.of());
+        DayState state = new DayState(
+                matchData, new DayIndex(0), agents, Map.of(), Map.of());
+        TeamPlan plan = plans(Map.of(
+                PATROL_ID, List.of(
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.RIGHT)),
+                REFUEL_ID, List.of(new WaitAction(18)),
+                intendedPatrol, List.of(new WaitAction(18))));
+
+        ValidDaySimulationResult result = valid(simulate(state, plan));
+
+        RefueledEvent incidentalRefill = result.events().stream()
+                .filter(RefueledEvent.class::isInstance)
+                .map(RefueledEvent.class::cast)
+                .filter(event -> event.patrolId().equals(PATROL_ID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(2, incidentalRefill.step());
+        assertEquals(new Position(1), incidentalRefill.position());
+        assertEquals(22, incidentalRefill.before());
+        assertEquals(60, incidentalRefill.after());
+        assertEquals(new FiniteFuel(57), result.timeline().get(7).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(55), result.timeline().get(11).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(52), result.timeline().get(17).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(52), result.finalAgents().getFirst().fuel());
+        assertTrue(new PlanValidator().validate(state, plan).valid());
+    }
+
+    @Test
+    void patrolIsRefilledOnceThenConsumesFuelThroughoutMultiStepDeparture() {
+        DayState state = state(
+                new Terrain[] {Terrain.PLAIN, Terrain.PLAIN},
+                List.of(
+                        AgentState.patrol(PATROL_ID, new Position(0), 0),
+                        AgentState.refuel(REFUEL_ID, new Position(1))),
+                4,
+                Map.of(),
+                Map.of());
+        TeamPlan plan = plans(Map.of(
+                PATROL_ID, List.of(new WaitAction(2), new MoveAction(Direction.RIGHT)),
+                REFUEL_ID, List.of(new MoveAction(Direction.LEFT), new WaitAction(2))));
+
+        ValidDaySimulationResult result = valid(simulate(state, plan));
+
+        assertEquals(new FiniteFuel(0), result.timeline().get(0).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(5), result.timeline().get(1).agents().get(PATROL_ID).fuel());
+        assertEquals(AgentActivity.WAITING,
+                result.timeline().get(1).agents().get(PATROL_ID).activity());
+        assertEquals(new FiniteFuel(4), result.timeline().get(2).agents().get(PATROL_ID).fuel());
+        assertEquals(AgentActivity.MOVING,
+                result.timeline().get(2).agents().get(PATROL_ID).activity());
+        assertEquals(new Position(0), result.timeline().get(2).agents().get(PATROL_ID).position());
+        assertEquals(new FiniteFuel(4), result.timeline().get(3).agents().get(PATROL_ID).fuel());
+        assertEquals(new Position(1), result.timeline().get(3).agents().get(PATROL_ID).position());
+        assertEquals(1, result.events().stream().filter(RefueledEvent.class::isInstance).count());
+    }
+
+    @Test
+    void liveShapeLeavesMaximumMinusActualMovementFuel() {
+        DayState state = state(
+                new Terrain[] {Terrain.MOUNTAIN, Terrain.PLAIN},
+                List.of(
+                        AgentState.patrol(PATROL_ID, new Position(0), 2),
+                        AgentState.refuel(REFUEL_ID, new Position(1))),
+                5,
+                Map.of(),
+                Map.of());
+        TeamPlan plan = plans(Map.of(
+                PATROL_ID, List.of(new WaitAction(2), new MoveAction(Direction.RIGHT)),
+                REFUEL_ID, List.of(new MoveAction(Direction.LEFT), new WaitAction(3))));
+
+        ValidDaySimulationResult result = valid(simulate(state, plan));
+
+        assertEquals(new FiniteFuel(5), result.timeline().get(1).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(3), result.timeline().get(2).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(3), result.timeline().get(3).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(3), result.timeline().get(4).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(3), result.finalAgents().getFirst().fuel());
+        assertEquals(1, result.events().stream().filter(RefueledEvent.class::isInstance).count());
+    }
+
+    @Test
+    void patrolCanBeRefilledAgainWhenItReturnsToRefuelCell() {
+        DayState state = state(
+                new Terrain[] {Terrain.PLAIN, Terrain.PLAIN},
+                List.of(
+                        AgentState.patrol(PATROL_ID, new Position(0), 0),
+                        AgentState.refuel(REFUEL_ID, new Position(0))),
+                6,
+                Map.of(),
+                Map.of());
+        TeamPlan plan = plans(Map.of(
+                PATROL_ID, List.of(
+                        new WaitAction(1),
+                        new MoveAction(Direction.RIGHT),
+                        new MoveAction(Direction.LEFT),
+                        new WaitAction(1)),
+                REFUEL_ID, List.of(new WaitAction(6))));
+
+        ValidDaySimulationResult result = valid(simulate(state, plan));
+
+        List<RefueledEvent> refuels = result.events().stream()
+                .filter(RefueledEvent.class::isInstance)
+                .map(RefueledEvent.class::cast)
+                .toList();
+        assertEquals(List.of(1, 5), refuels.stream().map(RefueledEvent::step).toList());
+        assertEquals(new FiniteFuel(4), result.timeline().get(1).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(3), result.timeline().get(3).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(5), result.timeline().get(4).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(5), result.timeline().get(5).agents().get(PATROL_ID).fuel());
+        assertEquals(new FiniteFuel(5), result.finalAgents().getFirst().fuel());
     }
 
     @Test
@@ -299,7 +567,7 @@ class DaySimulatorTest {
                         new MoveAction(Direction.RIGHT),
                         new WaitAction(2))));
 
-        assertEquals(new AgentStepUsage(4, 0), result.stepUsage().get(PATROL_ID));
+        assertEquals(new AgentStepUsage(4), result.stepUsage().get(PATROL_ID));
         assertEquals(new Position(1), result.finalAgents().getFirst().position());
         assertEquals(new FiniteFuel(3), result.finalAgents().getFirst().fuel());
         assertEquals(1, result.roadStoppedSteps().get(new Position(0)));
@@ -370,7 +638,10 @@ class DaySimulatorTest {
 
         ValidDaySimulationResult result = valid(simulate(
                 state,
-                plans(Map.of(PATROL_ID, List.of(), REFUEL_ID, List.of(), secondRefuel, List.of()))));
+                plans(Map.of(
+                        PATROL_ID, List.of(new WaitAction(1)),
+                        REFUEL_ID, List.of(new WaitAction(1)),
+                        secondRefuel, List.of(new WaitAction(1))))));
 
         RefueledEvent event = assertInstanceOf(
                 RefueledEvent.class,
@@ -414,7 +685,9 @@ class DaySimulatorTest {
 
         ValidDaySimulationResult result = valid(new DaySimulator().simulate(
                 state,
-                plans(Map.of(lowerId, List.of(), higherId, List.of()))));
+                plans(Map.of(
+                        lowerId, List.of(new WaitAction(1)),
+                        higherId, List.of(new WaitAction(1))))));
 
         assertEquals(1, result.portionsCollectedByAgent().get(lowerId));
         assertEquals(0, result.portionsCollectedByAgent().get(higherId));
@@ -436,7 +709,9 @@ class DaySimulatorTest {
 
         ValidDaySimulationResult result = valid(new DaySimulator().simulate(
                 state,
-                plans(Map.of(PATROL_ID, List.of(), REFUEL_ID, List.of()))));
+                plans(Map.of(
+                        PATROL_ID, List.of(new WaitAction(3)),
+                        REFUEL_ID, List.of(new WaitAction(3))))));
 
         assertEquals(0, result.portionsCollectedByAgent().get(REFUEL_ID));
         assertEquals(1, result.portionsCollectedByAgent().get(PATROL_ID));
@@ -524,8 +799,8 @@ class DaySimulatorTest {
                 Map.of(new Position(0), TrafficStatus.CLEAR),
                 Map.of());
         TeamPlan plan = plans(Map.of(
-                PATROL_ID, List.of(new WaitAction(1)),
-                REFUEL_ID, List.of(new MoveAction(Direction.LEFT))));
+                PATROL_ID, List.of(new WaitAction(3)),
+                REFUEL_ID, List.of(new MoveAction(Direction.LEFT), new WaitAction(1))));
 
         DaySimulationResult first = new DaySimulator().simulate(state, plan);
         DaySimulationResult second = new DaySimulator().simulate(state, plan);

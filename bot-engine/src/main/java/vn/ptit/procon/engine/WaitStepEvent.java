@@ -4,7 +4,7 @@ import java.util.Objects;
 import vn.ptit.procon.domain.agent.AgentId;
 import vn.ptit.procon.domain.map.Position;
 
-public record WaitStepEvent(int step, AgentId agentId, Position position, boolean automatic)
+public record WaitStepEvent(int step, AgentId agentId, Position position)
         implements SimulationEvent {
 
     public WaitStepEvent {

@@ -116,8 +116,8 @@ class ProtocolMappingTest {
     void actionEncoderUsesDirectionCodesNegativeWaitAndAgentIdOrder() {
         TeamPlan plan = new TeamPlan(java.util.Map.of(
                 new AgentId(1), List.of(new WaitAction(15)),
-                new AgentId(0), List.of(new MoveAction(Direction.RIGHT), new WaitAction(3))));
+                new AgentId(0), List.of(new MoveAction(Direction.RIGHT), new WaitAction(28))));
 
-        assertEquals(List.of(List.of(2, -3), List.of(-15)), new ActionEncoder().encode(plan, 2));
+        assertEquals(List.of(List.of(2, -28), List.of(-15)), new ActionEncoder().encode(plan, 2));
     }
 }

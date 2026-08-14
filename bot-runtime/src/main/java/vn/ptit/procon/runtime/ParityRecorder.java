@@ -11,7 +11,7 @@ import vn.ptit.procon.domain.agent.AgentState;
 import vn.ptit.procon.domain.agent.FiniteFuel;
 import vn.ptit.procon.engine.DayState;
 
-/** Compares only position and finite PATROL fuel observable after all-WAIT. */
+/** Compares predicted and authoritative next-day position and finite PATROL fuel. */
 public final class ParityRecorder {
 
     private final Map<Integer, ParityObservation> pending = new LinkedHashMap<>();
@@ -32,18 +32,36 @@ public final class ParityRecorder {
         boolean positionMatch = true;
         boolean fuelMatch = true;
         boolean fuelObservable = false;
+        List<AgentParityMismatch> agentMismatches = new ArrayList<>();
         for (AgentState predicted : observation.predictedResult().finalAgents()) {
             AgentState actualAgent = actual.get(predicted.id());
-            if (actualAgent == null || !predicted.position().equals(actualAgent.position())) {
+            boolean agentPositionMatch = actualAgent != null
+                    && predicted.position().equals(actualAgent.position());
+            if (!agentPositionMatch) {
                 positionMatch = false;
             }
+            Integer predictedFuelValue = null;
+            Integer actualFuelValue = null;
+            boolean agentFuelMatch = true;
             if (predicted.fuel() instanceof FiniteFuel predictedFuel) {
                 fuelObservable = true;
-                if (actualAgent == null
-                        || !(actualAgent.fuel() instanceof FiniteFuel actualFuel)
-                        || predictedFuel.amount() != actualFuel.amount()) {
+                predictedFuelValue = predictedFuel.amount();
+                if (actualAgent != null && actualAgent.fuel() instanceof FiniteFuel actualFuel) {
+                    actualFuelValue = actualFuel.amount();
+                }
+                agentFuelMatch = actualFuelValue != null
+                        && predictedFuelValue.intValue() == actualFuelValue.intValue();
+                if (!agentFuelMatch) {
                     fuelMatch = false;
                 }
+            }
+            if (!agentPositionMatch || !agentFuelMatch) {
+                agentMismatches.add(new AgentParityMismatch(
+                        predicted.id(),
+                        predicted.position(),
+                        actualAgent == null ? null : actualAgent.position(),
+                        predictedFuelValue,
+                        actualFuelValue));
             }
         }
 
@@ -52,7 +70,8 @@ public final class ParityRecorder {
                 positionMatch ? ParityStatus.MATCH : ParityStatus.MISMATCH,
                 !fuelObservable
                         ? ParityStatus.NOT_OBSERVABLE
-                        : fuelMatch ? ParityStatus.MATCH : ParityStatus.MISMATCH);
+                        : fuelMatch ? ParityStatus.MATCH : ParityStatus.MISMATCH,
+                agentMismatches);
         comparisons.add(comparison);
         return Optional.of(comparison);
     }
@@ -62,12 +81,21 @@ public final class ParityRecorder {
     }
 
     public Map<String, SemanticParityStatus> semanticChecklist() {
-        return Map.of(
-                "MULTI_STEP_MOVEMENT_OCCUPANCY", SemanticParityStatus.NOT_TESTED,
-                "START_DAY_UDON_COLLECTION", SemanticParityStatus.NOT_TESTED,
-                "REFUEL_TIMING", SemanticParityStatus.NOT_TESTED,
-                "ROAD_STOPPED_STEP_ACCOUNTING", SemanticParityStatus.NOT_TESTED,
-                "SAME_STEP_UDON_STOCK_TIE", SemanticParityStatus.NOT_TESTED);
+        return Map.ofEntries(
+                Map.entry("MULTI_STEP_INTERMEDIATE_POSITION",
+                        SemanticParityStatus.NOT_FULLY_VERIFIED),
+                Map.entry("START_DAY_UDON_COLLECTION", SemanticParityStatus.NOT_TESTED),
+                Map.entry("REFUEL_SELECTED_RENDEZVOUS",
+                        SemanticParityStatus.LIVE_MATCHED_FOR_TESTED_SCENARIO),
+                Map.entry("REFUEL_DURING_ACTIVE_MOVEMENT",
+                        SemanticParityStatus.CORRECTED_AND_LIVE_SUPPORTED),
+                Map.entry("REFUEL_ON_PATROL_ARRIVAL", SemanticParityStatus.LIVE_OBSERVED),
+                Map.entry("REFUEL_ON_PATROL_ARRIVAL_LOCAL_MODEL",
+                        SemanticParityStatus.CORRECTED_LOCALLY),
+                Map.entry("INCIDENTAL_REFUEL", SemanticParityStatus.LIVE_OBSERVED),
+                Map.entry("REFUEL_TIMING", SemanticParityStatus.PARTIALLY_LIVE_VERIFIED),
+                Map.entry("ROAD_STOPPED_STEP_ACCOUNTING", SemanticParityStatus.NOT_TESTED),
+                Map.entry("SAME_STEP_UDON_STOCK_TIE", SemanticParityStatus.NOT_TESTED));
     }
 
     private Map<AgentId, AgentState> index(List<AgentState> agents) {

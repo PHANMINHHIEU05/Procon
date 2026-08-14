@@ -4,7 +4,7 @@ import vn.ptit.procon.runtime.MatchRuntime;
 import vn.ptit.procon.runtime.MatchRuntimeResult;
 import vn.ptit.procon.runtime.RuntimeConfig;
 
-/** Runnable M4 entry point with configurable WAIT or BASELINE planning. */
+/** Runnable entry point with selectable competition and REFUEL probe planners. */
 public final class ProconBotMain {
 
     private ProconBotMain() {

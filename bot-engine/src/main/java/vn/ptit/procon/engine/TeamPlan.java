@@ -10,7 +10,11 @@ import java.util.Objects;
 import vn.ptit.procon.domain.action.AgentAction;
 import vn.ptit.procon.domain.agent.AgentId;
 
-/** Immutable protocol-independent action sequences keyed by internal agent ID. */
+/**
+ * Immutable protocol-independent action sequences keyed by internal agent ID.
+ * Submitted sequences must explicitly consume exactly the full day step budget;
+ * planners represent any remaining duration with {@code WaitAction}.
+ */
 public final class TeamPlan {
 
     private final Map<AgentId, List<AgentAction>> actionsByAgent;

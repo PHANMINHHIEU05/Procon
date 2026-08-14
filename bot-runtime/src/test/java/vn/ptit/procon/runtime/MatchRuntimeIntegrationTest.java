@@ -1,8 +1,11 @@
 package vn.ptit.procon.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -18,7 +21,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import vn.ptit.procon.domain.action.MoveAction;
+import vn.ptit.procon.domain.action.WaitAction;
+import vn.ptit.procon.domain.agent.AgentId;
+import vn.ptit.procon.domain.map.Direction;
+import vn.ptit.procon.engine.TeamPlan;
 import vn.ptit.procon.protocol.ProconHttpClient;
+import vn.ptit.procon.protocol.dto.SubmissionResult;
 
 class MatchRuntimeIntegrationTest {
 
@@ -27,6 +36,7 @@ class MatchRuntimeIntegrationTest {
     private final List<String> actionBodies = Collections.synchronizedList(new ArrayList<>());
     private final AtomicInteger assignmentAttempts = new AtomicInteger();
     private final AtomicInteger stateSuccesses = new AtomicInteger();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void startFakeMatch() throws IOException {
@@ -38,8 +48,8 @@ class MatchRuntimeIntegrationTest {
                 // Matches the observed live setup: traffic thresholds are not setup fields.
                 json(exchange, 200, """
                         {"daySteps":[3,3,3,3],
-                         "map":{"width":3,"height":1,"cells":[[0,1,0]]},
-                         "spots":[{"brand":1,"pos":2,"stocks":2}],
+                         "map":{"width":3,"height":1,"cells":[[0,0,0]]},
+                         "spots":[{"brand":1,"pos":1,"stocks":2}],
                          "agents":[0,2],"fuelLimits":8}
                         """);
             }
@@ -70,13 +80,21 @@ class MatchRuntimeIntegrationTest {
             json(exchange, 200, "{\"day\":" + day
                     + ",\"agents\":[{\"kind\":0,\"pos\":0,\"fuel\":8},"
                     + "{\"kind\":1,\"pos\":2,\"fuel\":null}],"
-                    + "\"others\":[{}],\"traffics\":[{\"pos\":1,\"status\":0}]}");
+                    + "\"others\":[{}],\"traffics\":[]}");
         });
         context("actions", exchange -> {
             count("actions");
-            actionBodies.add(body(exchange));
-            json(exchange, 200, actionResult(Math.min(3, calls.get("actions").get() - 1),
-                    "actions-test-" + calls.get("actions").get()));
+            String requestBody = body(exchange);
+            actionBodies.add(requestBody);
+            if (!isExplicitFullDayPlan(requestBody)) {
+                json(exchange, 200, """
+                        {"type":"action_result","valid":false,
+                         "reason":"E_STEP_OVERFLOW: explicit plan must consume exactly 3 steps"}
+                        """);
+            } else {
+                json(exchange, 200, actionResult(Math.min(3, calls.get("actions").get() - 1),
+                        "actions-test-" + calls.get("actions").get()));
+            }
         });
         context("result", exchange -> {
             count("result");
@@ -143,9 +161,87 @@ class MatchRuntimeIntegrationTest {
         MatchRuntimeResult result = new MatchRuntime(config).run();
 
         assertEquals(4, result.submittedDays());
-        assertEquals(List.of("[[2,2],[-3]]", "[[2,2],[-3]]", "[[2,2],[-3]]", "[[2,2],[-3]]"), actionBodies);
+        assertEquals(List.of("[[2,-1],[-3]]", "[[2,-1],[-3]]", "[[2,-1],[-3]]", "[[2,-1],[-3]]"),
+                actionBodies);
         assertTrue(actionBodies.stream().allMatch(body -> body.contains("2")));
         assertEquals("FINAL", result.authoritativeResult().get("status").textValue());
+    }
+
+    @Test
+    void brandAwareModeIsAvailableAndSubmitsCompletePlans() throws Exception {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_BASE_URL", "http://localhost:" + server.getAddress().getPort(),
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake-token",
+                "PROCON_POLL_INTERVAL_MS", "200",
+                "PROCON_HTTP_TIMEOUT_SECONDS", "2",
+                "PROCON_PLANNER_MODE", "BRAND_AWARE"));
+
+        MatchRuntimeResult result = new MatchRuntime(config).run();
+
+        assertEquals(4, result.submittedDays());
+        assertEquals(List.of("[[2,-1],[-3]]", "[[2,-1],[-3]]", "[[2,-1],[-3]]", "[[2,-1],[-3]]"),
+                actionBodies);
+        assertEquals("FINAL", result.authoritativeResult().get("status").textValue());
+    }
+
+    @Test
+    void refuelAwareModeIsAvailableAndPreservesCompletePlans() throws Exception {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_BASE_URL", "http://localhost:" + server.getAddress().getPort(),
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake-token",
+                "PROCON_POLL_INTERVAL_MS", "200",
+                "PROCON_HTTP_TIMEOUT_SECONDS", "2",
+                "PROCON_PLANNER_MODE", "REFUEL_AWARE"));
+
+        MatchRuntimeResult result = new MatchRuntime(config).run();
+
+        assertEquals(4, result.submittedDays());
+        assertEquals(List.of("[[2,-1],[-3]]", "[[2,-1],[-3]]", "[[2,-1],[-3]]", "[[2,-1],[-3]]"),
+                actionBodies);
+        assertEquals("FINAL", result.authoritativeResult().get("status").textValue());
+    }
+
+    @Test
+    void refuelProbeModeIsAvailableAndPreservesCompletePlans() throws Exception {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_BASE_URL", "http://localhost:" + server.getAddress().getPort(),
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake-token",
+                "PROCON_POLL_INTERVAL_MS", "200",
+                "PROCON_HTTP_TIMEOUT_SECONDS", "2",
+                "PROCON_PLANNER_MODE", "REFUEL_PROBE"));
+
+        MatchRuntimeResult result = new MatchRuntime(config).run();
+
+        assertEquals(4, result.submittedDays());
+        assertEquals(List.of("[[2,-1],[-3]]", "[[2,-1],[-3]]", "[[2,-1],[-3]]", "[[2,-1],[-3]]"),
+                actionBodies);
+        assertEquals("FINAL", result.authoritativeResult().get("status").textValue());
+    }
+
+    @Test
+    void fakeServerRejectsIncompletePlanAndAcceptsExplicitPadding() throws Exception {
+        ProconHttpClient client = new ProconHttpClient(
+                "http://localhost:" + server.getAddress().getPort(),
+                "m-fake",
+                "fake-token",
+                Duration.ofSeconds(2),
+                Duration.ofSeconds(2));
+        TeamPlan incomplete = new TeamPlan(Map.of(
+                new AgentId(0), List.of(new MoveAction(Direction.RIGHT)),
+                new AgentId(1), List.of(new WaitAction(3))));
+        TeamPlan padded = new TeamPlan(Map.of(
+                new AgentId(0), List.of(new MoveAction(Direction.RIGHT), new WaitAction(1)),
+                new AgentId(1), List.of(new WaitAction(3))));
+
+        SubmissionResult rejected = client.postActions(incomplete, 2);
+        SubmissionResult accepted = client.postActions(padded, 2);
+
+        assertFalse(rejected.valid());
+        assertTrue(accepted.valid());
+        assertEquals(List.of("[[2],[-3]]", "[[2,-1],[-3]]"), actionBodies);
     }
 
     private void context(String endpoint, Handler handler) {
@@ -177,6 +273,41 @@ class MatchRuntimeIntegrationTest {
                  "reason":"","response_ms":10,"submission_id":"%s",
                  "type":"action_result","valid":true}
                 """.formatted(day, submissionId);
+    }
+
+    private boolean isExplicitFullDayPlan(String requestBody) throws IOException {
+        JsonNode agentPlans = objectMapper.readTree(requestBody);
+        if (!agentPlans.isArray() || agentPlans.size() != 2) {
+            return false;
+        }
+        int[] positions = {0, 2};
+        for (int agent = 0; agent < agentPlans.size(); agent++) {
+            JsonNode actions = agentPlans.get(agent);
+            if (!actions.isArray()) {
+                return false;
+            }
+            int usedSteps = 0;
+            int position = positions[agent];
+            for (JsonNode actionNode : actions) {
+                int action = actionNode.intValue();
+                if (action < 0) {
+                    usedSteps += -action;
+                    continue;
+                }
+                usedSteps += 2;
+                if (action == Direction.RIGHT.code()) {
+                    position++;
+                } else if (action == Direction.LEFT.code()) {
+                    position--;
+                } else {
+                    return false;
+                }
+            }
+            if (usedSteps != 3) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @FunctionalInterface

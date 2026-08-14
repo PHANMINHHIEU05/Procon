@@ -32,13 +32,28 @@ class RuntimeConfigTest {
     }
 
     @Test
-    void parsesBaselinePlannerModeAndRejectsUnknownModes() {
+    void parsesAutonomousPlannerModesAndRejectsUnknownModes() {
         RuntimeConfig baseline = RuntimeConfig.fromEnvironment(Map.of(
                 "PROCON_MATCH_ID", "m-fake",
                 "PROCON_TOKEN", "fake",
                 "PROCON_PLANNER_MODE", "baseline"));
+        RuntimeConfig brandAware = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "brand_aware"));
+        RuntimeConfig refuelAware = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "refuel_aware"));
+        RuntimeConfig refuelProbe = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "refuel_probe"));
 
         assertEquals(PlannerMode.BASELINE, baseline.plannerMode());
+        assertEquals(PlannerMode.BRAND_AWARE, brandAware.plannerMode());
+        assertEquals(PlannerMode.REFUEL_AWARE, refuelAware.plannerMode());
+        assertEquals(PlannerMode.REFUEL_PROBE, refuelProbe.plannerMode());
         assertThrows(IllegalArgumentException.class, () -> RuntimeConfig.fromEnvironment(Map.of(
                 "PROCON_MATCH_ID", "m-fake",
                 "PROCON_TOKEN", "fake",

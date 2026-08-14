@@ -89,7 +89,8 @@ public final class SafeBaselinePlanner implements DayPlanner {
         if (selected.route.directions().isEmpty()) {
             return wait(state);
         }
-        return List.copyOf(selected.route.toMoveActions());
+        return ActionPlanCompleter.complete(
+                selected.route.toMoveActions(), selected.route.stepsUsed(), state.stepBudget());
     }
 
     private List<Target> stockedTargets(

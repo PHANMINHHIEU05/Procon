@@ -27,6 +27,7 @@ import vn.ptit.procon.domain.udon.BrandId;
 import vn.ptit.procon.domain.udon.UdonSpot;
 import vn.ptit.procon.engine.DaySimulator;
 import vn.ptit.procon.engine.DayState;
+import vn.ptit.procon.engine.AgentStepUsage;
 import vn.ptit.procon.engine.PlanValidator;
 import vn.ptit.procon.engine.TeamPlan;
 import vn.ptit.procon.engine.UdonCollectedEvent;
@@ -243,16 +244,54 @@ class SafeBaselinePlannerTest {
         DayState state = state(
                 new Terrain[] {Terrain.PLAIN, Terrain.PLAIN}, 2, 1,
                 AgentState.patrol(new AgentId(0), new Position(0), 5),
-                List.of(new UdonSpot(new BrandId("collect"), new Position(1), 1)), Map.of(), 2);
+                List.of(new UdonSpot(new BrandId("collect"), new Position(1), 1)), Map.of(), 30);
         TeamPlan plan = planner.plan(state);
 
         ValidDaySimulationResult result = assertInstanceOf(
                 ValidDaySimulationResult.class, new DaySimulator().simulate(state, plan));
 
+        assertEquals(List.of(
+                new MoveAction(Direction.RIGHT), new WaitAction(28)),
+                plan.actionsFor(new AgentId(0)));
+        assertEquals(30, result.timeline().size());
+        assertEquals(new AgentStepUsage(30), result.stepUsage().get(new AgentId(0)));
         assertEquals(0, result.remainingSpotStock().get(new Position(1)));
         assertEquals(1, result.portionsCollectedByAgent().get(new AgentId(0)));
         assertTrue(result.events().stream().anyMatch(event -> event instanceof UdonCollectedEvent collected
                 && collected.position().equals(new Position(1))));
+        assertValid(state, plan);
+    }
+
+    @Test
+    void everyAgentInMixedTeamReceivesAnExplicitThirtyStepPlan() {
+        DayState state = state(
+                new Terrain[] {
+                    Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN,
+                    Terrain.PLAIN, Terrain.PLAIN, Terrain.PLAIN
+                },
+                6,
+                1,
+                AgentState.patrol(new AgentId(0), new Position(0), 20),
+                List.of(
+                        new UdonSpot(new BrandId("near"), new Position(1), 1),
+                        new UdonSpot(new BrandId("far"), new Position(5), 1)),
+                Map.of(),
+                30,
+                AgentState.patrol(new AgentId(1), new Position(2), 20),
+                AgentState.patrol(new AgentId(2), new Position(3), 20),
+                AgentState.refuel(new AgentId(3), new Position(4)));
+
+        TeamPlan plan = planner.plan(state);
+        ValidDaySimulationResult result = assertInstanceOf(
+                ValidDaySimulationResult.class, new DaySimulator().simulate(state, plan));
+
+        assertEquals(new WaitAction(28), plan.actionsFor(new AgentId(0)).getLast());
+        assertEquals(new WaitAction(24), plan.actionsFor(new AgentId(1)).getLast());
+        assertEquals(List.of(new WaitAction(30)), plan.actionsFor(new AgentId(2)));
+        assertEquals(List.of(new WaitAction(30)), plan.actionsFor(new AgentId(3)));
+        for (AgentState agent : state.agents()) {
+            assertEquals(new AgentStepUsage(30), result.stepUsage().get(agent.id()));
+        }
         assertValid(state, plan);
     }
 
@@ -281,7 +320,11 @@ class SafeBaselinePlannerTest {
     }
 
     private static List<Direction> moveDirections(List<AgentAction> actions) {
-        return actions.stream().map(action -> ((MoveAction) action).direction()).toList();
+        return actions.stream()
+                .filter(MoveAction.class::isInstance)
+                .map(MoveAction.class::cast)
+                .map(MoveAction::direction)
+                .toList();
     }
 
     private static Map<Position, TrafficStatus> traffic(int... positions) {

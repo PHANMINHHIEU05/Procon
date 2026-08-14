@@ -16,7 +16,10 @@ import vn.ptit.procon.engine.PlanValidation;
 import vn.ptit.procon.engine.PlanValidator;
 import vn.ptit.procon.engine.TeamPlan;
 import vn.ptit.procon.engine.ValidDaySimulationResult;
+import vn.ptit.procon.planner.BrandAwarePlanner;
 import vn.ptit.procon.planner.DayPlanner;
+import vn.ptit.procon.planner.RefuelAwarePlanner;
+import vn.ptit.procon.planner.RefuelProbePlanner;
 import vn.ptit.procon.planner.SafeBaselinePlanner;
 import vn.ptit.procon.planner.WaitDayPlanner;
 import vn.ptit.procon.protocol.DayStateMapper;
@@ -358,6 +361,9 @@ public final class MatchRuntime {
         return switch (mode) {
             case WAIT -> new WaitDayPlanner();
             case BASELINE -> new SafeBaselinePlanner();
+            case BRAND_AWARE -> new BrandAwarePlanner();
+            case REFUEL_AWARE -> new RefuelAwarePlanner();
+            case REFUEL_PROBE -> new RefuelProbePlanner();
         };
     }
 
@@ -381,6 +387,23 @@ public final class MatchRuntime {
     private void logParity(ParityComparison comparison) {
         log("PARITY_OBSERVED", "day", comparison.submittedDay(),
                 "position", comparison.position(), "patrolFuel", comparison.patrolFuel());
+        for (AgentParityMismatch mismatch : comparison.agentMismatches()) {
+            log("PARITY_AGENT_MISMATCH",
+                    "day", comparison.submittedDay(),
+                    "agent", mismatch.agentId().value(),
+                    "predictedPosition", positionValue(mismatch.predictedPosition()),
+                    "actualPosition", positionValue(mismatch.actualPosition()),
+                    "predictedFuel", fuelValue(mismatch.predictedFuel()),
+                    "actualFuel", fuelValue(mismatch.actualFuel()));
+        }
+    }
+
+    private Object positionValue(vn.ptit.procon.domain.map.Position position) {
+        return position == null ? "MISSING" : position.value();
+    }
+
+    private Object fuelValue(Integer fuel) {
+        return fuel == null ? "N/A_OR_MISSING" : fuel;
     }
 
     private void log(String event, Object... fields) {

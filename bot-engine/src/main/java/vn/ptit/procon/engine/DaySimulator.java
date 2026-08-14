@@ -134,7 +134,7 @@ public final class DaySimulator {
                 }
 
                 collectUdon(step, arrivals);
-                applyRefueling(step);
+                applyRefueling(step, activities, arrivals);
                 countRoadOccupancy();
                 timeline.add(snapshot(step, activities));
             }
@@ -155,8 +155,17 @@ public final class DaySimulator {
         }
 
         private Optional<SimulationFailure> prepareAction(RuntimeAgent agent, int elapsedSteps) {
-            if (agent.operation != null || agent.actionIndex >= agent.actions.size()) {
+            if (agent.operation != null) {
                 return Optional.empty();
+            }
+            if (agent.actionIndex >= agent.actions.size()) {
+                return Optional.of(SimulationFailure.agent(
+                        SimulationFailureCode.STEP_UNDERFLOW,
+                        agent.id,
+                        elapsedSteps,
+                        agent.actionIndex,
+                        "Agent explicit actions consume " + elapsedSteps
+                                + " of " + budget + " required day steps"));
             }
 
             AgentAction action = agent.actions.get(agent.actionIndex);
@@ -253,17 +262,14 @@ public final class DaySimulator {
                 List<RuntimeAgent> arrivals,
                 Map<AgentId, AgentActivity> activities) {
             if (agent.operation == null) {
-                agent.automaticWaitSteps++;
-                activities.put(agent.id, AgentActivity.AUTO_WAITING);
-                events.add(new WaitStepEvent(step, agent.id, agent.position, true));
-                return;
+                throw new IllegalStateException("Prepared action must exist for every elapsed step");
             }
 
             agent.explicitSteps++;
             if (agent.operation instanceof WaitOperation wait) {
                 wait.remaining--;
                 activities.put(agent.id, AgentActivity.WAITING);
-                events.add(new WaitStepEvent(step, agent.id, agent.position, false));
+                events.add(new WaitStepEvent(step, agent.id, agent.position));
                 if (wait.remaining == 0) {
                     completeOperation(agent);
                 }
@@ -309,10 +315,14 @@ public final class DaySimulator {
             }
         }
 
-        private void applyRefueling(int step) {
+        private void applyRefueling(
+                int step,
+                Map<AgentId, AgentActivity> activities,
+                List<RuntimeAgent> arrivals) {
             Map<Position, List<AgentId>> refuelIdsByPosition = new HashMap<>();
             for (RuntimeAgent agent : agents) {
-                if (agent.kind == AgentKind.REFUEL) {
+                if (agent.kind == AgentKind.REFUEL
+                        && genuinelyOccupiesEndOfStepCell(agent, activities, arrivals)) {
                     refuelIdsByPosition
                             .computeIfAbsent(agent.position, ignored -> new ArrayList<>())
                             .add(agent.id);
@@ -320,7 +330,8 @@ public final class DaySimulator {
             }
             int capacity = state.matchData().patrolFuelCapacity().value();
             for (RuntimeAgent agent : agents) {
-                if (agent.kind != AgentKind.PATROL) {
+                if (agent.kind != AgentKind.PATROL
+                        || !genuinelyOccupiesEndOfStepCell(agent, activities, arrivals)) {
                     continue;
                 }
                 List<AgentId> refuelIds = refuelIdsByPosition.get(agent.position);
@@ -334,6 +345,14 @@ public final class DaySimulator {
                             step, agent.id, agent.position, before, capacity, refuelIds));
                 }
             }
+        }
+
+        private boolean genuinelyOccupiesEndOfStepCell(
+                RuntimeAgent agent,
+                Map<AgentId, AgentActivity> activities,
+                List<RuntimeAgent> arrivals) {
+            return activities.get(agent.id) == AgentActivity.WAITING
+                    || arrivals.contains(agent);
         }
 
         private void countRoadOccupancy() {
@@ -359,8 +378,7 @@ public final class DaySimulator {
             Map<AgentId, AgentStepUsage> usage = new LinkedHashMap<>();
             for (RuntimeAgent agent : agents) {
                 finalAgents.add(new AgentState(agent.id, agent.kind, agent.position, agent.fuel));
-                usage.put(agent.id, new AgentStepUsage(
-                        agent.explicitSteps, agent.automaticWaitSteps));
+                usage.put(agent.id, new AgentStepUsage(agent.explicitSteps));
             }
             return new ValidDaySimulationResult(
                     finalAgents,
@@ -384,7 +402,6 @@ public final class DaySimulator {
         private int actionIndex;
         private Operation operation;
         private int explicitSteps;
-        private int automaticWaitSteps;
 
         private RuntimeAgent(AgentState initial, List<AgentAction> actions) {
             this.id = initial.id();

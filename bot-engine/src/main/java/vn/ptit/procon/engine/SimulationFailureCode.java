@@ -8,6 +8,7 @@ public enum SimulationFailureCode {
     NOT_ADJACENT,
     POND_DESTINATION,
     IMPASSABLE_SOURCE,
+    STEP_UNDERFLOW,
     STEP_OVERFLOW,
     NO_FUEL,
     MISSING_TRAFFIC

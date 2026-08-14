@@ -1,15 +1,15 @@
 package vn.ptit.procon.engine;
 
-/** Explicit plan steps and automatically padded WAIT steps for one agent. */
-public record AgentStepUsage(int explicitSteps, int automaticWaitSteps) {
+/** Explicit steps consumed by one complete submitted agent plan. */
+public record AgentStepUsage(int explicitSteps) {
 
     public AgentStepUsage {
-        if (explicitSteps < 0 || automaticWaitSteps < 0) {
-            throw new IllegalArgumentException("Step usage values must be non-negative");
+        if (explicitSteps < 0) {
+            throw new IllegalArgumentException("Explicit step usage must be non-negative");
         }
     }
 
     public int totalSteps() {
-        return explicitSteps + automaticWaitSteps;
+        return explicitSteps;
     }
 }
