@@ -21,6 +21,7 @@ import vn.ptit.procon.planner.DayPlanner;
 import vn.ptit.procon.planner.RefuelAwarePlanner;
 import vn.ptit.procon.planner.RefuelProbePlanner;
 import vn.ptit.procon.planner.SafeBaselinePlanner;
+import vn.ptit.procon.planner.TeamCoordinatorPlanner;
 import vn.ptit.procon.planner.WaitDayPlanner;
 import vn.ptit.procon.protocol.DayStateMapper;
 import vn.ptit.procon.protocol.HttpStatusException;
@@ -364,6 +365,7 @@ public final class MatchRuntime {
             case BRAND_AWARE -> new BrandAwarePlanner();
             case REFUEL_AWARE -> new RefuelAwarePlanner();
             case REFUEL_PROBE -> new RefuelProbePlanner();
+            case TEAM_COORDINATED -> new TeamCoordinatorPlanner();
         };
     }
 

@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -222,6 +223,27 @@ class MatchRuntimeIntegrationTest {
     }
 
     @Test
+    void teamCoordinatedModeCompletesMultiPatrolAssignmentAndRetrievesResult() throws Exception {
+        restartForTeamCoordinatedScenario();
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_BASE_URL", "http://localhost:" + server.getAddress().getPort(),
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake-token",
+                "PROCON_POLL_INTERVAL_MS", "200",
+                "PROCON_HTTP_TIMEOUT_SECONDS", "2",
+                "PROCON_PLANNER_MODE", "TEAM_COORDINATED"));
+
+        MatchRuntimeResult result = new MatchRuntime(config).run();
+
+        assertEquals(1, result.submittedDays());
+        // PATROL 0 takes B (RIGHT), leaving constrained A for PATROL 1; PATROL 2 takes C.
+        assertEquals(List.of("[[2],[2,-1],[2],[-2]]"), actionBodies);
+        assertEquals(1, calls.get("actions").get());
+        assertEquals(1, calls.get("result").get());
+        assertEquals("FINAL", result.authoritativeResult().get("status").textValue());
+    }
+
+    @Test
     void fakeServerRejectsIncompletePlanAndAcceptsExplicitPadding() throws Exception {
         ProconHttpClient client = new ProconHttpClient(
                 "http://localhost:" + server.getAddress().getPort(),
@@ -242,6 +264,67 @@ class MatchRuntimeIntegrationTest {
         assertFalse(rejected.valid());
         assertTrue(accepted.valid());
         assertEquals(List.of("[[2],[-3]]", "[[2,-1],[-3]]"), actionBodies);
+    }
+
+    private void restartForTeamCoordinatedScenario() throws IOException {
+        server.stop(0);
+        calls.clear();
+        actionBodies.clear();
+        assignmentAttempts.set(0);
+        stateSuccesses.set(0);
+        AtomicBoolean actionsAccepted = new AtomicBoolean();
+        server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+        context("setup", exchange -> {
+            count("setup");
+            json(exchange, 200, """
+                    {"daySteps":[2],
+                     "map":{"width":6,"height":1,"cells":[[1,0,0,0,0,0]]},
+                     "spots":[
+                       {"brand":"A","pos":1,"stocks":1},
+                       {"brand":"B","pos":3,"stocks":1},
+                       {"brand":"C","pos":5,"stocks":1}],
+                     "agents":[2,0,4,5],"fuelLimits":5}
+                    """);
+        });
+        context("assignment", exchange -> {
+            count("assignment");
+            assertEquals("[0,0,0,1]", body(exchange));
+            json(exchange, 200, actionResult(0, "team-assignment"));
+        });
+        context("start", exchange -> {
+            count("start");
+            json(exchange, 200, "{\"started\":true}");
+        });
+        context("state", exchange -> {
+            count("state");
+            if (actionsAccepted.get()) {
+                json(exchange, 425, "{}");
+                return;
+            }
+            json(exchange, 200, """
+                    {"day":0,
+                     "agents":[
+                       {"kind":0,"pos":2,"fuel":5},
+                       {"kind":0,"pos":0,"fuel":5},
+                       {"kind":0,"pos":4,"fuel":5},
+                       {"kind":1,"pos":5,"fuel":null}],
+                     "others":[{}],
+                     "traffics":[{"pos":0,"status":0}]}
+                    """);
+        });
+        context("actions", exchange -> {
+            count("actions");
+            String requestBody = body(exchange);
+            actionBodies.add(requestBody);
+            assertEquals("[[2],[2,-1],[2],[-2]]", requestBody);
+            actionsAccepted.set(true);
+            json(exchange, 200, actionResult(0, "team-actions"));
+        });
+        context("result", exchange -> {
+            count("result");
+            json(exchange, 200, "{\"status\":\"FINAL\",\"score\":3}");
+        });
+        server.start();
     }
 
     private void context(String endpoint, Handler handler) {

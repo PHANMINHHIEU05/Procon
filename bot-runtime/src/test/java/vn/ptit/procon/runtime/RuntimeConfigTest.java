@@ -49,11 +49,16 @@ class RuntimeConfigTest {
                 "PROCON_MATCH_ID", "m-fake",
                 "PROCON_TOKEN", "fake",
                 "PROCON_PLANNER_MODE", "refuel_probe"));
+        RuntimeConfig teamCoordinated = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "team_coordinated"));
 
         assertEquals(PlannerMode.BASELINE, baseline.plannerMode());
         assertEquals(PlannerMode.BRAND_AWARE, brandAware.plannerMode());
         assertEquals(PlannerMode.REFUEL_AWARE, refuelAware.plannerMode());
         assertEquals(PlannerMode.REFUEL_PROBE, refuelProbe.plannerMode());
+        assertEquals(PlannerMode.TEAM_COORDINATED, teamCoordinated.plannerMode());
         assertThrows(IllegalArgumentException.class, () -> RuntimeConfig.fromEnvironment(Map.of(
                 "PROCON_MATCH_ID", "m-fake",
                 "PROCON_TOKEN", "fake",
