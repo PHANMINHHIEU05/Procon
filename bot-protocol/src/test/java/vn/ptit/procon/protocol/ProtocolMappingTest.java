@@ -17,6 +17,8 @@ import vn.ptit.procon.domain.map.Direction;
 import vn.ptit.procon.domain.map.Position;
 import vn.ptit.procon.domain.map.Terrain;
 import vn.ptit.procon.domain.match.StaticMatchData;
+import vn.ptit.procon.domain.opponent.ObservedOtherAgent;
+import vn.ptit.procon.domain.opponent.ObservedOtherGroup;
 import vn.ptit.procon.domain.traffic.TrafficStatus;
 import vn.ptit.procon.engine.DayState;
 import vn.ptit.procon.engine.TeamPlan;
@@ -93,6 +95,55 @@ class ProtocolMappingTest {
         assertEquals(AgentKind.REFUEL, state.agents().get(1).kind());
         assertEquals(TrafficStatus.JAMMED, state.roadTraffic().get(new Position(1)));
         assertEquals(3, state.spotStock().get(new Position(2)));
+    }
+
+    @Test
+    void mapsStateWhenOthersIsAbsentEmptyOrContainsUnknownFields() throws Exception {
+        SetupDto setup = json.readValue("""
+                {"daySteps":[4],"map":{"width":1,"height":1,"cells":[[0]]},
+                 "spots":[],"agents":[0],"fuelLimits":8}
+                """, SetupDto.class);
+        StaticMatchData matchData = new SetupMapper().toDomain(setup);
+        for (String payload : List.of(
+                "{\"day\":0,\"agents\":[{\"kind\":0,\"pos\":0,\"fuel\":8}],\"traffics\":[]}",
+                "{\"day\":0,\"agents\":[{\"kind\":0,\"pos\":0,\"fuel\":8}],"
+                        + "\"others\":[],\"traffics\":[]}",
+                "{\"day\":0,\"agents\":[{\"kind\":0,\"pos\":0,\"fuel\":8}],"
+                        + "\"others\":[{\"unknown\":{\"future\":true}}],\"traffics\":[]}")) {
+            DayStateDto dto = json.readValue(payload, DayStateDto.class);
+
+            DayState state = new DayStateMapper().toDomain(
+                    dto, matchData, List.of(AgentKind.PATROL));
+
+            assertEquals(new Position(0), state.agents().getFirst().position());
+        }
+    }
+
+    @Test
+    void mapsLiveObservedOthersIntoNeutralDomainAndSkipsMalformedOrOutOfBoundsAgents() throws Exception {
+        SetupDto setup = json.readValue("""
+                {"daySteps":[4],"map":{"width":4,"height":1,"cells":[[0,0,0,0]]},
+                 "spots":[],"agents":[0],"fuelLimits":8}
+                """, SetupDto.class);
+        DayStateDto dto = json.readValue("""
+                {"day":0,"agents":[{"kind":0,"pos":0,"fuel":8}],
+                 "others":[
+                   {"id":9,"agents":[{"pos":3,"kind":1,"fuel":60},
+                                      {"pos":99,"kind":0,"fuel":4},
+                                      {"pos":2,"kind":0}]},
+                   {"id":2,"agents":[{"pos":1,"kind":7,"fuel":-3,"future":true}]},
+                   {"malformed":true}],"traffics":[]}
+                """, DayStateDto.class);
+
+        DayState state = new DayStateMapper().toDomain(
+                dto, new SetupMapper().toDomain(setup), List.of(AgentKind.PATROL));
+
+        assertEquals(List.of(
+                new ObservedOtherGroup(2, List.of(
+                        new ObservedOtherAgent(new Position(1), 7, -3))),
+                new ObservedOtherGroup(9, List.of(
+                        new ObservedOtherAgent(new Position(3), 1, 60)))),
+                state.observedOthers());
     }
 
     @Test

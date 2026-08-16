@@ -1,0 +1,179 @@
+CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-2895 plannerMode=ANYTIME_RISK_ADJUSTED PROCON_TOKEN=<set>
+SETUP_WAITING matchId=m-2895
+SETUP_RECEIVED matchId=m-2895 agents=4 days=4
+ASSIGNMENT_SUBMITTED matchId=m-2895 agents=4
+ASSIGNMENT_ACCEPTED matchId=m-2895 agents=4
+MATCH_STARTED matchId=m-2895
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+TEAM_REFUEL_NO_ASSIGN day=0 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=0 iteration=1 agent=2 target=1 brand=numeric:2 teamNewBrand=true steps=6 fuel=3
+TEAM_TARGET_SELECT day=0 iteration=2 agent=1 target=15 brand=numeric:3 teamNewBrand=true steps=8 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=3 agent=2 target=58 brand=numeric:0 teamNewBrand=true steps=13 fuel=8
+TEAM_TARGET_SELECT day=0 iteration=4 agent=0 target=1 brand=numeric:2 teamNewBrand=false steps=13 fuel=8
+TEAM_TARGET_SELECT day=0 iteration=5 agent=0 target=58 brand=numeric:0 teamNewBrand=false steps=13 fuel=8
+TEAM_TARGET_SELECT day=0 iteration=6 agent=1 target=44 brand=numeric:0 teamNewBrand=false steps=8 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=7 agent=1 target=16 brand=numeric:2 teamNewBrand=false steps=7 fuel=8
+TEAM_TARGET_SELECT day=0 iteration=8 agent=2 target=12 brand=numeric:1 teamNewBrand=false steps=10 fuel=8
+TEAM_TARGET_SELECT day=0 iteration=9 agent=1 target=1 brand=numeric:2 teamNewBrand=false steps=4 fuel=2
+TEAM_PLAN_VALID day=0
+ANYTIME_HARVEST_START day=0 incumbentBrands=4 incumbentUdon=14 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=0 brands=4 udon=14 expanded=11
+ANYTIME_HARVEST_IMPROVEMENT day=0 brands=4 udon=14 expanded=54
+ANYTIME_HARVEST_IMPROVEMENT day=0 brands=4 udon=14 expanded=57
+ANYTIME_HARVEST_DONE day=0 brands=4 udon=14 expanded=64 coverageExpanded=3 harvestExpanded=61 generatedCandidates=198 retainedCandidates=101 prunedByTopK=97 improvements=3 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+CONTENTION_SUMMARY day=0 observedGroups=1 observedAgents=4 spotsConsidered=8 safeSpots=0 tiedSpots=7 contestedSpots=1 unobservedSpots=0
+ANYTIME_RISK_ADJUSTED_START day=0 incumbentBrands=4 incumbentRawUdon=14 incumbentAdjustedScore=16 budget=64
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=0 brands=4 rawUdon=14 adjustedScore=17 expanded=11
+ANYTIME_RISK_ADJUSTED_DONE day=0 brands=4 rawUdon=14 adjustedScore=17 safeProjected=0 tiedProjected=3 riskProjected=11 unobservedProjected=0 expanded=64 completedPlans=65 improvements=1 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2895 day=0 mode=RiskAdjustedAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2895 day=0
+UDON_OBSERVABILITY matchId=m-2895 day=0 predictedDayUdon=14 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2895 day=0
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+PARITY_OBSERVED matchId=m-2895 day=0 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2895 from=0 to=1
+TEAM_REFUEL_ASSIGN day=1 refuelAgent=3 patrolAgent=2 projectedBrandGain=0 projectedCollectionGain=1 arrivalStep=8
+TEAM_TARGET_SELECT day=1 iteration=1 agent=1 target=49 brand=numeric:3 teamNewBrand=true steps=11 fuel=7
+TEAM_TARGET_SELECT day=1 iteration=2 agent=2 target=12 brand=numeric:1 teamNewBrand=true steps=6 fuel=6
+TEAM_TARGET_SELECT day=1 iteration=3 agent=0 target=1 brand=numeric:2 teamNewBrand=false steps=13 fuel=8
+TEAM_TARGET_SELECT day=1 iteration=4 agent=1 target=58 brand=numeric:0 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=1 iteration=5 agent=2 target=1 brand=numeric:2 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=1 iteration=6 agent=0 target=12 brand=numeric:1 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=1 iteration=7 agent=1 target=12 brand=numeric:1 teamNewBrand=false steps=10 fuel=8
+TEAM_TARGET_SELECT day=1 iteration=8 agent=2 target=16 brand=numeric:2 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=1 iteration=9 agent=0 target=15 brand=numeric:3 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=1 iteration=10 agent=1 target=44 brand=numeric:0 teamNewBrand=false steps=6 fuel=6
+TEAM_PLAN_VALID day=1
+ANYTIME_HARVEST_START day=1 incumbentBrands=4 incumbentUdon=16 budget=64
+ANYTIME_HARVEST_DONE day=1 brands=4 udon=16 expanded=64 coverageExpanded=2 harvestExpanded=62 generatedCandidates=185 retainedCandidates=117 prunedByTopK=68 improvements=0 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+CONTENTION_SUMMARY day=1 observedGroups=1 observedAgents=4 spotsConsidered=8 safeSpots=5 tiedSpots=0 contestedSpots=3 unobservedSpots=0
+ANYTIME_RISK_ADJUSTED_START day=1 incumbentBrands=4 incumbentRawUdon=16 incumbentAdjustedScore=31 budget=64
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=1 brands=4 rawUdon=16 adjustedScore=32 expanded=8
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=1 brands=4 rawUdon=16 adjustedScore=32 expanded=9
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=1 brands=4 rawUdon=16 adjustedScore=32 expanded=16
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=1 brands=4 rawUdon=16 adjustedScore=32 expanded=19
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=1 brands=4 rawUdon=17 adjustedScore=32 expanded=61
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=1 brands=4 rawUdon=17 adjustedScore=32 expanded=62
+ANYTIME_RISK_ADJUSTED_DONE day=1 brands=4 rawUdon=17 adjustedScore=32 safeProjected=5 tiedProjected=0 riskProjected=12 unobservedProjected=0 expanded=64 completedPlans=65 improvements=6 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2895 day=1 mode=RiskAdjustedAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2895 day=1
+UDON_OBSERVABILITY matchId=m-2895 day=1 predictedDayUdon=17 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2895 day=1
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+PARITY_OBSERVED matchId=m-2895 day=1 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2895 from=1 to=2
+TEAM_REFUEL_NO_ASSIGN day=2 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=2 iteration=1 agent=0 target=1 brand=numeric:2 teamNewBrand=true steps=12 fuel=6
+TEAM_TARGET_SELECT day=2 iteration=2 agent=0 target=58 brand=numeric:0 teamNewBrand=true steps=13 fuel=8
+TEAM_TARGET_SELECT day=2 iteration=3 agent=2 target=1 brand=numeric:2 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=2 iteration=4 agent=2 target=58 brand=numeric:0 teamNewBrand=false steps=13 fuel=8
+TEAM_TARGET_SELECT day=2 iteration=5 agent=1 target=44 brand=numeric:0 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=6 agent=1 target=16 brand=numeric:2 teamNewBrand=false steps=7 fuel=8
+TEAM_TARGET_SELECT day=2 iteration=7 agent=1 target=1 brand=numeric:2 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=2 iteration=8 agent=2 target=44 brand=numeric:0 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=2 iteration=9 agent=1 target=12 brand=numeric:1 teamNewBrand=false steps=6 fuel=3
+TEAM_PLAN_VALID day=2
+ANYTIME_HARVEST_START day=2 incumbentBrands=4 incumbentUdon=17 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=17 expanded=9
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=17 expanded=15
+ANYTIME_HARVEST_DONE day=2 brands=4 udon=17 expanded=64 coverageExpanded=2 harvestExpanded=62 generatedCandidates=131 retainedCandidates=85 prunedByTopK=46 improvements=2 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+CONTENTION_SUMMARY day=2 observedGroups=1 observedAgents=4 spotsConsidered=8 safeSpots=4 tiedSpots=1 contestedSpots=3 unobservedSpots=0
+ANYTIME_RISK_ADJUSTED_START day=2 incumbentBrands=4 incumbentRawUdon=17 incumbentAdjustedScore=32 budget=64
+ANYTIME_RISK_ADJUSTED_DONE day=2 brands=4 rawUdon=17 adjustedScore=32 safeProjected=5 tiedProjected=0 riskProjected=12 unobservedProjected=0 expanded=64 completedPlans=65 improvements=0 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2895 day=2 mode=RiskAdjustedAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2895 day=2
+UDON_OBSERVABILITY matchId=m-2895 day=2 predictedDayUdon=17 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2895 day=2
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2895 day=3 agents=4
+PARITY_OBSERVED matchId=m-2895 day=2 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2895 from=2 to=3
+TEAM_REFUEL_NO_ASSIGN day=3 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=3 iteration=1 agent=1 target=15 brand=numeric:3 teamNewBrand=true steps=14 fuel=7
+TEAM_TARGET_SELECT day=3 iteration=2 agent=0 target=1 brand=numeric:2 teamNewBrand=false steps=13 fuel=8
+TEAM_TARGET_SELECT day=3 iteration=3 agent=2 target=49 brand=numeric:3 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=3 iteration=4 agent=2 target=1 brand=numeric:2 teamNewBrand=false steps=11 fuel=7
+TEAM_TARGET_SELECT day=3 iteration=5 agent=0 target=12 brand=numeric:1 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=3 iteration=6 agent=2 target=12 brand=numeric:1 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=3 iteration=7 agent=0 target=44 brand=numeric:0 teamNewBrand=false steps=7 fuel=5
+TEAM_PLAN_VALID day=3
+ANYTIME_HARVEST_START day=3 incumbentBrands=4 incumbentUdon=14 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=3 brands=4 udon=14 expanded=7
+ANYTIME_HARVEST_IMPROVEMENT day=3 brands=4 udon=15 expanded=8
+ANYTIME_HARVEST_DONE day=3 brands=4 udon=15 expanded=64 coverageExpanded=2 harvestExpanded=62 generatedCandidates=141 retainedCandidates=101 prunedByTopK=40 improvements=2 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+CONTENTION_SUMMARY day=3 observedGroups=1 observedAgents=4 spotsConsidered=8 safeSpots=3 tiedSpots=2 contestedSpots=3 unobservedSpots=0
+ANYTIME_RISK_ADJUSTED_START day=3 incumbentBrands=4 incumbentRawUdon=15 incumbentAdjustedScore=22 budget=64
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=3 brands=4 rawUdon=13 adjustedScore=23 expanded=7
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=3 brands=4 rawUdon=14 adjustedScore=24 expanded=8
+ANYTIME_RISK_ADJUSTED_IMPROVEMENT day=3 brands=4 rawUdon=15 adjustedScore=25 expanded=25
+ANYTIME_RISK_ADJUSTED_DONE day=3 brands=4 rawUdon=15 adjustedScore=25 safeProjected=3 tiedProjected=1 riskProjected=11 unobservedProjected=0 expanded=64 completedPlans=65 improvements=3 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2895 day=3 mode=RiskAdjustedAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2895 day=3
+UDON_OBSERVABILITY matchId=m-2895 day=3 predictedDayUdon=15 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2895 day=3
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_WAITING matchId=m-2895 httpStatus=425
+RESULT_RECEIVED matchId=m-2895 submittedDays=4
+FINAL matchId=m-2895 submittedDays=4 rateLimits=0 result={"protocol_version":"v0.1-draft","type":"match_result","match_id":"m-2895","standings":[{"rank":1,"team_id":"team-B","udon_types":4,"daily_types_sum":16,"udon_total":60,"response_ms_total":1421},{"rank":2,"team_id":"team-A","udon_types":4,"daily_types_sum":16,"udon_total":54,"response_ms_total":2077}]}

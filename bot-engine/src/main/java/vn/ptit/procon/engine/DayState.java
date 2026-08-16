@@ -15,6 +15,7 @@ import vn.ptit.procon.domain.map.Position;
 import vn.ptit.procon.domain.map.Terrain;
 import vn.ptit.procon.domain.match.DayIndex;
 import vn.ptit.procon.domain.match.StaticMatchData;
+import vn.ptit.procon.domain.opponent.ObservedOtherGroup;
 import vn.ptit.procon.domain.traffic.TrafficStatus;
 import vn.ptit.procon.domain.udon.UdonSpot;
 
@@ -26,6 +27,7 @@ public final class DayState {
     private final List<AgentState> agents;
     private final Map<Position, TrafficStatus> roadTraffic;
     private final Map<Position, Integer> spotStock;
+    private final List<ObservedOtherGroup> observedOthers;
 
     public DayState(
             StaticMatchData matchData,
@@ -33,6 +35,16 @@ public final class DayState {
             List<AgentState> agents,
             Map<Position, TrafficStatus> roadTraffic,
             Map<Position, Integer> spotStock) {
+        this(matchData, day, agents, roadTraffic, spotStock, List.of());
+    }
+
+    public DayState(
+            StaticMatchData matchData,
+            DayIndex day,
+            List<AgentState> agents,
+            Map<Position, TrafficStatus> roadTraffic,
+            Map<Position, Integer> spotStock,
+            List<ObservedOtherGroup> observedOthers) {
         this.matchData = Objects.requireNonNull(matchData, "Static match data must not be null");
         this.day = Objects.requireNonNull(day, "Day index must not be null");
         matchData.dayStepBudgets().stepsFor(day);
@@ -48,6 +60,12 @@ public final class DayState {
 
         this.roadTraffic = immutableTraffic(roadTraffic);
         this.spotStock = immutableStock(spotStock);
+        Objects.requireNonNull(observedOthers, "Observed other groups must not be null");
+        List<ObservedOtherGroup> copiedOthers = new ArrayList<>(observedOthers);
+        copiedOthers.forEach(group -> Objects.requireNonNull(
+                group, "Observed other group must not be null"));
+        copiedOthers.sort(Comparator.comparingInt(ObservedOtherGroup::rawId));
+        this.observedOthers = List.copyOf(copiedOthers);
     }
 
     public StaticMatchData matchData() {
@@ -68,6 +86,10 @@ public final class DayState {
 
     public Map<Position, Integer> spotStock() {
         return spotStock;
+    }
+
+    public List<ObservedOtherGroup> observedOthers() {
+        return observedOthers;
     }
 
     public int stepBudget() {

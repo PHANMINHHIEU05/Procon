@@ -11,7 +11,10 @@ public record RuntimeConfig(
         String token,
         Duration pollInterval,
         Duration httpTimeout,
-        PlannerMode plannerMode) {
+        PlannerMode plannerMode,
+        boolean othersShapeDiagnostics,
+        boolean othersValueDiagnostics,
+        boolean contentionDiagnostics) {
 
     public static final String DEFAULT_BASE_URL = "https://procon.ptit.edu.vn";
     public static final long DEFAULT_POLL_INTERVAL_MS = 250;
@@ -45,8 +48,30 @@ public record RuntimeConfig(
             String matchId,
             String token,
             Duration pollInterval,
+            Duration httpTimeout,
+            PlannerMode plannerMode) {
+        this(baseUrl, matchId, token, pollInterval, httpTimeout, plannerMode, false, false, false);
+    }
+
+    public RuntimeConfig(
+            String baseUrl,
+            String matchId,
+            String token,
+            Duration pollInterval,
+            Duration httpTimeout,
+            PlannerMode plannerMode,
+            boolean othersShapeDiagnostics) {
+        this(baseUrl, matchId, token, pollInterval, httpTimeout, plannerMode,
+                othersShapeDiagnostics, false, false);
+    }
+
+    public RuntimeConfig(
+            String baseUrl,
+            String matchId,
+            String token,
+            Duration pollInterval,
             Duration httpTimeout) {
-        this(baseUrl, matchId, token, pollInterval, httpTimeout, PlannerMode.WAIT);
+        this(baseUrl, matchId, token, pollInterval, httpTimeout, PlannerMode.WAIT, false, false, false);
     }
 
     public static RuntimeConfig fromEnvironment(Map<String, String> environment) {
@@ -63,7 +88,16 @@ public record RuntimeConfig(
                         environment.get("PROCON_HTTP_TIMEOUT_SECONDS"),
                         DEFAULT_HTTP_TIMEOUT_SECONDS,
                         "PROCON_HTTP_TIMEOUT_SECONDS")),
-                PlannerMode.parse(environment.get("PROCON_PLANNER_MODE")));
+                PlannerMode.parse(environment.get("PROCON_PLANNER_MODE")),
+                parseBoolean(
+                        environment.get("PROCON_OTHERS_SHAPE_DIAGNOSTICS"),
+                        "PROCON_OTHERS_SHAPE_DIAGNOSTICS"),
+                parseBoolean(
+                        environment.get("PROCON_OTHERS_VALUE_DIAGNOSTICS"),
+                        "PROCON_OTHERS_VALUE_DIAGNOSTICS"),
+                parseBoolean(
+                        environment.get("PROCON_CONTENTION_DIAGNOSTICS"),
+                        "PROCON_CONTENTION_DIAGNOSTICS"));
     }
 
     public Duration connectTimeout() {
@@ -74,7 +108,10 @@ public record RuntimeConfig(
     public String toString() {
         return "RuntimeConfig[baseUrl=" + baseUrl + ", matchId=" + matchId
                 + ", token=<set>, pollInterval=" + pollInterval
-                + ", httpTimeout=" + httpTimeout + ", plannerMode=" + plannerMode + "]";
+                + ", httpTimeout=" + httpTimeout + ", plannerMode=" + plannerMode
+                + ", othersShapeDiagnostics=" + othersShapeDiagnostics
+                + ", othersValueDiagnostics=" + othersValueDiagnostics
+                + ", contentionDiagnostics=" + contentionDiagnostics + "]";
     }
 
     private static String valueOrDefault(String value, String defaultValue) {
@@ -94,5 +131,18 @@ public record RuntimeConfig(
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException(name + " must be an integer", exception);
         }
+    }
+
+    private static boolean parseBoolean(String value, String name) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        if ("true".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(value)) {
+            return false;
+        }
+        throw new IllegalArgumentException(name + " must be true or false");
     }
 }

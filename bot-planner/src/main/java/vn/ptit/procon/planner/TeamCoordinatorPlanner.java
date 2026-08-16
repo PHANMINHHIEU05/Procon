@@ -52,6 +52,10 @@ public final class TeamCoordinatorPlanner implements DayPlanner {
             .thenComparingInt(assignment -> assignment.patrol().id().value())
             .thenComparingInt(assignment -> assignment.refuel().id().value());
 
+    static Comparator<TeamTargetCandidate> targetPreference() {
+        return TARGET_PREFERENCE;
+    }
+
     private final WeightedRouteFinder patrolRouteFinder;
     private final RefuelRouteFinder refuelRouteFinder;
     private final PlanValidator validator;

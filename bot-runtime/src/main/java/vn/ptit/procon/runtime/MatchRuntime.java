@@ -18,6 +18,12 @@ import vn.ptit.procon.engine.TeamPlan;
 import vn.ptit.procon.engine.ValidDaySimulationResult;
 import vn.ptit.procon.planner.BrandAwarePlanner;
 import vn.ptit.procon.planner.DayPlanner;
+import vn.ptit.procon.planner.AnytimeTeamPlanner;
+import vn.ptit.procon.planner.HarvestAnytimeTeamPlanner;
+import vn.ptit.procon.planner.ContentionAwareAnytimePlanner;
+import vn.ptit.procon.planner.ArrivalContentionAnytimePlanner;
+import vn.ptit.procon.planner.WeightedArrivalContentionAnytimePlanner;
+import vn.ptit.procon.planner.RiskAdjustedAnytimePlanner;
 import vn.ptit.procon.planner.RefuelAwarePlanner;
 import vn.ptit.procon.planner.RefuelProbePlanner;
 import vn.ptit.procon.planner.SafeBaselinePlanner;
@@ -25,6 +31,8 @@ import vn.ptit.procon.planner.TeamCoordinatorPlanner;
 import vn.ptit.procon.planner.WaitDayPlanner;
 import vn.ptit.procon.protocol.DayStateMapper;
 import vn.ptit.procon.protocol.HttpStatusException;
+import vn.ptit.procon.protocol.OthersShapeInspector;
+import vn.ptit.procon.protocol.OthersShapeSummary;
 import vn.ptit.procon.protocol.ProconHttpClient;
 import vn.ptit.procon.protocol.SetupMapper;
 import vn.ptit.procon.protocol.dto.DayStateDto;
@@ -47,6 +55,8 @@ public final class MatchRuntime {
     private final DaySimulator simulator;
     private final DayPlanner planner;
     private final ParityRecorder parityRecorder;
+    private final boolean othersShapeDiagnostics;
+    private final OthersValueObserver othersValueObserver;
 
     private int rateLimitOccurrences;
 
@@ -66,8 +76,10 @@ public final class MatchRuntime {
                 new SmokeAssignmentPolicy(),
                 new PlanValidator(),
                 new DaySimulator(),
-                plannerFor(config.plannerMode()),
-                new ParityRecorder());
+                plannerFor(config.plannerMode(), config.contentionDiagnostics()),
+                new ParityRecorder(),
+                config.othersShapeDiagnostics(),
+                config.othersValueDiagnostics());
     }
 
     MatchRuntime(
@@ -82,6 +94,41 @@ public final class MatchRuntime {
             DaySimulator simulator,
             DayPlanner planner,
             ParityRecorder parityRecorder) {
+        this(matchId, http, pollInterval, sleeper, setupMapper, stateMapper, assignmentPolicy,
+                validator, simulator, planner, parityRecorder, false, false);
+    }
+
+    MatchRuntime(
+            String matchId,
+            ProconHttpClient http,
+            Duration pollInterval,
+            Sleeper sleeper,
+            SetupMapper setupMapper,
+            DayStateMapper stateMapper,
+            SmokeAssignmentPolicy assignmentPolicy,
+            PlanValidator validator,
+            DaySimulator simulator,
+            DayPlanner planner,
+            ParityRecorder parityRecorder,
+            boolean othersShapeDiagnostics) {
+        this(matchId, http, pollInterval, sleeper, setupMapper, stateMapper, assignmentPolicy,
+                validator, simulator, planner, parityRecorder, othersShapeDiagnostics, false);
+    }
+
+    MatchRuntime(
+            String matchId,
+            ProconHttpClient http,
+            Duration pollInterval,
+            Sleeper sleeper,
+            SetupMapper setupMapper,
+            DayStateMapper stateMapper,
+            SmokeAssignmentPolicy assignmentPolicy,
+            PlanValidator validator,
+            DaySimulator simulator,
+            DayPlanner planner,
+            ParityRecorder parityRecorder,
+            boolean othersShapeDiagnostics,
+            boolean othersValueDiagnostics) {
         this.matchId = Objects.requireNonNull(matchId, "Match ID must not be null");
         this.http = Objects.requireNonNull(http, "HTTP client must not be null");
         this.pollInterval = Objects.requireNonNull(pollInterval, "Poll interval must not be null");
@@ -96,6 +143,8 @@ public final class MatchRuntime {
         this.simulator = Objects.requireNonNull(simulator, "Simulator must not be null");
         this.planner = Objects.requireNonNull(planner, "Day planner must not be null");
         this.parityRecorder = Objects.requireNonNull(parityRecorder, "Parity recorder must not be null");
+        this.othersShapeDiagnostics = othersShapeDiagnostics;
+        this.othersValueObserver = new OthersValueObserver(othersValueDiagnostics, matchId);
     }
 
     MatchRuntime(
@@ -186,6 +235,17 @@ public final class MatchRuntime {
                 throw new IllegalStateException(
                         "Authoritative day moved backwards from " + lastObservedDay + " to " + observedDay);
             }
+            if (othersShapeDiagnostics && observedDay != lastObservedDay) {
+                logOthersShape(observedDay, stateDto.others());
+            }
+            if (observedDay != lastObservedDay) {
+                othersValueObserver.observe(
+                        observedDay,
+                        stateDto.others(),
+                        matchData.map().cellCount(),
+                        matchData.patrolFuelCapacity().value(),
+                        System.out::println);
+            }
             DayState state = stateMapper.toDomain(stateDto, matchData, assignment);
             log("DAY_STATE_RECEIVED", "day", observedDay, "agents", state.agents().size());
             parityRecorder.observeNextState(state).ifPresent(this::logParity);
@@ -240,6 +300,7 @@ public final class MatchRuntime {
                 lastSubmittedDay = observedDay;
                 submittedDays++;
                 parityRecorder.record(new ParityObservation(state, plan, validPrediction));
+                logUdonObservability(observedDay, validPrediction);
                 log("ACTIONS_ACCEPTED", "day", observedDay);
             }
 
@@ -358,7 +419,7 @@ public final class MatchRuntime {
         return Duration.ofMillis(bounded);
     }
 
-    private static DayPlanner plannerFor(PlannerMode mode) {
+    static DayPlanner plannerFor(PlannerMode mode, boolean contentionDiagnostics) {
         return switch (mode) {
             case WAIT -> new WaitDayPlanner();
             case BASELINE -> new SafeBaselinePlanner();
@@ -366,7 +427,39 @@ public final class MatchRuntime {
             case REFUEL_AWARE -> new RefuelAwarePlanner();
             case REFUEL_PROBE -> new RefuelProbePlanner();
             case TEAM_COORDINATED -> new TeamCoordinatorPlanner();
+            case ANYTIME -> new AnytimeTeamPlanner();
+            case ANYTIME_HARVEST -> new HarvestAnytimeTeamPlanner();
+            case ANYTIME_CONTENTION -> new ContentionAwareAnytimePlanner(
+                    vn.ptit.procon.planner.AnytimePlannerConfig.defaults(), contentionDiagnostics);
+            case ANYTIME_ARRIVAL_CONTENTION -> new ArrivalContentionAnytimePlanner(
+                    vn.ptit.procon.planner.AnytimePlannerConfig.defaults(), contentionDiagnostics);
+            case ANYTIME_WEIGHTED_ARRIVAL_CONTENTION -> new WeightedArrivalContentionAnytimePlanner(
+                    vn.ptit.procon.planner.AnytimePlannerConfig.defaults(), contentionDiagnostics);
+            case ANYTIME_RISK_ADJUSTED -> new RiskAdjustedAnytimePlanner(
+                    vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                    vn.ptit.procon.planner.RiskAdjustmentWeights.defaults(), contentionDiagnostics);
         };
+    }
+
+    private void logUdonObservability(
+            int day, ValidDaySimulationResult prediction) {
+        int predictedDayUdon = prediction.portionsCollectedByAgent().values().stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+        log("UDON_OBSERVABILITY",
+                "day", day,
+                "predictedDayUdon", predictedDayUdon,
+                "authoritativeActual", "UNAVAILABLE");
+    }
+
+    private void logOthersShape(int day, JsonNode others) {
+        OthersShapeSummary summary = OthersShapeInspector.inspect(others);
+        log("OTHERS_SHAPE",
+                "day", day,
+                "nodeType", summary.nodeType(),
+                "entries", summary.entries(),
+                "shape", summary.shape(),
+                "truncated", summary.truncated());
     }
 
     private String submissionDiagnostic(SubmissionResult result) {

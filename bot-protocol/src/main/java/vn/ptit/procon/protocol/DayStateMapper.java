@@ -10,6 +10,7 @@ import vn.ptit.procon.domain.agent.AgentState;
 import vn.ptit.procon.domain.map.Position;
 import vn.ptit.procon.domain.match.DayIndex;
 import vn.ptit.procon.domain.match.StaticMatchData;
+import vn.ptit.procon.domain.opponent.ObservedOtherGroup;
 import vn.ptit.procon.domain.traffic.TrafficStatus;
 import vn.ptit.procon.domain.udon.UdonSpot;
 import vn.ptit.procon.engine.DayState;
@@ -21,6 +22,16 @@ import vn.ptit.procon.protocol.dto.TrafficDto;
 public final class DayStateMapper {
 
     private static final String ENDPOINT = "/state";
+    private final ObservedOthersParser observedOthersParser;
+
+    public DayStateMapper() {
+        this(new ObservedOthersParser());
+    }
+
+    DayStateMapper(ObservedOthersParser observedOthersParser) {
+        this.observedOthersParser = java.util.Objects.requireNonNull(
+                observedOthersParser, "Observed others parser must not be null");
+    }
 
     public DayState toDomain(
             DayStateDto dto, StaticMatchData matchData, List<AgentKind> assignment) {
@@ -74,8 +85,20 @@ public final class DayStateMapper {
             for (UdonSpot spot : matchData.udonSpots()) {
                 replenishedStock.put(spot.position(), spot.stockCapacity());
             }
+            List<ObservedOtherGroup> observedOthers;
+            try {
+                observedOthers = observedOthersParser.parse(dto.others()).stream()
+                        .map(group -> new ObservedOtherGroup(
+                                group.rawId(),
+                                group.agents().stream()
+                                        .filter(agent -> matchData.map().contains(agent.position()))
+                                        .toList()))
+                        .toList();
+            } catch (RuntimeException ignored) {
+                observedOthers = List.of();
+            }
             return new DayState(
-                    matchData, new DayIndex(day), agents, traffic, replenishedStock);
+                    matchData, new DayIndex(day), agents, traffic, replenishedStock, observedOthers);
         } catch (ProtocolMappingException exception) {
             throw exception;
         } catch (IllegalArgumentException exception) {

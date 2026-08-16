@@ -7,7 +7,13 @@ public enum PlannerMode {
     BRAND_AWARE,
     REFUEL_AWARE,
     REFUEL_PROBE,
-    TEAM_COORDINATED;
+    TEAM_COORDINATED,
+    ANYTIME,
+    ANYTIME_HARVEST,
+    ANYTIME_CONTENTION,
+    ANYTIME_ARRIVAL_CONTENTION,
+    ANYTIME_WEIGHTED_ARRIVAL_CONTENTION,
+    ANYTIME_RISK_ADJUSTED;
 
     static PlannerMode parse(String value) {
         String normalized = value == null || value.isBlank() ? WAIT.name() : value.trim().toUpperCase();
@@ -16,7 +22,9 @@ public enum PlannerMode {
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException(
                     "PROCON_PLANNER_MODE must be WAIT, BASELINE, BRAND_AWARE, REFUEL_AWARE,"
-                            + " REFUEL_PROBE, or TEAM_COORDINATED: " + value,
+                            + " REFUEL_PROBE, TEAM_COORDINATED, ANYTIME, ANYTIME_HARVEST,"
+                            + " ANYTIME_CONTENTION, ANYTIME_ARRIVAL_CONTENTION,"
+                            + " ANYTIME_WEIGHTED_ARRIVAL_CONTENTION, or ANYTIME_RISK_ADJUSTED: " + value,
                     exception);
         }
     }

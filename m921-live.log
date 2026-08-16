@@ -1,0 +1,225 @@
+CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-2868 plannerMode=ANYTIME_WEIGHTED_ARRIVAL_CONTENTION PROCON_TOKEN=<set>
+SETUP_WAITING matchId=m-2868
+SETUP_RECEIVED matchId=m-2868 agents=4 days=4
+ASSIGNMENT_SUBMITTED matchId=m-2868 agents=4
+ASSIGNMENT_ACCEPTED matchId=m-2868 agents=4
+MATCH_STARTED matchId=m-2868
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+TEAM_REFUEL_NO_ASSIGN day=0 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=0 iteration=1 agent=0 target=51 brand=numeric:2 teamNewBrand=true steps=10 fuel=5
+TEAM_TARGET_SELECT day=0 iteration=2 agent=2 target=9 brand=numeric:0 teamNewBrand=true steps=3 fuel=3
+TEAM_TARGET_SELECT day=0 iteration=3 agent=2 target=56 brand=numeric:1 teamNewBrand=true steps=11 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=4 agent=2 target=51 brand=numeric:2 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=0 iteration=5 agent=1 target=42 brand=numeric:2 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=0 iteration=6 agent=1 target=32 brand=numeric:3 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=0 iteration=7 agent=1 target=9 brand=numeric:0 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=8 agent=0 target=54 brand=numeric:1 teamNewBrand=false steps=7 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=9 agent=0 target=47 brand=numeric:0 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=0 iteration=10 agent=0 target=12 brand=numeric:3 teamNewBrand=false steps=9 fuel=8
+TEAM_TARGET_SELECT day=0 iteration=11 agent=1 target=54 brand=numeric:1 teamNewBrand=false steps=14 fuel=10
+TEAM_TARGET_SELECT day=0 iteration=12 agent=1 target=47 brand=numeric:0 teamNewBrand=false steps=2 fuel=1
+TEAM_PLAN_VALID day=0
+ANYTIME_HARVEST_START day=0 incumbentBrands=4 incumbentUdon=15 budget=64
+ANYTIME_HARVEST_DONE day=0 brands=4 udon=15 expanded=64 coverageExpanded=3 harvestExpanded=61 generatedCandidates=200 retainedCandidates=116 prunedByTopK=84 improvements=0 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+CONTENTION_SUMMARY day=0 observedGroups=1 observedAgents=4 spotsConsidered=8 safeSpots=0 tiedSpots=6 contestedSpots=2 unobservedSpots=0
+ARRIVAL_BOUND_COMPARISON position=9 ourArrivalStep=3 opponentHexDistanceLowerBound=2 opponentWeightedStepLowerBound=3 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=12 ourArrivalStep=5 opponentHexDistanceLowerBound=3 opponentWeightedStepLowerBound=5 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=32 ourArrivalStep=4 opponentHexDistanceLowerBound=2 opponentWeightedStepLowerBound=4 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=42 ourArrivalStep=2 opponentHexDistanceLowerBound=1 opponentWeightedStepLowerBound=2 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=47 ourArrivalStep=10 opponentHexDistanceLowerBound=2 opponentWeightedStepLowerBound=4 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=51 ourArrivalStep=4 opponentHexDistanceLowerBound=2 opponentWeightedStepLowerBound=4 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=54 ourArrivalStep=10 opponentHexDistanceLowerBound=3 opponentWeightedStepLowerBound=6 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=56 ourArrivalStep=2 opponentHexDistanceLowerBound=1 opponentWeightedStepLowerBound=2 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_START day=0 incumbentBrands=4 incumbentUdon=15 budget=64
+ARRIVAL_CONTENTION_CANDIDATE day=0 agent=1 target=42 totalGain=1 arrivalSafe=0 arrivalTied=1 arrivalAtRisk=0
+ARRIVAL_CONTENTION_CANDIDATE day=0 agent=0 target=51 totalGain=2 arrivalSafe=0 arrivalTied=0 arrivalAtRisk=2
+ARRIVAL_CONTENTION_CANDIDATE day=0 agent=0 target=56 totalGain=1 arrivalSafe=0 arrivalTied=1 arrivalAtRisk=0
+ARRIVAL_CONTENTION_CANDIDATE day=0 agent=2 target=9 totalGain=1 arrivalSafe=0 arrivalTied=1 arrivalAtRisk=0
+ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_DONE day=0 brands=4 udon=15 expanded=64 coverageExpanded=3 harvestExpanded=61 generatedCandidates=786 retainedCandidates=256 prunedByTopK=530 improvements=0 arrivalAwareIncumbentImprovements=0 weightedArrivalSafeProjected=0 weightedArrivalTiedProjected=2 weightedArrivalAtRiskProjected=13 safeProjected=0 tiedProjected=11 contestedProjected=4 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2868 day=0 mode=WeightedArrivalContentionAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2868 day=0
+UDON_OBSERVABILITY matchId=m-2868 day=0 predictedDayUdon=15 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2868 day=0
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+PARITY_OBSERVED matchId=m-2868 day=0 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2868 from=0 to=1
+TEAM_REFUEL_NO_ASSIGN day=1 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=1 iteration=1 agent=2 target=56 brand=numeric:1 teamNewBrand=true steps=10 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=2 agent=2 target=9 brand=numeric:0 teamNewBrand=false steps=11 fuel=7
+TEAM_TARGET_SELECT day=1 iteration=3 agent=1 target=54 brand=numeric:1 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=1 iteration=4 agent=0 target=9 brand=numeric:0 teamNewBrand=false steps=4 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=5 agent=1 target=51 brand=numeric:2 teamNewBrand=false steps=7 fuel=4
+TEAM_TARGET_SELECT day=1 iteration=6 agent=0 target=42 brand=numeric:2 teamNewBrand=false steps=7 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=7 agent=1 target=32 brand=numeric:3 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=1 iteration=8 agent=0 target=54 brand=numeric:1 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=9 agent=0 target=47 brand=numeric:0 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=1 iteration=10 agent=1 target=42 brand=numeric:2 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=1 iteration=11 agent=1 target=9 brand=numeric:0 teamNewBrand=false steps=7 fuel=5
+TEAM_PLAN_VALID day=1
+ANYTIME_HARVEST_START day=1 incumbentBrands=4 incumbentUdon=16 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=1 brands=4 udon=16 expanded=12
+ANYTIME_HARVEST_IMPROVEMENT day=1 brands=4 udon=17 expanded=13
+ANYTIME_HARVEST_DONE day=1 brands=4 udon=17 expanded=64 coverageExpanded=1 harvestExpanded=63 generatedCandidates=169 retainedCandidates=119 prunedByTopK=50 improvements=2 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+CONTENTION_SUMMARY day=1 observedGroups=1 observedAgents=4 spotsConsidered=8 safeSpots=5 tiedSpots=0 contestedSpots=3 unobservedSpots=0
+ARRIVAL_BOUND_COMPARISON position=9 ourArrivalStep=4 opponentHexDistanceLowerBound=1 opponentWeightedStepLowerBound=1 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=12 ourArrivalStep=0 opponentHexDistanceLowerBound=2 opponentWeightedStepLowerBound=2 oldClassification=ARRIVAL_SAFE weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=32 ourArrivalStep=7 opponentHexDistanceLowerBound=3 opponentWeightedStepLowerBound=4 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=42 ourArrivalStep=4 opponentHexDistanceLowerBound=4 opponentWeightedStepLowerBound=6 oldClassification=ARRIVAL_TIED weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=47 ourArrivalStep=0 opponentHexDistanceLowerBound=1 opponentWeightedStepLowerBound=2 oldClassification=ARRIVAL_SAFE weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=51 ourArrivalStep=0 opponentHexDistanceLowerBound=3 opponentWeightedStepLowerBound=7 oldClassification=ARRIVAL_SAFE weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=54 ourArrivalStep=2 opponentHexDistanceLowerBound=0 opponentWeightedStepLowerBound=0 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=56 ourArrivalStep=10 opponentHexDistanceLowerBound=6 opponentWeightedStepLowerBound=10 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_START day=1 incumbentBrands=4 incumbentUdon=17 budget=64
+ARRIVAL_CONTENTION_CANDIDATE day=1 agent=2 target=56 totalGain=2 arrivalSafe=1 arrivalTied=1 arrivalAtRisk=0
+ARRIVAL_CONTENTION_CANDIDATE day=1 agent=1 target=54 totalGain=1 arrivalSafe=0 arrivalTied=0 arrivalAtRisk=1
+ARRIVAL_CONTENTION_CANDIDATE day=1 agent=0 target=56 totalGain=1 arrivalSafe=0 arrivalTied=0 arrivalAtRisk=1
+ARRIVAL_CONTENTION_CANDIDATE day=1 agent=2 target=54 totalGain=1 arrivalSafe=0 arrivalTied=0 arrivalAtRisk=1
+ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_DONE day=1 brands=4 udon=17 expanded=64 coverageExpanded=1 harvestExpanded=63 generatedCandidates=723 retainedCandidates=256 prunedByTopK=467 improvements=0 arrivalAwareIncumbentImprovements=0 weightedArrivalSafeProjected=4 weightedArrivalTiedProjected=1 weightedArrivalAtRiskProjected=12 safeProjected=10 tiedProjected=0 contestedProjected=7 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2868 day=1 mode=WeightedArrivalContentionAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2868 day=1
+UDON_OBSERVABILITY matchId=m-2868 day=1 predictedDayUdon=17 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2868 day=1
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+PARITY_OBSERVED matchId=m-2868 day=1 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2868 from=1 to=2
+TEAM_REFUEL_NO_ASSIGN day=2 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=2 iteration=1 agent=2 target=56 brand=numeric:1 teamNewBrand=true steps=11 fuel=7
+TEAM_TARGET_SELECT day=2 iteration=2 agent=2 target=51 brand=numeric:2 teamNewBrand=true steps=10 fuel=5
+TEAM_TARGET_SELECT day=2 iteration=3 agent=0 target=54 brand=numeric:1 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=2 iteration=4 agent=1 target=12 brand=numeric:3 teamNewBrand=false steps=4 fuel=5
+TEAM_TARGET_SELECT day=2 iteration=5 agent=0 target=51 brand=numeric:2 teamNewBrand=false steps=7 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=6 agent=1 target=42 brand=numeric:2 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=7 agent=0 target=32 brand=numeric:3 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=8 agent=1 target=54 brand=numeric:1 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=2 iteration=9 agent=1 target=47 brand=numeric:0 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=2 iteration=10 agent=0 target=42 brand=numeric:2 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=2 iteration=11 agent=2 target=54 brand=numeric:1 teamNewBrand=false steps=7 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=12 agent=2 target=47 brand=numeric:0 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=2 iteration=13 agent=0 target=9 brand=numeric:0 teamNewBrand=false steps=7 fuel=5
+TEAM_PLAN_VALID day=2
+ANYTIME_HARVEST_START day=2 incumbentBrands=4 incumbentUdon=18 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=18 expanded=13
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=19 expanded=14
+ANYTIME_HARVEST_DONE day=2 brands=4 udon=19 expanded=64 coverageExpanded=2 harvestExpanded=62 generatedCandidates=209 retainedCandidates=139 prunedByTopK=70 improvements=2 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+CONTENTION_SUMMARY day=2 observedGroups=1 observedAgents=4 spotsConsidered=8 safeSpots=3 tiedSpots=0 contestedSpots=5 unobservedSpots=0
+ARRIVAL_BOUND_COMPARISON position=9 ourArrivalStep=0 opponentHexDistanceLowerBound=3 opponentWeightedStepLowerBound=5 oldClassification=ARRIVAL_SAFE weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=12 ourArrivalStep=4 opponentHexDistanceLowerBound=4 opponentWeightedStepLowerBound=7 oldClassification=ARRIVAL_TIED weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=32 ourArrivalStep=5 opponentHexDistanceLowerBound=0 opponentWeightedStepLowerBound=0 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=42 ourArrivalStep=7 opponentHexDistanceLowerBound=0 opponentWeightedStepLowerBound=0 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=47 ourArrivalStep=0 opponentHexDistanceLowerBound=1 opponentWeightedStepLowerBound=2 oldClassification=ARRIVAL_SAFE weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=51 ourArrivalStep=8 opponentHexDistanceLowerBound=2 opponentWeightedStepLowerBound=4 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=54 ourArrivalStep=2 opponentHexDistanceLowerBound=0 opponentWeightedStepLowerBound=0 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=56 ourArrivalStep=11 opponentHexDistanceLowerBound=3 opponentWeightedStepLowerBound=6 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_START day=2 incumbentBrands=4 incumbentUdon=19 budget=64
+ARRIVAL_CONTENTION_CANDIDATE day=2 agent=1 target=12 totalGain=1 arrivalSafe=1 arrivalTied=0 arrivalAtRisk=0
+ARRIVAL_CONTENTION_CANDIDATE day=2 agent=1 target=47 totalGain=2 arrivalSafe=1 arrivalTied=0 arrivalAtRisk=1
+ARRIVAL_CONTENTION_CANDIDATE day=2 agent=0 target=54 totalGain=1 arrivalSafe=0 arrivalTied=0 arrivalAtRisk=1
+ARRIVAL_CONTENTION_CANDIDATE day=2 agent=2 target=12 totalGain=1 arrivalSafe=1 arrivalTied=0 arrivalAtRisk=0
+ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_DONE day=2 brands=4 udon=19 expanded=64 coverageExpanded=3 harvestExpanded=61 generatedCandidates=790 retainedCandidates=256 prunedByTopK=534 improvements=0 arrivalAwareIncumbentImprovements=0 weightedArrivalSafeProjected=4 weightedArrivalTiedProjected=0 weightedArrivalAtRiskProjected=15 safeProjected=7 tiedProjected=0 contestedProjected=12 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2868 day=2 mode=WeightedArrivalContentionAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2868 day=2
+UDON_OBSERVABILITY matchId=m-2868 day=2 predictedDayUdon=19 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2868 day=2
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2868 day=3 agents=4
+PARITY_OBSERVED matchId=m-2868 day=2 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2868 from=2 to=3
+TEAM_REFUEL_ASSIGN day=3 refuelAgent=3 patrolAgent=1 projectedBrandGain=0 projectedCollectionGain=1 arrivalStep=11
+TEAM_TARGET_SELECT day=3 iteration=1 agent=0 target=56 brand=numeric:1 teamNewBrand=true steps=11 fuel=7
+TEAM_TARGET_SELECT day=3 iteration=2 agent=2 target=54 brand=numeric:1 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=3 iteration=3 agent=1 target=32 brand=numeric:3 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=3 iteration=4 agent=1 target=9 brand=numeric:0 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=3 iteration=5 agent=0 target=42 brand=numeric:2 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=3 iteration=6 agent=2 target=51 brand=numeric:2 teamNewBrand=false steps=7 fuel=4
+TEAM_TARGET_SELECT day=3 iteration=7 agent=2 target=12 brand=numeric:3 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=3 iteration=8 agent=2 target=9 brand=numeric:0 teamNewBrand=false steps=4 fuel=5
+TEAM_TARGET_SELECT day=3 iteration=9 agent=1 target=51 brand=numeric:2 teamNewBrand=false steps=9 fuel=6
+TEAM_PLAN_VALID day=3
+ANYTIME_HARVEST_START day=3 incumbentBrands=4 incumbentUdon=13 budget=64
+ANYTIME_HARVEST_DONE day=3 brands=4 udon=13 expanded=64 coverageExpanded=1 harvestExpanded=63 generatedCandidates=148 retainedCandidates=100 prunedByTopK=48 improvements=0 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+CONTENTION_SUMMARY day=3 observedGroups=1 observedAgents=4 spotsConsidered=8 safeSpots=2 tiedSpots=5 contestedSpots=1 unobservedSpots=0
+ARRIVAL_BOUND_COMPARISON position=9 ourArrivalStep=0 opponentHexDistanceLowerBound=0 opponentWeightedStepLowerBound=0 oldClassification=ARRIVAL_TIED weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=12 ourArrivalStep=4 opponentHexDistanceLowerBound=0 opponentWeightedStepLowerBound=0 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_AT_RISK
+ARRIVAL_BOUND_COMPARISON position=32 ourArrivalStep=4 opponentHexDistanceLowerBound=2 opponentWeightedStepLowerBound=4 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=42 ourArrivalStep=0 opponentHexDistanceLowerBound=0 opponentWeightedStepLowerBound=0 oldClassification=ARRIVAL_TIED weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=47 ourArrivalStep=0 opponentHexDistanceLowerBound=5 opponentWeightedStepLowerBound=9 oldClassification=ARRIVAL_SAFE weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=51 ourArrivalStep=4 opponentHexDistanceLowerBound=2 opponentWeightedStepLowerBound=4 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ARRIVAL_BOUND_COMPARISON position=54 ourArrivalStep=2 opponentHexDistanceLowerBound=5 opponentWeightedStepLowerBound=10 oldClassification=ARRIVAL_SAFE weightedClassification=ARRIVAL_SAFE
+ARRIVAL_BOUND_COMPARISON position=56 ourArrivalStep=6 opponentHexDistanceLowerBound=3 opponentWeightedStepLowerBound=6 oldClassification=ARRIVAL_AT_RISK weightedClassification=ARRIVAL_TIED
+ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_START day=3 incumbentBrands=4 incumbentUdon=13 budget=64
+ARRIVAL_CONTENTION_CANDIDATE day=3 agent=2 target=54 totalGain=1 arrivalSafe=1 arrivalTied=0 arrivalAtRisk=0
+ARRIVAL_CONTENTION_CANDIDATE day=3 agent=0 target=56 totalGain=2 arrivalSafe=0 arrivalTied=0 arrivalAtRisk=2
+ARRIVAL_CONTENTION_CANDIDATE day=3 agent=1 target=54 totalGain=1 arrivalSafe=0 arrivalTied=1 arrivalAtRisk=0
+ARRIVAL_CONTENTION_CANDIDATE day=3 agent=1 target=32 totalGain=1 arrivalSafe=0 arrivalTied=1 arrivalAtRisk=0
+ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_DONE day=3 brands=4 udon=13 expanded=64 coverageExpanded=1 harvestExpanded=63 generatedCandidates=451 retainedCandidates=256 prunedByTopK=195 improvements=0 arrivalAwareIncumbentImprovements=0 weightedArrivalSafeProjected=2 weightedArrivalTiedProjected=2 weightedArrivalAtRiskProjected=9 safeProjected=2 tiedProjected=10 contestedProjected=1 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2868 day=3 mode=WeightedArrivalContentionAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2868 day=3
+UDON_OBSERVABILITY matchId=m-2868 day=3 predictedDayUdon=13 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2868 day=3
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_WAITING matchId=m-2868 httpStatus=425
+RESULT_RECEIVED matchId=m-2868 submittedDays=4
+FINAL matchId=m-2868 submittedDays=4 rateLimits=0 result={"protocol_version":"v0.1-draft","type":"match_result","match_id":"m-2868","standings":[{"rank":1,"team_id":"team-B","udon_types":4,"daily_types_sum":16,"udon_total":62,"response_ms_total":1637},{"rank":2,"team_id":"team-A","udon_types":4,"daily_types_sum":16,"udon_total":56,"response_ms_total":2194}]}
