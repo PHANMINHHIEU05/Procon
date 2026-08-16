@@ -91,6 +91,10 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             .comparing(AnytimeTeamPlanner::riskAdjustedFrontierMetrics,
                     RiskAdjustedFrontierMetrics.preference());
 
+    private static final Comparator<SearchState> INTENT_AWARE_STATE_PREFERENCE = Comparator
+            .comparing(AnytimeTeamPlanner::intentAwareFrontierMetrics,
+                    IntentAwareFrontierMetrics.preference());
+
     private static final Comparator<RefuelSchedule> REFUEL_ROOT_PREFERENCE = Comparator
             .comparingInt(RefuelSchedule::currentFuel)
             .thenComparingInt(schedule -> schedule.route.stepsUsed())
@@ -106,6 +110,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
     private final DayPlanner teamCoordinator;
     private final DayPlanner contentionFallback;
     private final RiskAdjustmentWeights riskAdjustmentWeights;
+    private final OpponentIntentConfig opponentIntentConfig;
+    private final IntentAdjustmentWeights intentAdjustmentWeights;
     private final boolean contentionDiagnostics;
 
     public AnytimeTeamPlanner() {
@@ -142,6 +148,29 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 new DaySimulator(),
                 null,
                 riskAdjustmentWeights,
+                OpponentIntentConfig.defaults(),
+                IntentAdjustmentWeights.defaults(),
+                contentionDiagnostics);
+    }
+
+    public AnytimeTeamPlanner(
+            AnytimePlannerConfig config,
+            AnytimeSearchPolicy policy,
+            RiskAdjustmentWeights riskAdjustmentWeights,
+            OpponentIntentConfig opponentIntentConfig,
+            IntentAdjustmentWeights intentAdjustmentWeights,
+            boolean contentionDiagnostics) {
+        this(
+                config,
+                policy,
+                new WeightedRouteFinder(),
+                new RefuelRouteFinder(),
+                new PlanValidator(),
+                new DaySimulator(),
+                null,
+                riskAdjustmentWeights,
+                opponentIntentConfig,
+                intentAdjustmentWeights,
                 contentionDiagnostics);
     }
 
@@ -170,6 +199,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 simulator,
                 teamCoordinator,
                 RiskAdjustmentWeights.defaults(),
+                OpponentIntentConfig.defaults(),
+                IntentAdjustmentWeights.defaults(),
                 false);
     }
 
@@ -182,6 +213,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             DaySimulator simulator,
             DayPlanner teamCoordinator,
             RiskAdjustmentWeights riskAdjustmentWeights,
+            OpponentIntentConfig opponentIntentConfig,
+            IntentAdjustmentWeights intentAdjustmentWeights,
             boolean contentionDiagnostics) {
         this.config = Objects.requireNonNull(config, "Anytime configuration must not be null");
         this.policy = Objects.requireNonNull(policy, "Anytime search policy must not be null");
@@ -194,11 +227,16 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         this.teamCoordinator = teamCoordinator == null
                 ? new TeamCoordinatorPlanner(this.patrolRouteFinder, this.refuelRouteFinder, this.validator)
                 : teamCoordinator;
-        this.contentionFallback = (policy == AnytimeSearchPolicy.CONTENTION || isArrivalPolicy(policy))
+        this.contentionFallback = (policy == AnytimeSearchPolicy.CONTENTION
+                || isArrivalPolicy(policy) || policy == AnytimeSearchPolicy.ANYTIME_INTENT_AWARE)
                 ? new HarvestAnytimeTeamPlanner(config)
                 : null;
         this.riskAdjustmentWeights = Objects.requireNonNull(
                 riskAdjustmentWeights, "Risk adjustment weights must not be null");
+        this.opponentIntentConfig = Objects.requireNonNull(
+                opponentIntentConfig, "Opponent intent configuration must not be null");
+        this.intentAdjustmentWeights = Objects.requireNonNull(
+                intentAdjustmentWeights, "Intent adjustment weights must not be null");
         this.contentionDiagnostics = contentionDiagnostics;
     }
 
@@ -210,11 +248,16 @@ public final class AnytimeTeamPlanner implements DayPlanner {
     public AnytimePlanResult planWithStats(DayState state) {
         Objects.requireNonNull(state, "Day state must not be null");
         MutableStats stats = new MutableStats();
-        SearchContext context = new SearchContext(state, policy, riskAdjustmentWeights);
+        SearchContext context = new SearchContext(
+                state, policy, riskAdjustmentWeights, opponentIntentConfig, intentAdjustmentWeights);
         ArrivalEvaluatedPlan arrivalIncumbent = null;
         RiskAdjustedEvaluatedPlan riskAdjustedIncumbent = null;
+        IntentAwareEvaluatedPlan intentAwareIncumbent = null;
         EvaluatedPlan incumbent = null;
-        if (isRiskAdjustedPolicy()) {
+        if (isIntentAwarePolicy()) {
+            intentAwareIncumbent = initialIntentAwareIncumbent(state, stats, context);
+            incumbent = intentAwareIncumbent.base();
+        } else if (isRiskAdjustedPolicy()) {
             riskAdjustedIncumbent = initialRiskAdjustedIncumbent(state, stats, context);
             incumbent = riskAdjustedIncumbent.base();
         } else if (isArrivalPolicy(policy)) {
@@ -244,7 +287,18 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 logArrivalBoundComparisons(state, context);
             }
         }
-        if (isRiskAdjustedPolicy()) {
+        if (isIntentAwarePolicy() && contentionDiagnostics) {
+            logIntentForecast(state, context);
+        }
+        if (isIntentAwarePolicy()) {
+            log(event("START"),
+                    "day", state.day().value(),
+                    "incumbentBrands", incumbent.evaluation.teamBrandCount(),
+                    "incumbentRawUdon", incumbent.evaluation.udonTotal(),
+                    "incumbentIntentScore",
+                    intentAwareIncumbent.evaluation().adjustedCollectionScore().value(),
+                    "budget", config.maxExpandedStates());
+        } else if (isRiskAdjustedPolicy()) {
             log(event("START"),
                     "day", state.day().value(),
                     "incumbentBrands", incumbent.evaluation.teamBrandCount(),
@@ -278,7 +332,24 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 stats.expandedStates++;
                 TeamPlan complete = current.completePlan(context.state);
                 stats.completedPlans++;
-                if (isRiskAdjustedPolicy()) {
+                if (isIntentAwarePolicy()) {
+                    Optional<IntentAwareEvaluatedPlan> evaluated = evaluateIntentAware(
+                            context.state, complete, context);
+                    if (evaluated.isPresent()
+                            && evaluated.orElseThrow().evaluation().betterThan(
+                                    intentAwareIncumbent.evaluation())) {
+                        intentAwareIncumbent = evaluated.orElseThrow();
+                        incumbent = intentAwareIncumbent.base();
+                        stats.incumbentImprovements++;
+                        log(event("IMPROVEMENT"),
+                                "day", state.day().value(),
+                                "brands", incumbent.evaluation.teamBrandCount(),
+                                "rawUdon", incumbent.evaluation.udonTotal(),
+                                "intentAdjustedScore",
+                                intentAwareIncumbent.evaluation().adjustedCollectionScore().value(),
+                                "expanded", stats.expandedStates);
+                    }
+                } else if (isRiskAdjustedPolicy()) {
                     Optional<RiskAdjustedEvaluatedPlan> evaluated = evaluateRiskAdjusted(
                             context.state, complete, context);
                     if (evaluated.isPresent()
@@ -357,12 +428,18 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                                     arrivalContention.arrivalAtRiskCollections(),
                                     arrivalContention.unobservedCollections())
                             : 0;
+                    IntentRouteMetrics intentMetrics = context.candidateIntent.getOrDefault(
+                            retainedCandidate, IntentRouteMetrics.empty());
+                    if (isIntentAwarePolicy()) {
+                        routeAdjustedScore = intentMetrics.adjustedScore();
+                    }
                     SearchState child = current.child(
                             context.state,
                             retainedCandidate,
                             contention,
                             arrivalContention,
                             routeAdjustedScore,
+                            intentMetrics,
                             context.nextSequence());
                     stats.generatedStates++;
                     if (!seen.add(child.key())) {
@@ -380,7 +457,22 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         boolean budgetExhausted = !frontier.isEmpty()
                 && stats.expandedStates >= config.maxExpandedStates();
         AnytimeSearchStats finalStats = stats.immutable(budgetExhausted);
-        if (isRiskAdjustedPolicy()) {
+        if (isIntentAwarePolicy()) {
+            IntentAwarePlanEvaluation evaluation = intentAwareIncumbent.evaluation();
+            log(event("DONE"),
+                    "day", state.day().value(),
+                    "brands", evaluation.base().teamBrandCount(),
+                    "rawUdon", evaluation.base().udonTotal(),
+                    "intentAdjustedScore", evaluation.adjustedCollectionScore().value(),
+                    "forecastRealizableCollections", evaluation.forecastRealizableCollections(),
+                    "likelyClaimedFirst", evaluation.likelyClaimedFirstCollections(),
+                    "tieCollections", evaluation.tieCollections(),
+                    "unforecastedCollections", evaluation.unforecastedCollections(),
+                    "expanded", finalStats.expandedStates(),
+                    "completedPlans", finalStats.completedPlans(),
+                    "improvements", finalStats.incumbentImprovements(),
+                    "budgetExhausted", finalStats.budgetExhausted());
+        } else if (isRiskAdjustedPolicy()) {
             RiskAdjustedPlanEvaluation evaluation = riskAdjustedIncumbent.evaluation();
             log(event("DONE"),
                     "day", state.day().value(),
@@ -478,8 +570,12 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         Optional<RiskAdjustedPlanEvaluation> riskAdjustedEvaluation = isRiskAdjustedPolicy()
                 ? Optional.of(riskAdjustedIncumbent.evaluation())
                 : Optional.empty();
+        Optional<IntentAwarePlanEvaluation> intentAwareEvaluation = isIntentAwarePolicy()
+                ? Optional.of(intentAwareIncumbent.evaluation())
+                : Optional.empty();
         return new AnytimePlanResult(
-                incumbent.plan, incumbent.evaluation, finalStats, riskAdjustedEvaluation);
+                incumbent.plan, incumbent.evaluation, finalStats,
+                riskAdjustedEvaluation, intentAwareEvaluation);
     }
 
     private void logContentionSpots(DayState state, SearchContext context) {
@@ -524,6 +620,43 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                             "oldClassification", oldClassification,
                             "weightedClassification", weightedClassification);
                 });
+    }
+
+    private void logIntentForecast(DayState state, SearchContext context) {
+        OpponentIntentForecast forecast = context.intentForecast;
+        log("OPPONENT_INTENT_SUMMARY",
+                "day", state.day().value(),
+                "groups", forecast.groups().size(),
+                "agents", forecast.observedAgentCount(),
+                "stockedSpots", forecast.stockedSpotCount(),
+                "physicallyReachablePairs", forecast.physicallyReachablePairs(),
+                "retainedIntentTargets", forecast.retainedIntentTargets(),
+                "forecastClaims", forecast.forecastClaims());
+        forecast.groups().stream()
+                .flatMap(group -> group.agents().stream()
+                        .flatMap(agent -> agent.targets().stream()
+                                .map(target -> new IntentDiagnostic(group.groupRawId(), agent, target))))
+                .limit(12)
+                .forEach(item -> log("OPPONENT_INTENT_TARGET",
+                        "groupRawId", item.groupRawId(),
+                        "agentIndex", item.agent().agentIndex(),
+                        "rawKind", item.agent().rawKind(),
+                        "spot", item.target().spot().value(),
+                        "rank", item.target().rank(),
+                        "travelSteps", item.target().optimisticTravelSteps(),
+                        "pressureUnits", item.target().pressureUnits(),
+                        "forecastArrivalStep", item.target().forecastArrivalStep().isPresent()
+                                ? item.target().forecastArrivalStep().getAsInt() : "UNCLAIMED"));
+        forecast.pressureBySpot().values().stream()
+                .sorted(Comparator.comparingInt(value -> value.spot().value()))
+                .limit(8)
+                .forEach(value -> log("INTENT_STOCK_PRESSURE",
+                        "spot", value.spot().value(),
+                        "currentStock", value.currentStock(),
+                        "forecastClaims", value.forecastClaimedPortions(),
+                        "earliestClaimStep", value.earliestClaimStep().isPresent()
+                                ? value.earliestClaimStep().getAsInt() : "UNAVAILABLE",
+                        "pressureUnits", value.intentPressureUnits()));
     }
 
     private OptionalInt ourEarliestArrivalStep(DayState state, Position target) {
@@ -626,6 +759,26 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         return Optional.of(new RiskAdjustedEvaluatedPlan(plan, riskAdjusted, base));
     }
 
+    private Optional<IntentAwareEvaluatedPlan> evaluateIntentAware(
+            DayState state, TeamPlan plan, SearchContext context) {
+        Optional<EvaluatedPlan> baseEval = evaluate(state, plan);
+        if (baseEval.isEmpty()) {
+            return Optional.empty();
+        }
+        EvaluatedPlan base = baseEval.orElseThrow();
+        DaySimulationResult simulation = simulator.simulate(state, plan);
+        IntentCollectionAttribution attribution = context.intentEvaluator.evaluate(
+                state, simulation, context.intentForecast, intentAdjustmentWeights);
+        IntentAwarePlanEvaluation evaluation = new IntentAwarePlanEvaluation(
+                base.evaluation(),
+                attribution.adjustedScore(),
+                attribution.forecastRealizableCollections(),
+                attribution.likelyClaimedFirstCollections(),
+                attribution.tieCollections(),
+                attribution.unforecastedCollections());
+        return Optional.of(new IntentAwareEvaluatedPlan(plan, evaluation, base));
+    }
+
     private ArrivalEvaluatedPlan initialArrivalIncumbent(
             DayState state, MutableStats stats, SearchContext context) {
         TeamPlan m7Plan;
@@ -664,6 +817,28 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         TeamPlan waitAll = SafePlanFactory.waitAll(state);
         stats.completedPlans++;
         Optional<RiskAdjustedEvaluatedPlan> safe = evaluateRiskAdjusted(state, waitAll, context);
+        if (safe.isEmpty()) {
+            throw new IllegalStateException("Validated all-WAIT incumbent could not be simulated");
+        }
+        return safe.orElseThrow();
+    }
+
+    private IntentAwareEvaluatedPlan initialIntentAwareIncumbent(
+            DayState state, MutableStats stats, SearchContext context) {
+        TeamPlan fallback;
+        try {
+            fallback = contentionFallback.plan(state);
+        } catch (RuntimeException exception) {
+            fallback = SafePlanFactory.waitAll(state);
+        }
+        stats.completedPlans++;
+        Optional<IntentAwareEvaluatedPlan> evaluated = evaluateIntentAware(state, fallback, context);
+        if (evaluated.isPresent()) {
+            return evaluated.orElseThrow();
+        }
+        TeamPlan waitAll = SafePlanFactory.waitAll(state);
+        stats.completedPlans++;
+        Optional<IntentAwareEvaluatedPlan> safe = evaluateIntentAware(state, waitAll, context);
         if (safe.isEmpty()) {
             throw new IllegalStateException("Validated all-WAIT incumbent could not be simulated");
         }
@@ -709,6 +884,14 @@ public final class AnytimeTeamPlanner implements DayPlanner {
 
     private boolean isRiskAdjustedPolicy() {
         return policy == AnytimeSearchPolicy.ANYTIME_RISK_ADJUSTED;
+    }
+
+    private static boolean isIntentAwarePolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_INTENT_AWARE;
+    }
+
+    private boolean isIntentAwarePolicy() {
+        return isIntentAwarePolicy(policy);
     }
 
     private static ContentionFrontierMetrics frontierMetrics(SearchState state) {
@@ -786,6 +969,22 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 state.arrivalAtRiskProjectedCollections,
                 state.arrivalSafeProjectedCollections - state.arrivalUnobservedProjectedCollections,
                 state.stronglyContestedProjectedCollections,
+                state.optimisticHarvestPotential(),
+                state.remainingUsefulSteps(),
+                state.remainingFuel(),
+                state.travelSteps,
+                state.depth,
+                state.sequence);
+    }
+
+    private static IntentAwareFrontierMetrics intentAwareFrontierMetrics(SearchState state) {
+        return new IntentAwareFrontierMetrics(
+                state.teamBrands.size(),
+                state.adjustedCollectionScore,
+                state.intentForecastRealizableCollections,
+                state.projectedCollections,
+                state.intentLikelyClaimedFirstCollections,
+                state.intentTieCollections,
                 state.optimisticHarvestPotential(),
                 state.remainingUsefulSteps(),
                 state.remainingFuel(),
@@ -909,6 +1108,16 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                             arrivalMetrics.staticTiedCollections(),
                             arrivalMetrics.staticContestedCollections(),
                             arrivalMetrics.stronglyStaticContestedCollections()));
+                } else if (isIntentAwarePolicy()) {
+                    int initialArrivalStep = context.state.stepBudget() - patrol.remainingSteps;
+                    context.candidateIntent.put(candidate, context.intentEvaluator.evaluateRoute(
+                            context.state,
+                            route,
+                            initialArrivalStep,
+                            searchState.stock,
+                            patrol.visitedSpots,
+                            context.intentForecast,
+                            intentAdjustmentWeights));
                 }
             }
         }
@@ -955,6 +1164,13 @@ public final class AnytimeTeamPlanner implements DayPlanner {
 
     private Comparator<TeamTargetCandidate> candidatePreference(
             SearchContext context, boolean coveragePhase) {
+        if (isIntentAwarePolicy()) {
+            Comparator<IntentAwareCandidateMetrics> preference = coveragePhase
+                    ? IntentAwareCandidateMetrics.coveragePreference()
+                    : IntentAwareCandidateMetrics.harvestPreference();
+            return Comparator.comparing(
+                    candidate -> intentAwareCandidateMetrics(context, candidate), preference);
+        }
         if (isRiskAdjustedPolicy()) {
             Comparator<RiskAdjustedCandidateMetrics> preference = coveragePhase
                     ? RiskAdjustedCandidateMetrics.coveragePreference()
@@ -1066,6 +1282,24 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 contention.arrivalAtRiskCollections(),
                 contention.observedArrivalSafeCollections(),
                 contention.stronglyStaticContestedCollections(),
+                candidate.routeSteps(),
+                candidate.routeFuel(),
+                candidate.resultingFuel(),
+                candidate.targetPosition(),
+                candidate.patrolAgentId());
+    }
+
+    private IntentAwareCandidateMetrics intentAwareCandidateMetrics(
+            SearchContext context, TeamTargetCandidate candidate) {
+        IntentRouteMetrics metrics = context.candidateIntent.getOrDefault(
+                candidate, IntentRouteMetrics.empty());
+        return new IntentAwareCandidateMetrics(
+                candidate.newBrandForTeamToday(),
+                metrics.adjustedScore(),
+                metrics.forecastRealizableCollections(),
+                candidate.projectedCollectionGain(),
+                metrics.likelyClaimedFirstCollections(),
+                metrics.tieCollections(),
                 candidate.routeSteps(),
                 candidate.routeFuel(),
                 candidate.resultingFuel(),
@@ -1188,6 +1422,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             case ANYTIME_ARRIVAL_CONTENTION -> ARRIVAL_CONTENTION_STATE_PREFERENCE;
             case ANYTIME_WEIGHTED_ARRIVAL_CONTENTION -> ARRIVAL_CONTENTION_STATE_PREFERENCE;
             case ANYTIME_RISK_ADJUSTED -> RISK_ADJUSTED_STATE_PREFERENCE;
+            case ANYTIME_INTENT_AWARE -> INTENT_AWARE_STATE_PREFERENCE;
         };
     }
 
@@ -1200,6 +1435,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             case ANYTIME_WEIGHTED_ARRIVAL_CONTENTION ->
                     "ANYTIME_WEIGHTED_ARRIVAL_CONTENTION_" + suffix;
             case ANYTIME_RISK_ADJUSTED -> "ANYTIME_RISK_ADJUSTED_" + suffix;
+            case ANYTIME_INTENT_AWARE -> "ANYTIME_INTENT_AWARE_" + suffix;
         };
     }
 
@@ -1226,18 +1462,28 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 new LinkedHashMap<>();
         private final Map<TeamTargetCandidate, RouteArrivalContentionMetrics> candidateArrivalContention =
                 new LinkedHashMap<>();
+        private final Map<TeamTargetCandidate, IntentRouteMetrics> candidateIntent = new LinkedHashMap<>();
         private final AnytimeSearchPolicy policy;
         private final RiskAdjustmentWeights riskAdjustmentWeights;
+        private final OpponentIntentForecast intentForecast;
+        private final IntentForecastEvaluator intentEvaluator = new IntentForecastEvaluator();
+        private final IntentAdjustmentWeights intentAdjustmentWeights;
         private long sequence;
         private int loggedCandidateDiagnostics;
 
         private SearchContext(
                 DayState state,
                 AnytimeSearchPolicy policy,
-                RiskAdjustmentWeights riskAdjustmentWeights) {
+                RiskAdjustmentWeights riskAdjustmentWeights,
+                OpponentIntentConfig opponentIntentConfig,
+                IntentAdjustmentWeights intentAdjustmentWeights) {
             this.state = state;
             this.policy = policy;
             this.riskAdjustmentWeights = riskAdjustmentWeights;
+            this.intentAdjustmentWeights = intentAdjustmentWeights;
+            this.intentForecast = isIntentAwarePolicy(policy)
+                    ? new OpponentIntentForecaster().forecast(state, opponentIntentConfig)
+                    : new OpponentIntentForecast(List.of(), Map.of(), 0, 0, 0, 0, 0, 0);
             this.orderedSpots = state.matchData().udonSpots().stream()
                     .sorted(Comparator.comparingInt(spot -> spot.position().value()))
                     .toList();
@@ -1282,6 +1528,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         private final int arrivalAtRiskProjectedCollections;
         private final int arrivalUnobservedProjectedCollections;
         private final int adjustedCollectionScore;
+        private final int intentForecastRealizableCollections;
+        private final int intentLikelyClaimedFirstCollections;
+        private final int intentTieCollections;
         private final int travelSteps;
         private final int depth;
         private final long sequence;
@@ -1301,6 +1550,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 int arrivalAtRiskProjectedCollections,
                 int arrivalUnobservedProjectedCollections,
                 int adjustedCollectionScore,
+                int intentForecastRealizableCollections,
+                int intentLikelyClaimedFirstCollections,
+                int intentTieCollections,
                 int travelSteps,
                 int depth,
                 long sequence) {
@@ -1318,6 +1570,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             this.arrivalAtRiskProjectedCollections = arrivalAtRiskProjectedCollections;
             this.arrivalUnobservedProjectedCollections = arrivalUnobservedProjectedCollections;
             this.adjustedCollectionScore = adjustedCollectionScore;
+            this.intentForecastRealizableCollections = intentForecastRealizableCollections;
+            this.intentLikelyClaimedFirstCollections = intentLikelyClaimedFirstCollections;
+            this.intentTieCollections = intentTieCollections;
             this.travelSteps = travelSteps;
             this.depth = depth;
             this.sequence = sequence;
@@ -1366,6 +1621,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                     0,
                     0,
                     0,
+                    0,
+                    0,
+                    0,
                     schedule.map(value -> value.route.stepsUsed()).orElse(0),
                     0,
                     sequence);
@@ -1375,6 +1633,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             int arrivalAtRisk = 0;
             int arrivalUnobserved = 0;
             int adjustedScore = 0;
+            int intentRealizable = 0;
+            int intentClaimedFirst = 0;
+            int intentTies = 0;
             Map<Position, UdonSpot> spots = context.spotsByPosition;
             for (SearchPatrol patrol : patrols.values()) {
                 if (root.projectCollection(patrol.position, patrol, spots)) {
@@ -1395,6 +1656,16 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                         adjustedScore = Math.addExact(
                                 adjustedScore,
                                 context.riskAdjustmentWeights.weightFor(arrivalMetrics.classification()));
+                    } else if (context.policy == AnytimeSearchPolicy.ANYTIME_INTENT_AWARE) {
+                        ForecastCollectionAssessment assessment = context.intentEvaluator.assessCollection(
+                                state.spotStock(), patrol.position, 0, context.intentForecast,
+                                context.intentAdjustmentWeights);
+                        adjustedScore = Math.addExact(adjustedScore, assessment.intentValueUnits());
+                        intentRealizable += assessment.forecastRealizable() ? 1 : 0;
+                        intentClaimedFirst += assessment.classification()
+                                == IntentCollectionClassification.LIKELY_CLAIMED_FIRST ? 1 : 0;
+                        intentTies += assessment.classification()
+                                == IntentCollectionClassification.CONTESTED_TIE ? 1 : 0;
                     }
                 }
             }
@@ -1413,6 +1684,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                     arrivalAtRisk,
                     arrivalUnobserved,
                     adjustedScore,
+                    intentRealizable,
+                    intentClaimedFirst,
+                    intentTies,
                     root.travelSteps,
                     root.depth,
                     root.sequence);
@@ -1424,6 +1698,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 RouteContentionMetrics contention,
                 RouteArrivalContentionMetrics arrivalContention,
                 int routeAdjustedScore,
+                IntentRouteMetrics intentMetrics,
                 long childSequence) {
             Map<Position, Integer> childStock = new LinkedHashMap<>(stock);
             Set<BrandId> childTeamBrands = new LinkedHashSet<>(teamBrands);
@@ -1446,6 +1721,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                     arrivalAtRiskProjectedCollections,
                     arrivalUnobservedProjectedCollections,
                     adjustedCollectionScore,
+                    intentForecastRealizableCollections,
+                    intentLikelyClaimedFirstCollections,
+                    intentTieCollections,
                     travelSteps + candidate.routeSteps(),
                     depth + 1,
                     childSequence);
@@ -1483,6 +1761,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                     arrivalUnobservedProjectedCollections
                             + (arrivalContention != null ? arrivalContention.unobservedCollections() : 0),
                     Math.addExact(adjustedCollectionScore, routeAdjustedScore),
+                    intentForecastRealizableCollections + intentMetrics.forecastRealizableCollections(),
+                    intentLikelyClaimedFirstCollections + intentMetrics.likelyClaimedFirstCollections(),
+                    intentTieCollections + intentMetrics.tieCollections(),
                     child.travelSteps,
                     child.depth,
                     child.sequence);
@@ -1592,7 +1873,10 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                     arrivalTiedProjectedCollections,
                     arrivalAtRiskProjectedCollections,
                     arrivalUnobservedProjectedCollections,
-                    adjustedCollectionScore);
+                    adjustedCollectionScore,
+                    intentForecastRealizableCollections,
+                    intentLikelyClaimedFirstCollections,
+                    intentTieCollections);
         }
     }
 
@@ -1699,6 +1983,18 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             EvaluatedPlan base) {
     }
 
+    private record IntentAwareEvaluatedPlan(
+            TeamPlan plan,
+            IntentAwarePlanEvaluation evaluation,
+            EvaluatedPlan base) {
+    }
+
+    private record IntentDiagnostic(
+            int groupRawId,
+            OpponentAgentIntentForecast agent,
+            OpponentTargetIntent target) {
+    }
+
     private record RefuelSchedule(
             AgentId refuelId,
             AgentId patrolId,
@@ -1746,6 +2042,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             int arrivalTiedProjectedCollections,
             int arrivalAtRiskProjectedCollections,
             int arrivalUnobservedProjectedCollections,
-            int adjustedCollectionScore) {
+            int adjustedCollectionScore,
+            int intentForecastRealizableCollections,
+            int intentLikelyClaimedFirstCollections,
+            int intentTieCollections) {
     }
 }

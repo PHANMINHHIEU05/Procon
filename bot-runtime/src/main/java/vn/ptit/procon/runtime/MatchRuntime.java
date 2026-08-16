@@ -24,6 +24,7 @@ import vn.ptit.procon.planner.ContentionAwareAnytimePlanner;
 import vn.ptit.procon.planner.ArrivalContentionAnytimePlanner;
 import vn.ptit.procon.planner.WeightedArrivalContentionAnytimePlanner;
 import vn.ptit.procon.planner.RiskAdjustedAnytimePlanner;
+import vn.ptit.procon.planner.IntentAwareAnytimePlanner;
 import vn.ptit.procon.planner.RefuelAwarePlanner;
 import vn.ptit.procon.planner.RefuelProbePlanner;
 import vn.ptit.procon.planner.SafeBaselinePlanner;
@@ -438,6 +439,11 @@ public final class MatchRuntime {
             case ANYTIME_RISK_ADJUSTED -> new RiskAdjustedAnytimePlanner(
                     vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
                     vn.ptit.procon.planner.RiskAdjustmentWeights.defaults(), contentionDiagnostics);
+            case ANYTIME_INTENT_AWARE -> new IntentAwareAnytimePlanner(
+                    vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                    vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                    vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                    contentionDiagnostics);
         };
     }
 

@@ -1,0 +1,257 @@
+CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-2933 plannerMode=ANYTIME_INTENT_AWARE PROCON_TOKEN=<set>
+SETUP_WAITING matchId=m-2933
+SETUP_RECEIVED matchId=m-2933 agents=4 days=4
+ASSIGNMENT_SUBMITTED matchId=m-2933 agents=4
+ASSIGNMENT_ACCEPTED matchId=m-2933 agents=4
+MATCH_STARTED matchId=m-2933
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+TEAM_REFUEL_NO_ASSIGN day=0 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=0 iteration=1 agent=0 target=61 brand=numeric:3 teamNewBrand=true steps=6 fuel=3
+TEAM_TARGET_SELECT day=0 iteration=2 agent=1 target=54 brand=numeric:0 teamNewBrand=true steps=8 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=3 agent=2 target=8 brand=numeric:0 teamNewBrand=false steps=12 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=4 agent=1 target=47 brand=numeric:3 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=0 iteration=5 agent=0 target=54 brand=numeric:0 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=0 iteration=6 agent=1 target=59 brand=numeric:1 teamNewBrand=false steps=8 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=7 agent=2 target=24 brand=numeric:1 teamNewBrand=false steps=12 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=8 agent=0 target=8 brand=numeric:0 teamNewBrand=false steps=17 fuel=13
+TEAM_PLAN_VALID day=0
+ANYTIME_HARVEST_START day=0 incumbentBrands=4 incumbentUdon=11 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=0 brands=4 udon=12 expanded=10
+ANYTIME_HARVEST_DONE day=0 brands=4 udon=12 expanded=64 coverageExpanded=2 harvestExpanded=62 generatedCandidates=182 retainedCandidates=112 prunedByTopK=70 improvements=1 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+OPPONENT_INTENT_SUMMARY day=0 groups=1 agents=4 stockedSpots=8 physicallyReachablePairs=32 retainedIntentTargets=12 forecastClaims=8
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=59 rank=PRIMARY travelSteps=2 pressureUnits=3 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=43 rank=SECONDARY travelSteps=4 pressureUnits=2 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=61 rank=TERTIARY travelSteps=6 pressureUnits=1 forecastArrivalStep=12
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=43 rank=PRIMARY travelSteps=2 pressureUnits=3 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=59 rank=SECONDARY travelSteps=4 pressureUnits=2 forecastArrivalStep=6
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=24 rank=TERTIARY travelSteps=4 pressureUnits=1 forecastArrivalStep=10
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=4 rank=PRIMARY travelSteps=2 pressureUnits=3 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=47 rank=SECONDARY travelSteps=9 pressureUnits=2 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=43 rank=TERTIARY travelSteps=9 pressureUnits=1 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=54 rank=PRIMARY travelSteps=2 pressureUnits=3 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=47 rank=SECONDARY travelSteps=2 pressureUnits=2 forecastArrivalStep=4
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=43 rank=TERTIARY travelSteps=4 pressureUnits=1 forecastArrivalStep=UNCLAIMED
+INTENT_STOCK_PRESSURE spot=4 currentStock=1 forecastClaims=1 earliestClaimStep=2 pressureUnits=3
+INTENT_STOCK_PRESSURE spot=24 currentStock=1 forecastClaims=1 earliestClaimStep=10 pressureUnits=1
+INTENT_STOCK_PRESSURE spot=43 currentStock=1 forecastClaims=1 earliestClaimStep=2 pressureUnits=7
+INTENT_STOCK_PRESSURE spot=47 currentStock=1 forecastClaims=1 earliestClaimStep=4 pressureUnits=4
+INTENT_STOCK_PRESSURE spot=54 currentStock=4 forecastClaims=1 earliestClaimStep=2 pressureUnits=3
+INTENT_STOCK_PRESSURE spot=59 currentStock=2 forecastClaims=2 earliestClaimStep=2 pressureUnits=5
+INTENT_STOCK_PRESSURE spot=61 currentStock=1 forecastClaims=1 earliestClaimStep=12 pressureUnits=1
+ANYTIME_INTENT_AWARE_START day=0 incumbentBrands=4 incumbentRawUdon=12 incumbentIntentScore=30 budget=64
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=0 brands=4 rawUdon=10 intentAdjustedScore=34 expanded=8
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=0 brands=4 rawUdon=11 intentAdjustedScore=34 expanded=10
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=0 brands=4 rawUdon=12 intentAdjustedScore=34 expanded=54
+ANYTIME_INTENT_AWARE_DONE day=0 brands=4 rawUdon=12 intentAdjustedScore=34 forecastRealizableCollections=10 likelyClaimedFirst=2 tieCollections=3 unforecastedCollections=3 expanded=64 completedPlans=65 improvements=3 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2933 day=0 mode=IntentAwareAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2933 day=0
+UDON_OBSERVABILITY matchId=m-2933 day=0 predictedDayUdon=12 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2933 day=0
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+PARITY_OBSERVED matchId=m-2933 day=0 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2933 from=0 to=1
+TEAM_REFUEL_NO_ASSIGN day=1 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=1 iteration=1 agent=2 target=47 brand=numeric:3 teamNewBrand=true steps=2 fuel=1
+TEAM_TARGET_SELECT day=1 iteration=2 agent=2 target=43 brand=numeric:2 teamNewBrand=true steps=7 fuel=6
+TEAM_TARGET_SELECT day=1 iteration=3 agent=2 target=59 brand=numeric:1 teamNewBrand=true steps=4 fuel=2
+TEAM_TARGET_SELECT day=1 iteration=4 agent=0 target=4 brand=numeric:2 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=5 agent=0 target=24 brand=numeric:1 teamNewBrand=false steps=11 fuel=10
+TEAM_TARGET_SELECT day=1 iteration=6 agent=1 target=59 brand=numeric:1 teamNewBrand=false steps=17 fuel=10
+TEAM_TARGET_SELECT day=1 iteration=7 agent=1 target=61 brand=numeric:3 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=1 iteration=8 agent=1 target=54 brand=numeric:0 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=1 iteration=9 agent=2 target=8 brand=numeric:0 teamNewBrand=false steps=17 fuel=10
+TEAM_PLAN_VALID day=1
+ANYTIME_HARVEST_START day=1 incumbentBrands=4 incumbentUdon=12 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=1 brands=4 udon=12 expanded=10
+ANYTIME_HARVEST_IMPROVEMENT day=1 brands=4 udon=12 expanded=24
+ANYTIME_HARVEST_DONE day=1 brands=4 udon=12 expanded=64 coverageExpanded=3 harvestExpanded=61 generatedCandidates=176 retainedCandidates=110 prunedByTopK=66 improvements=2 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+OPPONENT_INTENT_SUMMARY day=1 groups=1 agents=4 stockedSpots=8 physicallyReachablePairs=32 retainedIntentTargets=12 forecastClaims=7
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=43 rank=PRIMARY travelSteps=0 pressureUnits=3 forecastArrivalStep=0
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=59 rank=SECONDARY travelSteps=4 pressureUnits=2 forecastArrivalStep=4
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=61 rank=TERTIARY travelSteps=5 pressureUnits=1 forecastArrivalStep=9
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=4 rank=PRIMARY travelSteps=2 pressureUnits=3 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=43 rank=SECONDARY travelSteps=7 pressureUnits=2 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=24 rank=TERTIARY travelSteps=9 pressureUnits=1 forecastArrivalStep=18
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=8 rank=PRIMARY travelSteps=2 pressureUnits=3 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=4 rank=SECONDARY travelSteps=8 pressureUnits=2 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=24 rank=TERTIARY travelSteps=10 pressureUnits=1 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=43 rank=PRIMARY travelSteps=0 pressureUnits=3 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=59 rank=SECONDARY travelSteps=4 pressureUnits=2 forecastArrivalStep=4
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=61 rank=TERTIARY travelSteps=5 pressureUnits=1 forecastArrivalStep=UNCLAIMED
+INTENT_STOCK_PRESSURE spot=4 currentStock=1 forecastClaims=1 earliestClaimStep=2 pressureUnits=5
+INTENT_STOCK_PRESSURE spot=8 currentStock=4 forecastClaims=1 earliestClaimStep=2 pressureUnits=3
+INTENT_STOCK_PRESSURE spot=24 currentStock=1 forecastClaims=1 earliestClaimStep=18 pressureUnits=2
+INTENT_STOCK_PRESSURE spot=43 currentStock=1 forecastClaims=1 earliestClaimStep=0 pressureUnits=8
+INTENT_STOCK_PRESSURE spot=59 currentStock=2 forecastClaims=2 earliestClaimStep=4 pressureUnits=4
+INTENT_STOCK_PRESSURE spot=61 currentStock=1 forecastClaims=1 earliestClaimStep=9 pressureUnits=2
+ANYTIME_INTENT_AWARE_START day=1 incumbentBrands=4 incumbentRawUdon=12 incumbentIntentScore=28 budget=64
+ANYTIME_INTENT_AWARE_DONE day=1 brands=4 rawUdon=12 intentAdjustedScore=28 forecastRealizableCollections=7 likelyClaimedFirst=5 tieCollections=0 unforecastedCollections=4 expanded=64 completedPlans=65 improvements=0 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2933 day=1 mode=IntentAwareAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2933 day=1
+UDON_OBSERVABILITY matchId=m-2933 day=1 predictedDayUdon=12 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2933 day=1
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+PARITY_OBSERVED matchId=m-2933 day=1 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2933 from=1 to=2
+TEAM_REFUEL_NO_ASSIGN day=2 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=2 iteration=1 agent=0 target=43 brand=numeric:2 teamNewBrand=true steps=4 fuel=2
+TEAM_TARGET_SELECT day=2 iteration=2 agent=1 target=47 brand=numeric:3 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=2 iteration=3 agent=2 target=54 brand=numeric:0 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=2 iteration=4 agent=0 target=54 brand=numeric:0 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=5 agent=2 target=59 brand=numeric:1 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=6 agent=1 target=4 brand=numeric:2 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=2 iteration=7 agent=1 target=24 brand=numeric:1 teamNewBrand=false steps=11 fuel=10
+TEAM_TARGET_SELECT day=2 iteration=8 agent=2 target=8 brand=numeric:0 teamNewBrand=false steps=17 fuel=10
+TEAM_PLAN_VALID day=2
+ANYTIME_HARVEST_START day=2 incumbentBrands=4 incumbentUdon=11 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=11 expanded=9
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=12 expanded=10
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=12 expanded=12
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=12 expanded=64
+ANYTIME_HARVEST_DONE day=2 brands=4 udon=12 expanded=64 coverageExpanded=1 harvestExpanded=63 generatedCandidates=178 retainedCandidates=121 prunedByTopK=57 improvements=4 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+OPPONENT_INTENT_SUMMARY day=2 groups=1 agents=4 stockedSpots=8 physicallyReachablePairs=32 retainedIntentTargets=12 forecastClaims=8
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=8 rank=PRIMARY travelSteps=4 pressureUnits=3 forecastArrivalStep=4
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=4 rank=SECONDARY travelSteps=6 pressureUnits=2 forecastArrivalStep=10
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=24 rank=TERTIARY travelSteps=8 pressureUnits=1 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=24 rank=PRIMARY travelSteps=0 pressureUnits=3 forecastArrivalStep=0
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=43 rank=SECONDARY travelSteps=5 pressureUnits=2 forecastArrivalStep=5
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=59 rank=TERTIARY travelSteps=8 pressureUnits=1 forecastArrivalStep=13
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=47 rank=PRIMARY travelSteps=0 pressureUnits=3 forecastArrivalStep=0
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=54 rank=SECONDARY travelSteps=2 pressureUnits=2 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=43 rank=TERTIARY travelSteps=6 pressureUnits=1 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=24 rank=PRIMARY travelSteps=0 pressureUnits=3 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=43 rank=SECONDARY travelSteps=5 pressureUnits=2 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=59 rank=TERTIARY travelSteps=8 pressureUnits=1 forecastArrivalStep=13
+INTENT_STOCK_PRESSURE spot=4 currentStock=1 forecastClaims=1 earliestClaimStep=10 pressureUnits=2
+INTENT_STOCK_PRESSURE spot=8 currentStock=4 forecastClaims=1 earliestClaimStep=4 pressureUnits=3
+INTENT_STOCK_PRESSURE spot=24 currentStock=1 forecastClaims=1 earliestClaimStep=0 pressureUnits=7
+INTENT_STOCK_PRESSURE spot=43 currentStock=1 forecastClaims=1 earliestClaimStep=5 pressureUnits=5
+INTENT_STOCK_PRESSURE spot=47 currentStock=1 forecastClaims=1 earliestClaimStep=0 pressureUnits=3
+INTENT_STOCK_PRESSURE spot=54 currentStock=4 forecastClaims=1 earliestClaimStep=2 pressureUnits=2
+INTENT_STOCK_PRESSURE spot=59 currentStock=2 forecastClaims=2 earliestClaimStep=13 pressureUnits=2
+ANYTIME_INTENT_AWARE_START day=2 incumbentBrands=4 incumbentRawUdon=12 incumbentIntentScore=36 budget=64
+ANYTIME_INTENT_AWARE_DONE day=2 brands=4 rawUdon=12 intentAdjustedScore=36 forecastRealizableCollections=9 likelyClaimedFirst=3 tieCollections=0 unforecastedCollections=1 expanded=64 completedPlans=65 improvements=0 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2933 day=2 mode=IntentAwareAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2933 day=2
+UDON_OBSERVABILITY matchId=m-2933 day=2 predictedDayUdon=12 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2933 day=2
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-2933 day=3 agents=4
+PARITY_OBSERVED matchId=m-2933 day=2 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-2933 from=2 to=3
+TEAM_REFUEL_NO_ASSIGN day=3 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=3 iteration=1 agent=0 target=47 brand=numeric:3 teamNewBrand=true steps=2 fuel=1
+TEAM_TARGET_SELECT day=3 iteration=2 agent=0 target=43 brand=numeric:2 teamNewBrand=true steps=6 fuel=6
+TEAM_TARGET_SELECT day=3 iteration=3 agent=0 target=59 brand=numeric:1 teamNewBrand=true steps=4 fuel=2
+TEAM_TARGET_SELECT day=3 iteration=4 agent=2 target=4 brand=numeric:2 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=3 iteration=5 agent=2 target=24 brand=numeric:1 teamNewBrand=false steps=11 fuel=10
+TEAM_TARGET_SELECT day=3 iteration=6 agent=2 target=61 brand=numeric:3 teamNewBrand=false steps=9 fuel=12
+TEAM_TARGET_SELECT day=3 iteration=7 agent=1 target=59 brand=numeric:1 teamNewBrand=false steps=16 fuel=11
+TEAM_TARGET_SELECT day=3 iteration=8 agent=1 target=54 brand=numeric:0 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=3 iteration=9 agent=0 target=8 brand=numeric:0 teamNewBrand=false steps=16 fuel=11
+TEAM_PLAN_VALID day=3
+ANYTIME_HARVEST_START day=3 incumbentBrands=4 incumbentUdon=12 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=3 brands=4 udon=12 expanded=10
+ANYTIME_HARVEST_IMPROVEMENT day=3 brands=4 udon=12 expanded=14
+ANYTIME_HARVEST_IMPROVEMENT day=3 brands=4 udon=12 expanded=59
+ANYTIME_HARVEST_DONE day=3 brands=4 udon=12 expanded=64 coverageExpanded=3 harvestExpanded=61 generatedCandidates=174 retainedCandidates=110 prunedByTopK=64 improvements=3 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+OPPONENT_INTENT_SUMMARY day=3 groups=1 agents=4 stockedSpots=8 physicallyReachablePairs=32 retainedIntentTargets=12 forecastClaims=9
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=59 rank=PRIMARY travelSteps=2 pressureUnits=3 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=61 rank=SECONDARY travelSteps=2 pressureUnits=2 forecastArrivalStep=4
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=0 rawKind=0 spot=43 rank=TERTIARY travelSteps=4 pressureUnits=1 forecastArrivalStep=8
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=47 rank=PRIMARY travelSteps=0 pressureUnits=3 forecastArrivalStep=0
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=54 rank=SECONDARY travelSteps=2 pressureUnits=2 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=1 rawKind=0 spot=43 rank=TERTIARY travelSteps=6 pressureUnits=1 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=4 rank=PRIMARY travelSteps=2 pressureUnits=3 forecastArrivalStep=2
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=8 rank=SECONDARY travelSteps=8 pressureUnits=2 forecastArrivalStep=10
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=2 rawKind=0 spot=43 rank=TERTIARY travelSteps=9 pressureUnits=1 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=4 rank=PRIMARY travelSteps=4 pressureUnits=3 forecastArrivalStep=UNCLAIMED
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=8 rank=SECONDARY travelSteps=6 pressureUnits=2 forecastArrivalStep=10
+OPPONENT_INTENT_TARGET groupRawId=1 agentIndex=3 rawKind=1 spot=24 rank=TERTIARY travelSteps=8 pressureUnits=1 forecastArrivalStep=18
+INTENT_STOCK_PRESSURE spot=4 currentStock=1 forecastClaims=1 earliestClaimStep=2 pressureUnits=6
+INTENT_STOCK_PRESSURE spot=8 currentStock=4 forecastClaims=2 earliestClaimStep=10 pressureUnits=4
+INTENT_STOCK_PRESSURE spot=24 currentStock=1 forecastClaims=1 earliestClaimStep=18 pressureUnits=1
+INTENT_STOCK_PRESSURE spot=43 currentStock=1 forecastClaims=1 earliestClaimStep=8 pressureUnits=3
+INTENT_STOCK_PRESSURE spot=47 currentStock=1 forecastClaims=1 earliestClaimStep=0 pressureUnits=3
+INTENT_STOCK_PRESSURE spot=54 currentStock=4 forecastClaims=1 earliestClaimStep=2 pressureUnits=2
+INTENT_STOCK_PRESSURE spot=59 currentStock=2 forecastClaims=1 earliestClaimStep=2 pressureUnits=3
+INTENT_STOCK_PRESSURE spot=61 currentStock=1 forecastClaims=1 earliestClaimStep=4 pressureUnits=2
+ANYTIME_INTENT_AWARE_START day=3 incumbentBrands=4 incumbentRawUdon=12 incumbentIntentScore=30 budget=64
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=3 brands=4 rawUdon=9 intentAdjustedScore=32 expanded=7
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=3 brands=4 rawUdon=10 intentAdjustedScore=32 expanded=8
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=3 brands=4 rawUdon=11 intentAdjustedScore=32 expanded=9
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=3 brands=4 rawUdon=12 intentAdjustedScore=32 expanded=10
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=3 brands=4 rawUdon=13 intentAdjustedScore=32 expanded=11
+ANYTIME_INTENT_AWARE_IMPROVEMENT day=3 brands=4 rawUdon=13 intentAdjustedScore=32 expanded=43
+ANYTIME_INTENT_AWARE_DONE day=3 brands=4 rawUdon=13 intentAdjustedScore=32 forecastRealizableCollections=8 likelyClaimedFirst=5 tieCollections=0 unforecastedCollections=0 expanded=64 completedPlans=65 improvements=6 budgetExhausted=true
+LOCAL_PLAN_VALID matchId=m-2933 day=3 mode=IntentAwareAnytimePlanner
+ACTIONS_SUBMITTED matchId=m-2933 day=3
+UDON_OBSERVABILITY matchId=m-2933 day=3 predictedDayUdon=13 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-2933 day=3
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_WAITING matchId=m-2933 httpStatus=425
+RESULT_RECEIVED matchId=m-2933 submittedDays=4
+FINAL matchId=m-2933 submittedDays=4 rateLimits=0 result={"protocol_version":"v0.1-draft","type":"match_result","match_id":"m-2933","standings":[{"rank":1,"team_id":"team-B","udon_types":4,"daily_types_sum":16,"udon_total":42,"response_ms_total":1242},{"rank":2,"team_id":"team-A","udon_types":4,"daily_types_sum":16,"udon_total":40,"response_ms_total":2082}]}

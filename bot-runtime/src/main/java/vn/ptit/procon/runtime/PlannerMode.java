@@ -13,7 +13,8 @@ public enum PlannerMode {
     ANYTIME_CONTENTION,
     ANYTIME_ARRIVAL_CONTENTION,
     ANYTIME_WEIGHTED_ARRIVAL_CONTENTION,
-    ANYTIME_RISK_ADJUSTED;
+    ANYTIME_RISK_ADJUSTED,
+    ANYTIME_INTENT_AWARE;
 
     static PlannerMode parse(String value) {
         String normalized = value == null || value.isBlank() ? WAIT.name() : value.trim().toUpperCase();
@@ -24,7 +25,8 @@ public enum PlannerMode {
                     "PROCON_PLANNER_MODE must be WAIT, BASELINE, BRAND_AWARE, REFUEL_AWARE,"
                             + " REFUEL_PROBE, TEAM_COORDINATED, ANYTIME, ANYTIME_HARVEST,"
                             + " ANYTIME_CONTENTION, ANYTIME_ARRIVAL_CONTENTION,"
-                            + " ANYTIME_WEIGHTED_ARRIVAL_CONTENTION, or ANYTIME_RISK_ADJUSTED: " + value,
+                            + " ANYTIME_WEIGHTED_ARRIVAL_CONTENTION, ANYTIME_RISK_ADJUSTED,"
+                            + " or ANYTIME_INTENT_AWARE: " + value,
                     exception);
         }
     }

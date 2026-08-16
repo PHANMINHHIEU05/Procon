@@ -33,6 +33,7 @@ import vn.ptit.procon.engine.TeamPlan;
 import vn.ptit.procon.planner.ArrivalContentionAnytimePlanner;
 import vn.ptit.procon.planner.WeightedArrivalContentionAnytimePlanner;
 import vn.ptit.procon.planner.RiskAdjustedAnytimePlanner;
+import vn.ptit.procon.planner.IntentAwareAnytimePlanner;
 import vn.ptit.procon.protocol.ProconHttpClient;
 import vn.ptit.procon.protocol.dto.SubmissionResult;
 
@@ -468,6 +469,13 @@ class MatchRuntimeIntegrationTest {
     }
 
     @Test
+    void plannerFactorySelectsIntentAwareAnytimePlanner() {
+        assertInstanceOf(
+                IntentAwareAnytimePlanner.class,
+                MatchRuntime.plannerFor(PlannerMode.ANYTIME_INTENT_AWARE, false));
+    }
+
+    @Test
     void anytimeRiskAdjustedModeSubmitsCompletePlanAndRetrievesResult() throws Exception {
         restartForTeamCoordinatedScenario("""
                 [{"id":1,"agents":[
@@ -483,6 +491,31 @@ class MatchRuntimeIntegrationTest {
                 "PROCON_POLL_INTERVAL_MS", "200",
                 "PROCON_HTTP_TIMEOUT_SECONDS", "2",
                 "PROCON_PLANNER_MODE", "ANYTIME_RISK_ADJUSTED"));
+
+        MatchRuntimeResult result = new MatchRuntime(config).run();
+
+        assertEquals(1, result.submittedDays());
+        assertEquals(List.of("[[2],[2,-1],[2],[-2]]"), actionBodies);
+        assertEquals(1, calls.get("actions").get());
+        assertEquals("FINAL", result.authoritativeResult().get("status").textValue());
+    }
+
+    @Test
+    void anytimeIntentAwareModeSubmitsCompletePlanAndRetrievesResult() throws Exception {
+        restartForTeamCoordinatedScenario("""
+                [{"id":1,"agents":[
+                    {"pos":1,"kind":0,"fuel":41},
+                    {"pos":3,"kind":0,"fuel":43},
+                    {"pos":4,"kind":0,"fuel":27},
+                    {"pos":5,"kind":1,"fuel":60}]}]
+                """);
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_BASE_URL", "http://localhost:" + server.getAddress().getPort(),
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake-token",
+                "PROCON_POLL_INTERVAL_MS", "200",
+                "PROCON_HTTP_TIMEOUT_SECONDS", "2",
+                "PROCON_PLANNER_MODE", "ANYTIME_INTENT_AWARE"));
 
         MatchRuntimeResult result = new MatchRuntime(config).run();
 

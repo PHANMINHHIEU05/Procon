@@ -9,19 +9,29 @@ public record AnytimePlanResult(
         TeamPlan plan,
         PlanEvaluation evaluation,
         AnytimeSearchStats stats,
-        Optional<RiskAdjustedPlanEvaluation> riskAdjustedEvaluation) {
+        Optional<RiskAdjustedPlanEvaluation> riskAdjustedEvaluation,
+        Optional<IntentAwarePlanEvaluation> intentAwareEvaluation) {
 
     public AnytimePlanResult {
         Objects.requireNonNull(plan, "Plan must not be null");
         Objects.requireNonNull(evaluation, "Plan evaluation must not be null");
         Objects.requireNonNull(stats, "Search statistics must not be null");
         Objects.requireNonNull(riskAdjustedEvaluation, "Risk-adjusted evaluation must not be null");
+        Objects.requireNonNull(intentAwareEvaluation, "Intent-aware evaluation must not be null");
     }
 
     public AnytimePlanResult(
             TeamPlan plan,
             PlanEvaluation evaluation,
             AnytimeSearchStats stats) {
-        this(plan, evaluation, stats, Optional.empty());
+        this(plan, evaluation, stats, Optional.empty(), Optional.empty());
+    }
+
+    public AnytimePlanResult(
+            TeamPlan plan,
+            PlanEvaluation evaluation,
+            AnytimeSearchStats stats,
+            Optional<RiskAdjustedPlanEvaluation> riskAdjustedEvaluation) {
+        this(plan, evaluation, stats, riskAdjustedEvaluation, Optional.empty());
     }
 }

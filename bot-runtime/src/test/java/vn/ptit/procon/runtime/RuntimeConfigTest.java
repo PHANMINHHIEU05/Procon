@@ -164,4 +164,14 @@ class RuntimeConfigTest {
 
         assertEquals(PlannerMode.ANYTIME_RISK_ADJUSTED, config.plannerMode());
     }
+
+    @Test
+    void parsesAnytimeIntentAwareMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_intent_aware"));
+
+        assertEquals(PlannerMode.ANYTIME_INTENT_AWARE, config.plannerMode());
+    }
 }

@@ -50,6 +50,14 @@ public final class OpponentWeightedArrivalLowerBound {
         return result == null ? OptionalInt.empty() : OptionalInt.of(result);
     }
 
+    /** Immutable all-destination optimistic distances for one cached forecast source. */
+    Map<Position, Integer> shortestTravelStepsFrom(HexMap map, Position start) {
+        if (!map.contains(start)) {
+            return Map.of();
+        }
+        return Map.copyOf(shortestPaths(map, start));
+    }
+
     private Map<Position, Integer> shortestPaths(HexMap map, Position start) {
         Map<Position, Integer> distances = new HashMap<>();
         PriorityQueue<Node> frontier = new PriorityQueue<>(
