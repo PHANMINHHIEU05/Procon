@@ -24,6 +24,10 @@ import vn.ptit.procon.engine.DayState;
  *
  * <p>This is planner inference only. It does not reconstruct opponent routes or
  * alter simulator semantics.</p>
+ *
+ * <p>Every observed agent is measured for physical reachability. Only agents the
+ * active {@link OpponentCollectionEligibility} accepts as Udon collectors retain
+ * intent targets, add spot pressure or produce forecast claims.</p>
  */
 public final class OpponentIntentForecaster {
 
@@ -47,9 +51,10 @@ public final class OpponentIntentForecaster {
         Map<Position, MutablePressure> pressure = new TreeMap<>(Comparator.comparingInt(Position::value));
         List<ForecastOpponentClaim> proposedClaims = new ArrayList<>();
         int observedAgents = 0;
-        int includedAgents = 0;
+        int collectionEligibleAgents = 0;
         int stockedSpots = (int) initialStock.entrySet().stream().filter(entry -> entry.getValue() > 0).count();
-        int physicallyReachablePairs = 0;
+        int physicalPairsAllObserved = 0;
+        int physicalPairsCollectionEligible = 0;
         int retainedTargets = 0;
         int forecastClaims = 0;
 
@@ -58,10 +63,6 @@ public final class OpponentIntentForecaster {
             for (int agentIndex = 0; agentIndex < group.agents().size(); agentIndex++) {
                 ObservedOtherAgent agent = group.agents().get(agentIndex);
                 observedAgents++;
-                if (!config.agentPolicy().includes(agent)) {
-                    continue;
-                }
-                includedAgents++;
                 Map<Position, Integer> sourceDistances = distancesFrom(
                         map, agent.position(), distances, distanceCache);
                 List<TargetChoice> reachable = spots.values().stream()
@@ -73,7 +74,20 @@ public final class OpponentIntentForecaster {
                         .filter(choice -> choice.distance != null && choice.distance <= state.stepBudget())
                         .sorted(targetPreference(Set.of()))
                         .toList();
-                physicallyReachablePairs += reachable.size();
+                physicalPairsAllObserved += reachable.size();
+                if (!config.collectionEligibility().collectsUdon(agent)) {
+                    agents.add(new OpponentAgentIntentForecast(
+                            agentIndex,
+                            agent.position(),
+                            agent.rawKind(),
+                            agent.fuel(),
+                            reachable.size(),
+                            false,
+                            List.of()));
+                    continue;
+                }
+                collectionEligibleAgents++;
+                physicalPairsCollectionEligible += reachable.size();
 
                 List<TargetChoice> retained = retainTargets(
                         reachable, config.maxIntentTargetsPerAgent());
@@ -120,6 +134,7 @@ public final class OpponentIntentForecaster {
                         agent.rawKind(),
                         agent.fuel(),
                         reachable.size(),
+                        true,
                         targetIntents));
             }
             groups.add(new OpponentGroupIntentForecast(group.rawId(), agents));
@@ -154,6 +169,7 @@ public final class OpponentIntentForecaster {
                                         agentForecast.rawKind(),
                                         agentForecast.observedFuel(),
                                         agentForecast.physicallyReachableSpots(),
+                                        agentForecast.collectionEligible(),
                                         agentForecast.targets().stream()
                                                 .map(target -> acceptedTarget(
                                                         group.groupRawId(), agentForecast.agentIndex(),
@@ -184,9 +200,10 @@ public final class OpponentIntentForecaster {
                 groups,
                 immutablePressure,
                 observedAgents,
-                includedAgents,
+                collectionEligibleAgents,
                 stockedSpots,
-                physicallyReachablePairs,
+                physicalPairsAllObserved,
+                physicalPairsCollectionEligible,
                 retainedTargets,
                 forecastClaims);
     }

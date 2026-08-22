@@ -1,0 +1,197 @@
+CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-3644 plannerMode=ANYTIME_STRATIFIED_COMMITMENT_AWARE PROCON_TOKEN=<set>
+SETUP_WAITING matchId=m-3644
+SETUP_RECEIVED matchId=m-3644 agents=4 days=4
+ASSIGNMENT_SUBMITTED matchId=m-3644 agents=4
+ASSIGNMENT_ACCEPTED matchId=m-3644 agents=4
+MATCH_STARTED matchId=m-3644
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+TEAM_REFUEL_NO_ASSIGN day=0 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=0 iteration=1 agent=0 target=12 brand=numeric:2 teamNewBrand=true steps=7 fuel=5
+TEAM_TARGET_SELECT day=0 iteration=2 agent=2 target=7 brand=numeric:3 teamNewBrand=true steps=15 fuel=12
+TEAM_TARGET_SELECT day=0 iteration=3 agent=1 target=54 brand=numeric:1 teamNewBrand=true steps=2 fuel=1
+TEAM_TARGET_SELECT day=0 iteration=4 agent=1 target=17 brand=numeric:0 teamNewBrand=false steps=12 fuel=9
+TEAM_TARGET_SELECT day=0 iteration=5 agent=0 target=38 brand=numeric:1 teamNewBrand=false steps=5 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=6 agent=0 target=48 brand=numeric:3 teamNewBrand=false steps=12 fuel=12
+TEAM_TARGET_SELECT day=0 iteration=7 agent=1 target=48 brand=numeric:3 teamNewBrand=false steps=6 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=8 agent=2 target=38 brand=numeric:1 teamNewBrand=false steps=7 fuel=5
+TEAM_TARGET_SELECT day=0 iteration=9 agent=2 target=28 brand=numeric:2 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=10 agent=2 target=12 brand=numeric:2 teamNewBrand=false steps=3 fuel=3
+TEAM_TARGET_SELECT day=0 iteration=11 agent=0 target=17 brand=numeric:0 teamNewBrand=false steps=6 fuel=6
+TEAM_PLAN_VALID day=0
+ANYTIME_HARVEST_START day=0 incumbentBrands=4 incumbentUdon=15 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=0 brands=4 udon=15 expanded=23
+ANYTIME_HARVEST_DONE day=0 brands=4 udon=15 expanded=64 coverageExpanded=3 harvestExpanded=61 generatedCandidates=227 retainedCandidates=111 prunedByTopK=116 improvements=1 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+OPPONENT_COMMITMENT_SUMMARY day=0 observedAgents=4 collectionEligibleAgents=3 forecastClaims=9 observedNowClaims=0 directIntentClaims=3 followOnIntentClaims=6 hardConsumedPortions=0 stockedSpots=8
+ANYTIME_STRATIFIED_COMMITMENT_START day=0 incumbentLocalBrands=4 incumbentCommitmentBrands=4 incumbentRawUdon=15 incumbentCommitmentRealizable=15 incumbentCommitmentScore=45 oldForecastRealizable=12 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_COMMITMENT_DONE day=0 localBrands=4 commitmentBrands=4 rawUdon=15 commitmentRealizableCollections=15 commitmentAdjustedScore=45 oldForecastRealizableCollections=12 hardClaimedFirst=0 directIntentBefore=4 followOnIntentBefore=5 tieCollections=1 expanded=64 completedPlans=65 improvements=0 strategiesDiscovered=19 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=7 maxStrategyExpansionCount=43 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+STRATEGY_DEPTH_SUMMARY day=0 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=12], AgentOpening[patrolAgentId=1, firstTargetPosition=38], AgentOpening[patrolAgentId=2, firstTargetPosition=7]]] totalExpansions=43 qualificationExpansions=10 bestFrontierRankOrOrdinal=0 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=0 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=12], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=-1 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=0 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=12], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=7]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=17 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=0 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=12], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=48]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=20 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=0 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=12], AgentOpening[patrolAgentId=1, firstTargetPosition=38], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=23 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=0 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=12], AgentOpening[patrolAgentId=1, firstTargetPosition=38], AgentOpening[patrolAgentId=2, firstTargetPosition=12]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=3 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=0 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=12], AgentOpening[patrolAgentId=1, firstTargetPosition=38], AgentOpening[patrolAgentId=2, firstTargetPosition=48]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=10 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=0 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=12]]] totalExpansions=2 qualificationExpansions=2 bestFrontierRankOrOrdinal=32 bestCompleteFound=true
+LOCAL_PLAN_VALID matchId=m-3644 day=0 mode=CommitmentAwareStratifiedPlanner
+ACTIONS_SUBMITTED matchId=m-3644 day=0
+UDON_OBSERVABILITY matchId=m-3644 day=0 predictedDayUdon=15 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-3644 day=0
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+PARITY_OBSERVED matchId=m-3644 day=0 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-3644 from=0 to=1
+TEAM_REFUEL_NO_ASSIGN day=1 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=1 iteration=1 agent=1 target=17 brand=numeric:0 teamNewBrand=true steps=9 fuel=9
+TEAM_TARGET_SELECT day=1 iteration=2 agent=1 target=28 brand=numeric:2 teamNewBrand=true steps=4 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=3 agent=1 target=48 brand=numeric:3 teamNewBrand=true steps=7 fuel=8
+TEAM_TARGET_SELECT day=1 iteration=4 agent=2 target=17 brand=numeric:0 teamNewBrand=false steps=12 fuel=9
+TEAM_TARGET_SELECT day=1 iteration=5 agent=2 target=7 brand=numeric:3 teamNewBrand=false steps=12 fuel=9
+TEAM_TARGET_SELECT day=1 iteration=6 agent=0 target=28 brand=numeric:2 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=1 iteration=7 agent=0 target=48 brand=numeric:3 teamNewBrand=false steps=7 fuel=8
+TEAM_TARGET_SELECT day=1 iteration=8 agent=0 target=12 brand=numeric:2 teamNewBrand=false steps=9 fuel=9
+TEAM_TARGET_SELECT day=1 iteration=9 agent=0 target=38 brand=numeric:1 teamNewBrand=false steps=5 fuel=7
+TEAM_TARGET_SELECT day=1 iteration=10 agent=1 target=12 brand=numeric:2 teamNewBrand=false steps=9 fuel=9
+TEAM_PLAN_VALID day=1
+ANYTIME_HARVEST_START day=1 incumbentBrands=4 incumbentUdon=16 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=1 brands=4 udon=16 expanded=9
+ANYTIME_HARVEST_IMPROVEMENT day=1 brands=4 udon=16 expanded=14
+ANYTIME_HARVEST_IMPROVEMENT day=1 brands=4 udon=17 expanded=43
+ANYTIME_HARVEST_DONE day=1 brands=4 udon=17 expanded=64 coverageExpanded=2 harvestExpanded=62 generatedCandidates=160 retainedCandidates=108 prunedByTopK=52 improvements=3 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+OPPONENT_COMMITMENT_SUMMARY day=1 observedAgents=4 collectionEligibleAgents=3 forecastClaims=9 observedNowClaims=1 directIntentClaims=3 followOnIntentClaims=5 hardConsumedPortions=1 stockedSpots=8
+ANYTIME_STRATIFIED_COMMITMENT_START day=1 incumbentLocalBrands=4 incumbentCommitmentBrands=4 incumbentRawUdon=17 incumbentCommitmentRealizable=17 incumbentCommitmentScore=52 oldForecastRealizable=13 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_COMMITMENT_IMPROVEMENT day=1 localBrands=4 commitmentBrands=4 rawUdon=17 commitmentRealizableCollections=17 commitmentAdjustedScore=52 oldForecastRealizable=13 expanded=33
+ANYTIME_STRATIFIED_COMMITMENT_IMPROVEMENT day=1 localBrands=4 commitmentBrands=4 rawUdon=17 commitmentRealizableCollections=17 commitmentAdjustedScore=52 oldForecastRealizable=14 expanded=48
+ANYTIME_STRATIFIED_COMMITMENT_DONE day=1 localBrands=4 commitmentBrands=4 rawUdon=17 commitmentRealizableCollections=17 commitmentAdjustedScore=52 oldForecastRealizableCollections=14 hardClaimedFirst=0 directIntentBefore=4 followOnIntentBefore=4 tieCollections=2 expanded=64 completedPlans=65 improvements=2 strategiesDiscovered=21 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=7 maxStrategyExpansionCount=21 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+STRATEGY_DEPTH_SUMMARY day=1 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=48], AgentOpening[patrolAgentId=2, firstTargetPosition=12]]] totalExpansions=21 qualificationExpansions=5 bestFrontierRankOrOrdinal=0 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=1 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=48], AgentOpening[patrolAgentId=2, firstTargetPosition=17]]] totalExpansions=13 qualificationExpansions=6 bestFrontierRankOrOrdinal=2 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=1 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=48], AgentOpening[patrolAgentId=2, firstTargetPosition=38]]] totalExpansions=13 qualificationExpansions=3 bestFrontierRankOrOrdinal=4 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=1 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=48], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=5 qualificationExpansions=2 bestFrontierRankOrOrdinal=14 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=1 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=48], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=28 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=1 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=48], AgentOpening[patrolAgentId=2, firstTargetPosition=19]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=17 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=1 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=48], AgentOpening[patrolAgentId=2, firstTargetPosition=19]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=12 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=1 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=17], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=2 qualificationExpansions=2 bestFrontierRankOrOrdinal=29 bestCompleteFound=true
+LOCAL_PLAN_VALID matchId=m-3644 day=1 mode=CommitmentAwareStratifiedPlanner
+ACTIONS_SUBMITTED matchId=m-3644 day=1
+UDON_OBSERVABILITY matchId=m-3644 day=1 predictedDayUdon=17 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-3644 day=1
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+PARITY_OBSERVED matchId=m-3644 day=1 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-3644 from=1 to=2
+TEAM_REFUEL_NO_ASSIGN day=2 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=2 iteration=1 agent=0 target=17 brand=numeric:0 teamNewBrand=true steps=12 fuel=9
+TEAM_TARGET_SELECT day=2 iteration=2 agent=1 target=17 brand=numeric:0 teamNewBrand=false steps=13 fuel=8
+TEAM_TARGET_SELECT day=2 iteration=3 agent=2 target=38 brand=numeric:1 teamNewBrand=false steps=5 fuel=7
+TEAM_TARGET_SELECT day=2 iteration=4 agent=0 target=12 brand=numeric:2 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=2 iteration=5 agent=1 target=28 brand=numeric:2 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=2 iteration=6 agent=0 target=38 brand=numeric:1 teamNewBrand=false steps=6 fuel=6
+TEAM_TARGET_SELECT day=2 iteration=7 agent=2 target=7 brand=numeric:3 teamNewBrand=false steps=7 fuel=5
+TEAM_TARGET_SELECT day=2 iteration=8 agent=2 target=28 brand=numeric:2 teamNewBrand=false steps=9 fuel=6
+TEAM_PLAN_VALID day=2
+ANYTIME_HARVEST_START day=2 incumbentBrands=4 incumbentUdon=13 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=13 expanded=9
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=14 expanded=10
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=15 expanded=11
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=15 expanded=44
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=16 expanded=45
+ANYTIME_HARVEST_IMPROVEMENT day=2 brands=4 udon=16 expanded=57
+ANYTIME_HARVEST_DONE day=2 brands=4 udon=16 expanded=64 coverageExpanded=1 harvestExpanded=63 generatedCandidates=188 retainedCandidates=122 prunedByTopK=66 improvements=6 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+OPPONENT_COMMITMENT_SUMMARY day=2 observedAgents=4 collectionEligibleAgents=3 forecastClaims=9 observedNowClaims=2 directIntentClaims=3 followOnIntentClaims=4 hardConsumedPortions=2 stockedSpots=8
+ANYTIME_STRATIFIED_COMMITMENT_START day=2 incumbentLocalBrands=4 incumbentCommitmentBrands=4 incumbentRawUdon=16 incumbentCommitmentRealizable=15 incumbentCommitmentScore=50 oldForecastRealizable=11 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_COMMITMENT_DONE day=2 localBrands=4 commitmentBrands=4 rawUdon=16 commitmentRealizableCollections=15 commitmentAdjustedScore=50 oldForecastRealizableCollections=11 hardClaimedFirst=1 directIntentBefore=4 followOnIntentBefore=2 tieCollections=0 expanded=64 completedPlans=65 improvements=0 strategiesDiscovered=19 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=7 maxStrategyExpansionCount=43 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+STRATEGY_DEPTH_SUMMARY day=2 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=17], AgentOpening[patrolAgentId=2, firstTargetPosition=28]]] totalExpansions=43 qualificationExpansions=10 bestFrontierRankOrOrdinal=0 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=2 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=-1 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=2 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=19]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=23 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=2 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=28]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=16 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=2 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=17], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=27 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=2 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=17], AgentOpening[patrolAgentId=2, firstTargetPosition=38]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=4 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=2 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=38], AgentOpening[patrolAgentId=2, firstTargetPosition=19]]] totalExpansions=3 qualificationExpansions=2 bestFrontierRankOrOrdinal=7 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=2 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=17], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=2 qualificationExpansions=2 bestFrontierRankOrOrdinal=38 bestCompleteFound=true
+LOCAL_PLAN_VALID matchId=m-3644 day=2 mode=CommitmentAwareStratifiedPlanner
+ACTIONS_SUBMITTED matchId=m-3644 day=2
+UDON_OBSERVABILITY matchId=m-3644 day=2 predictedDayUdon=16 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-3644 day=2
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-3644 day=3 agents=4
+PARITY_OBSERVED matchId=m-3644 day=2 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-3644 from=2 to=3
+TEAM_REFUEL_ASSIGN day=3 refuelAgent=3 patrolAgent=1 projectedBrandGain=1 projectedCollectionGain=4 arrivalStep=11
+TEAM_TARGET_SELECT day=3 iteration=1 agent=1 target=19 brand=numeric:0 teamNewBrand=true steps=2 fuel=1
+TEAM_TARGET_SELECT day=3 iteration=2 agent=1 target=38 brand=numeric:1 teamNewBrand=false steps=5 fuel=7
+TEAM_TARGET_SELECT day=3 iteration=3 agent=1 target=48 brand=numeric:3 teamNewBrand=false steps=12 fuel=12
+TEAM_PLAN_VALID day=3
+ANYTIME_HARVEST_START day=3 incumbentBrands=4 incumbentUdon=7 budget=64
+ANYTIME_HARVEST_IMPROVEMENT day=3 brands=4 udon=8 expanded=21
+ANYTIME_HARVEST_DONE day=3 brands=4 udon=8 expanded=64 coverageExpanded=2 harvestExpanded=62 generatedCandidates=87 retainedCandidates=72 prunedByTopK=15 improvements=1 safeProjected=0 tiedProjected=0 contestedProjected=0 unobservedProjected=0 stronglyContestedProjected=0 budgetExhausted=true
+OPPONENT_COMMITMENT_SUMMARY day=3 observedAgents=4 collectionEligibleAgents=3 forecastClaims=9 observedNowClaims=2 directIntentClaims=3 followOnIntentClaims=4 hardConsumedPortions=2 stockedSpots=8
+ANYTIME_STRATIFIED_COMMITMENT_START day=3 incumbentLocalBrands=4 incumbentCommitmentBrands=4 incumbentRawUdon=8 incumbentCommitmentRealizable=8 incumbentCommitmentScore=27 oldForecastRealizable=7 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_COMMITMENT_DONE day=3 localBrands=4 commitmentBrands=4 rawUdon=8 commitmentRealizableCollections=8 commitmentAdjustedScore=27 oldForecastRealizableCollections=7 hardClaimedFirst=0 directIntentBefore=2 followOnIntentBefore=1 tieCollections=0 expanded=64 completedPlans=65 improvements=0 strategiesDiscovered=13 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=7 maxStrategyExpansionCount=17 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=23 budgetExhausted=true
+STRATEGY_DEPTH_SUMMARY day=3 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=19], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=17 qualificationExpansions=5 bestFrontierRankOrOrdinal=2 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=3 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=17], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=12 qualificationExpansions=4 bestFrontierRankOrOrdinal=-1 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=3 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=38], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=9 qualificationExpansions=6 bestFrontierRankOrOrdinal=4 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=3 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=38], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=9 qualificationExpansions=2 bestFrontierRankOrOrdinal=5 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=3 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=19], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=5 qualificationExpansions=2 bestFrontierRankOrOrdinal=0 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=3 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=4 qualificationExpansions=2 bestFrontierRankOrOrdinal=-1 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=3 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=-1], AgentOpening[patrolAgentId=1, firstTargetPosition=48], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=4 qualificationExpansions=0 bestFrontierRankOrOrdinal=-1 bestCompleteFound=true
+STRATEGY_DEPTH_SUMMARY day=3 strategyKey=StrategicDiversityKey[openings=[AgentOpening[patrolAgentId=0, firstTargetPosition=17], AgentOpening[patrolAgentId=1, firstTargetPosition=-1], AgentOpening[patrolAgentId=2, firstTargetPosition=-1]]] totalExpansions=2 qualificationExpansions=2 bestFrontierRankOrOrdinal=-1 bestCompleteFound=true
+LOCAL_PLAN_VALID matchId=m-3644 day=3 mode=CommitmentAwareStratifiedPlanner
+ACTIONS_SUBMITTED matchId=m-3644 day=3
+UDON_OBSERVABILITY matchId=m-3644 day=3 predictedDayUdon=8 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-3644 day=3
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_WAITING matchId=m-3644 httpStatus=425
+RESULT_RECEIVED matchId=m-3644 submittedDays=4
+FINAL matchId=m-3644 submittedDays=4 rateLimits=0 result={"protocol_version":"v0.1-draft","type":"match_result","match_id":"m-3644","standings":[{"rank":1,"team_id":"team-B","udon_types":4,"daily_types_sum":16,"udon_total":65,"response_ms_total":926},{"rank":2,"team_id":"team-A","udon_types":4,"daily_types_sum":16,"udon_total":50,"response_ms_total":3915}]}

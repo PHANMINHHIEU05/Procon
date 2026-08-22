@@ -476,6 +476,27 @@ class MatchRuntimeIntegrationTest {
     }
 
     @Test
+    void plannerFactorySelectsDiverseIntentAwareAnytimePlanner() {
+        assertInstanceOf(
+                vn.ptit.procon.planner.DiverseIntentAwareAnytimePlanner.class,
+                MatchRuntime.plannerFor(PlannerMode.ANYTIME_DIVERSE_INTENT_AWARE, false));
+    }
+
+    @Test
+    void plannerFactorySelectsStratifiedIntentAwareAnytimePlanner() {
+        assertInstanceOf(
+                vn.ptit.procon.planner.StratifiedIntentAwareAnytimePlanner.class,
+                MatchRuntime.plannerFor(PlannerMode.ANYTIME_STRATIFIED_INTENT_AWARE, false));
+    }
+
+    @Test
+    void plannerFactorySelectsCommitmentAwareStratifiedPlanner() {
+        assertInstanceOf(
+                vn.ptit.procon.planner.CommitmentAwareStratifiedPlanner.class,
+                MatchRuntime.plannerFor(PlannerMode.ANYTIME_STRATIFIED_COMMITMENT_AWARE, false));
+    }
+
+    @Test
     void anytimeRiskAdjustedModeSubmitsCompletePlanAndRetrievesResult() throws Exception {
         restartForTeamCoordinatedScenario("""
                 [{"id":1,"agents":[

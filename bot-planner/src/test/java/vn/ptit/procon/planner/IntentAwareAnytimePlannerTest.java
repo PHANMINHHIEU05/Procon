@@ -2,6 +2,7 @@ package vn.ptit.procon.planner;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -34,12 +35,63 @@ class IntentAwareAnytimePlannerTest {
 
     @Test
     void objectivePrefersForecastValueButKeepsBrandPriorityFirst() {
-        IntentAwarePlanEvaluation claimed = evaluation(2, 15, 20, 5, 10, 0);
-        IntentAwarePlanEvaluation realizable = evaluation(2, 14, 56, 14, 0, 0);
-        IntentAwarePlanEvaluation moreBrands = evaluation(3, 1, 0, 0, 1, 1);
+        IntentAwarePlanEvaluation claimed = evaluation(2, 2, 15, 20, 5, 10, 0);
+        IntentAwarePlanEvaluation realizable = evaluation(2, 2, 14, 56, 14, 0, 0);
+        IntentAwarePlanEvaluation moreBrands = evaluation(3, 3, 1, 0, 0, 1, 1);
 
         assertTrue(realizable.betterThan(claimed));
         assertTrue(moreBrands.betterThan(realizable));
+    }
+
+    @Test
+    void forecastRealizableBrandLossOutranksLocalBrandCount() {
+        IntentAwarePlanEvaluation localFourth = evaluation(4, 3, 16, 48, 12, 4, 0);
+        IntentAwarePlanEvaluation realizableFourth = evaluation(4, 4, 15, 52, 15, 0, 0);
+
+        assertTrue(realizableFourth.betterThan(localFourth));
+        assertFalse(localFourth.betterThan(realizableFourth));
+        assertTrue(IntentAwarePlanEvaluation.preference()
+                .compare(realizableFourth, localFourth) < 0);
+    }
+
+    @Test
+    void locallyNewBrandDoesNotDominateWhenItsOnlySourceIsForecastClaimed() {
+        IntentAwarePlanEvaluation locallyNewOnly = evaluation(4, 3, 12, 36, 12, 3, 0);
+        IntentAwarePlanEvaluation realizableCoverage = evaluation(3, 3, 12, 40, 12, 0, 0);
+
+        assertTrue(realizableCoverage.betterThan(locallyNewOnly));
+    }
+
+    @Test
+    void realizableBrandCoverageBeatsGreaterRealizableQuantity() {
+        IntentAwarePlanEvaluation fourBrands = evaluation(4, 4, 12, 44, 12, 0, 0);
+        IntentAwarePlanEvaluation threeBrandsMoreUdon = evaluation(3, 3, 18, 64, 18, 0, 0);
+
+        assertTrue(fourBrands.betterThan(threeBrandsMoreUdon));
+    }
+
+    @Test
+    void equalRealizableBrandsLetIntentScoreDecideBeforeRawUdon() {
+        IntentAwarePlanEvaluation higherIntentLowerRaw = evaluation(3, 3, 14, 56, 14, 0, 0);
+        IntentAwarePlanEvaluation lowerIntentHigherRaw = evaluation(3, 3, 17, 40, 10, 7, 0);
+
+        assertTrue(higherIntentLowerRaw.betterThan(lowerIntentHigherRaw));
+    }
+
+    @Test
+    void m2929FixtureRanksRealizableThreeAboveLocalFourWithoutInflatingRawUdon() {
+        IntentAwarePlanEvaluation m10LocalBrands = evaluation(4, 3, 15, 44, 11, 4, 0);
+        IntentAwarePlanEvaluation correctedRealizable = evaluation(4, 4, 15, 52, 15, 0, 0);
+
+        assertTrue(correctedRealizable.betterThan(m10LocalBrands));
+        assertEquals(m10LocalBrands.base().udonTotal(), correctedRealizable.base().udonTotal());
+        assertEquals(4, correctedRealizable.localTeamBrandCount());
+    }
+
+    @Test
+    void impossibleForecastMetricsFailFast() {
+        assertThrows(IllegalArgumentException.class, () -> evaluation(3, 4, 10, 20, 5, 0, 0));
+        assertThrows(IllegalArgumentException.class, () -> evaluation(3, 3, 10, 20, 11, 0, 0));
     }
 
     @Test
@@ -48,13 +100,14 @@ class IntentAwareAnytimePlannerTest {
 
         AnytimePlanResult harvest = new HarvestAnytimeTeamPlanner(SAME_BUDGET).planWithStats(state);
         AnytimePlanResult intent = new IntentAwareAnytimePlanner(SAME_BUDGET).planWithStats(state);
+        IntentAwarePlanEvaluation evaluation = intent.intentAwareEvaluation().orElseThrow();
 
         assertEquals(harvest.evaluation().teamBrandCount(), intent.evaluation().teamBrandCount());
         assertEquals(harvest.evaluation().udonTotal(), intent.evaluation().udonTotal());
         assertEquals(intent.evaluation().udonTotal() * 4,
-                intent.intentAwareEvaluation().orElseThrow().adjustedCollectionScore().value());
-        assertEquals(intent.evaluation().udonTotal(),
-                intent.intentAwareEvaluation().orElseThrow().forecastRealizableCollections());
+                evaluation.adjustedCollectionScore().value());
+        assertEquals(intent.evaluation().udonTotal(), evaluation.forecastRealizableCollections());
+        assertEquals(evaluation.localTeamBrandCount(), evaluation.forecastRealizableBrandCount());
     }
 
     @Test
@@ -67,7 +120,8 @@ class IntentAwareAnytimePlannerTest {
                 List.of(group(3, agent(0, 0))));
         OpponentIntentForecast forecast = new OpponentIntentForecaster().forecast(state);
 
-        assertEquals(4, forecast.physicallyReachablePairs());
+        assertEquals(4, forecast.physicalPairsAllObserved());
+        assertEquals(4, forecast.physicalPairsCollectionEligible());
         assertEquals(3, forecast.retainedIntentTargets());
         assertEquals(null, forecast.pressureAt(position(4)));
         ForecastCollectionAssessment assessment = new IntentForecastEvaluator().assessCollection(
@@ -92,7 +146,7 @@ class IntentAwareAnytimePlannerTest {
         assertTrue(intent.intentAwareEvaluation().orElseThrow().adjustedCollectionScore().value()
                 >= riskUnderIntent.adjustedScore().value());
         assertTrue(intent.intentAwareEvaluation().orElseThrow().forecastRealizableCollections()
-                > riskUnderIntent.forecastRealizableCollections());
+                >= riskUnderIntent.forecastRealizableCollections());
         assertTrue(intent.intentAwareEvaluation().orElseThrow().unforecastedCollections() > 0);
         assertTrue(risk.stats().expandedStates() <= SAME_BUDGET.maxExpandedStates());
         assertTrue(intent.stats().expandedStates() <= SAME_BUDGET.maxExpandedStates());
@@ -108,10 +162,47 @@ class IntentAwareAnytimePlannerTest {
         AnytimePlanResult result = new IntentAwareAnytimePlanner(SAME_BUDGET).planWithStats(state);
 
         assertEquals(4, forecast.observedAgentCount());
+        assertEquals(3, forecast.collectionEligibleAgentCount());
         assertEquals(8, forecast.stockedSpotCount());
-        assertTrue(forecast.physicallyReachablePairs() > forecast.retainedIntentTargets());
+        assertTrue(forecast.physicalPairsAllObserved() > forecast.retainedIntentTargets());
         assertTrue(forecast.pressureBySpot().size() < forecast.stockedSpotCount());
         assertTrue(result.intentAwareEvaluation().orElseThrow().unforecastedCollections() > 0);
+    }
+
+    @Test
+    void liveShapedRegressionRestoresForecastStockWithoutInflatingRawUdon() {
+        DayState state = liveShapedState();
+        OpponentIntentConfig previous = new OpponentIntentConfig(
+                OpponentIntentConfig.DEFAULT_MAX_INTENT_TARGETS_PER_AGENT,
+                OpponentCollectionEligibility.ALL_OBSERVED_COLLECT);
+
+        OpponentIntentForecast beforeForecast = new OpponentIntentForecaster().forecast(state, previous);
+        OpponentIntentForecast afterForecast = new OpponentIntentForecaster()
+                .forecast(state, OpponentIntentConfig.defaults());
+        AnytimePlanResult before = new IntentAwareAnytimePlanner(
+                SAME_BUDGET, previous, IntentAdjustmentWeights.defaults()).planWithStats(state);
+        AnytimePlanResult after = new IntentAwareAnytimePlanner(
+                SAME_BUDGET, OpponentIntentConfig.defaults(),
+                IntentAdjustmentWeights.defaults()).planWithStats(state);
+        IntentAwarePlanEvaluation beforeEval = before.intentAwareEvaluation().orElseThrow();
+        IntentAwarePlanEvaluation afterEval = after.intentAwareEvaluation().orElseThrow();
+
+        assertEquals(8, afterForecast.stockedSpotCount());
+        assertEquals(4, beforeForecast.observedAgentCount());
+        assertEquals(4, afterForecast.observedAgentCount());
+        assertEquals(4, beforeForecast.collectionEligibleAgentCount());
+        assertEquals(3, afterForecast.collectionEligibleAgentCount());
+        assertTrue(afterForecast.forecastClaims() < beforeForecast.forecastClaims());
+        assertTrue(remainingForecastStock(state, afterForecast)
+                > remainingForecastStock(state, beforeForecast));
+        assertTrue(afterEval.forecastRealizableCollections()
+                > beforeEval.forecastRealizableCollections());
+        assertTrue(afterEval.forecastRealizableBrandCount()
+                > beforeEval.forecastRealizableBrandCount());
+        assertTrue(afterEval.likelyClaimedFirstCollections()
+                < beforeEval.likelyClaimedFirstCollections());
+        assertEquals(beforeEval.base().udonTotal(), afterEval.base().udonTotal());
+        assertTrue(after.stats().expandedStates() <= SAME_BUDGET.maxExpandedStates());
     }
 
     @Test
@@ -132,30 +223,69 @@ class IntentAwareAnytimePlannerTest {
 
         String logs = captured.toString(StandardCharsets.UTF_8);
         assertTrue(logs.contains("OPPONENT_INTENT_SUMMARY day=0"));
-        assertTrue(logs.contains("physicallyReachablePairs="));
+        assertTrue(logs.contains("observedAgents=4"));
+        assertTrue(logs.contains("collectionEligibleAgents=3"));
+        assertTrue(logs.contains("physicalPairsAllObserved="));
+        assertTrue(logs.contains("physicalPairsCollectionEligible="));
         assertTrue(logs.contains("retainedIntentTargets="));
+        assertTrue(logs.contains("OPPONENT_OBSERVED_AGENT "));
+        assertTrue(logs.contains("collectionEligible=false"));
         assertTrue(logs.contains("ANYTIME_INTENT_AWARE_START day=0"));
+        assertTrue(logs.contains("incumbentLocalBrands="));
+        assertTrue(logs.contains("incumbentForecastBrands="));
+        assertTrue(logs.contains("incumbentForecastRealizable="));
         assertTrue(logs.contains("ANYTIME_INTENT_AWARE_DONE day=0"));
+        assertTrue(logs.contains("localBrands="));
+        assertTrue(logs.contains("forecastBrands="));
         assertTrue(logs.contains("likelyClaimedFirst="));
+        assertFalse(logs.contains("physicallyReachablePairs="));
         assertTrue(logs.lines().filter(line -> line.startsWith("OPPONENT_INTENT_TARGET ")).count() <= 12);
+        assertTrue(logs.lines().filter(line -> line.startsWith("OPPONENT_OBSERVED_AGENT ")).count() <= 12);
         assertTrue(logs.lines().filter(line -> line.startsWith("INTENT_STOCK_PRESSURE ")).count() <= 8);
         assertFalse(logs.contains("probability"));
+        assertTrue(logs.lines()
+                .filter(line -> line.startsWith("OPPONENT_INTENT_TARGET "))
+                .allMatch(line -> line.contains("collectionEligible=true")));
+    }
+
+    private static int remainingForecastStock(DayState state, OpponentIntentForecast forecast) {
+        int claimed = forecast.pressureBySpot().values().stream()
+                .mapToInt(SpotIntentPressure::forecastClaimedPortions)
+                .sum();
+        int stock = state.spotStock().values().stream().mapToInt(Integer::intValue).sum();
+        return stock - claimed;
     }
 
     private static IntentAwarePlanEvaluation evaluation(
-            int brands,
+            int localBrands,
+            int realizableBrands,
             int raw,
             int adjusted,
             int realizable,
             int claimedFirst,
             int ties) {
         return new IntentAwarePlanEvaluation(
-                new PlanEvaluation(brands, raw, 1, 10, 10, "sig"),
+                new PlanEvaluation(localBrands, raw, 1, 10, 10, "sig"),
                 new IntentAdjustedCollectionScore(adjusted),
+                realizableBrands,
                 realizable,
                 claimedFirst,
                 ties,
                 0);
+    }
+
+    /**
+     * Live m-2929/m-2933 group shape: eight stocked spots over four brands, one observed
+     * opponent group of four agents with raw kinds {@code 0,0,0,1}. The raw-kind-one agent
+     * stands next to distinct stock, so treating it as a collector deletes brand coverage.
+     */
+    private static DayState liveShapedState() {
+        List<UdonSpot> spots = List.of(
+                spot("A", 0), spot("B", 1), spot("C", 2), spot("D", 3),
+                spot("A", 4), spot("B", 6), spot("C", 9), spot("D", 12));
+        List<ObservedOtherAgent> agents = List.of(
+                agent(10, 0), agent(10, 0), agent(10, 0), agent(3, 1));
+        return state(spots, List.of(new ObservedOtherGroup(5, agents)));
     }
 
     private static DayState branchState(boolean fourAgents) {
@@ -167,7 +297,7 @@ class IntentAwareAnytimePlannerTest {
                         spot("A", 1), spot("A", 2), spot("A", 6),
                         spot("A", 9), spot("A", 4));
         List<ObservedOtherAgent> agents = fourAgents
-                ? List.of(agent(7, 0), agent(7, 1), agent(7, 0), agent(7, 1))
+                ? List.of(agent(7, 0), agent(7, 0), agent(7, 0), agent(7, 1))
                 : List.of(agent(7, 0));
         return state(spots, List.of(new ObservedOtherGroup(5, agents)));
     }

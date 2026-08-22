@@ -444,6 +444,36 @@ public final class MatchRuntime {
                     vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
                     vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
                     contentionDiagnostics);
+            case ANYTIME_DIVERSE_INTENT_AWARE ->
+                    new vn.ptit.procon.planner.DiverseIntentAwareAnytimePlanner(
+                            vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                            vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                            vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.DiverseSearchConfig.defaults(),
+                            contentionDiagnostics);
+            case ANYTIME_STRATIFIED_INTENT_AWARE ->
+                    new vn.ptit.procon.planner.StratifiedIntentAwareAnytimePlanner(
+                            vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                            vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                            vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.StratifiedSearchConfig.defaults(),
+                            contentionDiagnostics);
+            case ANYTIME_STRATIFIED_COMMITMENT_AWARE ->
+                    new vn.ptit.procon.planner.CommitmentAwareStratifiedPlanner(
+                            vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                            vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                            vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.CommitmentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.StratifiedSearchConfig.defaults(),
+                            contentionDiagnostics);
+            case ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE ->
+                    new vn.ptit.procon.planner.SemiCommitmentAwareStratifiedPlanner(
+                            vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                            vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                            vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.SemiCommitmentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.StratifiedSearchConfig.defaults(),
+                            contentionDiagnostics);
         };
     }
 

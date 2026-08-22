@@ -1,6 +1,7 @@
 package vn.ptit.procon.planner;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -31,7 +32,8 @@ class OpponentIntentForecasterTest {
 
         OpponentIntentForecast forecast = new OpponentIntentForecaster().forecast(state);
 
-        assertEquals(6, forecast.physicallyReachablePairs());
+        assertEquals(6, forecast.physicalPairsAllObserved());
+        assertEquals(6, forecast.physicalPairsCollectionEligible());
         assertEquals(3, forecast.retainedIntentTargets());
         assertEquals(3, forecast.pressureBySpot().size());
     }
@@ -75,19 +77,89 @@ class OpponentIntentForecasterTest {
     }
 
     @Test
-    void rawKindPolicyIsExplicitAndDeterministic() {
+    void rawKindOneObservedAgentNeverClaimsForecastStock() {
+        DayState state = state(6, 5, spots(1, 2), List.of(group(1, agent(0, 1))));
+
+        OpponentIntentForecast forecast = new OpponentIntentForecaster().forecast(state);
+        OpponentAgentIntentForecast agent = forecast.groups().get(0).agents().get(0);
+
+        assertEquals(1, forecast.observedAgentCount());
+        assertEquals(0, forecast.collectionEligibleAgentCount());
+        assertEquals(0, forecast.forecastClaims());
+        assertEquals(0, forecast.retainedIntentTargets());
+        assertTrue(forecast.pressureBySpot().isEmpty());
+        assertTrue(forecast.physicalPairsAllObserved() > 0);
+        assertEquals(0, forecast.physicalPairsCollectionEligible());
+        assertEquals(1, agent.rawKind());
+        assertFalse(agent.collectionEligible());
+        assertTrue(agent.targets().isEmpty());
+        assertTrue(agent.physicallyReachableSpots() > 0);
+    }
+
+    @Test
+    void rawKindZeroObservedAgentStillClaimsForecastStock() {
+        DayState state = state(6, 5, spots(1, 2), List.of(group(1, agent(0, 0))));
+
+        OpponentIntentForecast forecast = new OpponentIntentForecaster().forecast(state);
+        OpponentAgentIntentForecast agent = forecast.groups().get(0).agents().get(0);
+
+        assertEquals(1, forecast.collectionEligibleAgentCount());
+        assertTrue(forecast.forecastClaims() > 0);
+        assertTrue(agent.collectionEligible());
+        assertFalse(agent.targets().isEmpty());
+        assertTrue(forecast.pressureAt(position(1)).forecastClaimedPortions() > 0);
+    }
+
+    @Test
+    void liveGroupShapeCountsThreeCollectorsOutOfFourObservedAgents() {
+        DayState state = state(10, 8, spots(1, 2, 3, 4, 5),
+                List.of(group(5, agent(9, 0), agent(9, 0), agent(9, 0), agent(9, 1))));
+
+        OpponentIntentForecast forecast = new OpponentIntentForecaster().forecast(state);
+        List<OpponentAgentIntentForecast> agents = forecast.groups().get(0).agents();
+
+        assertEquals(4, forecast.observedAgentCount());
+        assertEquals(3, forecast.collectionEligibleAgentCount());
+        assertEquals(4, agents.size());
+        assertEquals(3, agents.stream().filter(OpponentAgentIntentForecast::collectionEligible).count());
+        assertFalse(agents.get(3).collectionEligible());
+        assertTrue(agents.get(3).targets().isEmpty());
+        assertTrue(forecast.physicalPairsAllObserved() > forecast.physicalPairsCollectionEligible());
+    }
+
+    @Test
+    void onlyRawKindOneOpponentsProduceNoCollectorForecastAtAll() {
+        DayState state = state(10, 8, spots(1, 2, 3, 4),
+                List.of(group(5, agent(9, 1), agent(9, 1)), group(6, agent(0, 1))));
+
+        OpponentIntentForecast forecast = new OpponentIntentForecaster().forecast(state);
+
+        assertEquals(3, forecast.observedAgentCount());
+        assertEquals(0, forecast.collectionEligibleAgentCount());
+        assertEquals(0, forecast.forecastClaims());
+        assertEquals(0, forecast.retainedIntentTargets());
+        assertTrue(forecast.pressureBySpot().isEmpty());
+        assertEquals(2, forecast.groups().size());
+        assertEquals(3, forecast.groups().stream().mapToInt(group -> group.agents().size()).sum());
+    }
+
+    @Test
+    void collectionEligibilityPolicyIsExplicitAndDeterministic() {
         DayState state = state(5, 4, spots(1, 2), List.of(group(1, agent(0, 0), agent(1, 1))));
         OpponentIntentForecaster forecaster = new OpponentIntentForecaster();
 
         OpponentIntentForecast all = forecaster.forecast(state,
-                new OpponentIntentConfig(3, OpponentAgentPolicy.ALL_OBSERVED));
-        OpponentIntentForecast zero = forecaster.forecast(state,
-                new OpponentIntentConfig(3, OpponentAgentPolicy.LIKELY_COLLECTOR_RAW_KIND_ZERO));
+                new OpponentIntentConfig(3, OpponentCollectionEligibility.ALL_OBSERVED_COLLECT));
+        OpponentIntentForecast collectors = forecaster.forecast(state,
+                new OpponentIntentConfig(3, OpponentCollectionEligibility.RAW_KIND_ZERO_COLLECTS));
 
         assertEquals(all, forecaster.forecast(state,
-                new OpponentIntentConfig(3, OpponentAgentPolicy.ALL_OBSERVED)));
-        assertEquals(2, all.includedAgentCount());
-        assertEquals(1, zero.includedAgentCount());
+                new OpponentIntentConfig(3, OpponentCollectionEligibility.ALL_OBSERVED_COLLECT)));
+        assertEquals(2, all.observedAgentCount());
+        assertEquals(2, all.collectionEligibleAgentCount());
+        assertEquals(2, collectors.observedAgentCount());
+        assertEquals(1, collectors.collectionEligibleAgentCount());
+        assertTrue(collectors.forecastClaims() < all.forecastClaims());
     }
 
     @Test
@@ -97,7 +169,8 @@ class OpponentIntentForecasterTest {
         OpponentIntentForecast forecast = new OpponentIntentForecaster().forecast(state);
 
         assertTrue(forecast.pressureBySpot().isEmpty());
-        assertEquals(0, forecast.physicallyReachablePairs());
+        assertEquals(0, forecast.physicalPairsAllObserved());
+        assertEquals(0, forecast.physicalPairsCollectionEligible());
     }
 
     @Test
@@ -107,18 +180,19 @@ class OpponentIntentForecasterTest {
         OpponentIntentForecast forecast = new OpponentIntentForecaster().forecast(state);
 
         assertEquals(1, forecast.observedAgentCount());
-        assertEquals(0, forecast.physicallyReachablePairs());
+        assertEquals(0, forecast.physicalPairsAllObserved());
         assertTrue(forecast.pressureBySpot().isEmpty());
     }
 
     @Test
-    void defaultConfigurationIsBoundedAndValidated() {
-        assertEquals(new OpponentIntentConfig(3, OpponentAgentPolicy.ALL_OBSERVED),
+    void defaultConfigurationFiltersRawKindOneAndIsValidated() {
+        assertEquals(
+                new OpponentIntentConfig(3, OpponentCollectionEligibility.RAW_KIND_ZERO_COLLECTS),
                 OpponentIntentConfig.defaults());
-        assertThrows(IllegalArgumentException.class,
-                () -> new OpponentIntentConfig(0, OpponentAgentPolicy.ALL_OBSERVED));
-        assertThrows(IllegalArgumentException.class,
-                () -> new OpponentIntentConfig(4, OpponentAgentPolicy.ALL_OBSERVED));
+        assertThrows(IllegalArgumentException.class, () -> new OpponentIntentConfig(
+                0, OpponentCollectionEligibility.RAW_KIND_ZERO_COLLECTS));
+        assertThrows(IllegalArgumentException.class, () -> new OpponentIntentConfig(
+                4, OpponentCollectionEligibility.RAW_KIND_ZERO_COLLECTS));
     }
 
     @Test
@@ -130,6 +204,24 @@ class OpponentIntentForecasterTest {
 
         assertEquals(new OpponentIntentForecaster().forecast(first),
                 new OpponentIntentForecaster().forecast(second));
+    }
+
+    @Test
+    void collectionEligibleMetricsCanNeverExceedObservedMetrics() {
+        assertThrows(IllegalArgumentException.class, () -> new OpponentIntentForecast(
+                List.of(), Map.of(), 1, 2, 1, 1, 1, 0, 0));
+        assertThrows(IllegalArgumentException.class, () -> new OpponentIntentForecast(
+                List.of(), Map.of(), 2, 1, 1, 1, 2, 0, 0));
+    }
+
+    @Test
+    void ineligibleAgentCannotCarryCollectorIntentTargets() {
+        OpponentTargetIntent target = new OpponentTargetIntent(
+                position(1), new BrandId("A"), IntentRank.PRIMARY, 2,
+                java.util.OptionalInt.of(2), true);
+
+        assertThrows(IllegalArgumentException.class, () -> new OpponentAgentIntentForecast(
+                0, position(0), 1, 40, 1, false, List.of(target)));
     }
 
     private static List<UdonSpot> spots(int... positions) {

@@ -5,11 +5,20 @@ import java.util.Objects;
 import vn.ptit.procon.domain.agent.AgentId;
 import vn.ptit.procon.domain.map.Position;
 
-/** Lexicographic M10 candidate guidance aligned with intent-adjusted plan value. */
+/**
+ * Lexicographic M10 candidate guidance aligned with intent-adjusted plan value.
+ *
+ * <p>Coverage ordering leads with a new forecast-realizable team brand, so a locally
+ * new brand whose only projected collection source is already forecast claimed before
+ * our arrival cannot dominate. Harvest ordering keeps intent-adjusted value first but
+ * protects the realizable brand count above raw quantity.</p>
+ */
 record IntentAwareCandidateMetrics(
-        boolean teamNewBrand,
+        boolean teamNewForecastRealizableBrand,
+        boolean teamNewLocalBrand,
         int adjustedScore,
         int forecastRealizableGain,
+        int forecastRealizableBrandGain,
         int rawGain,
         int likelyClaimedFirst,
         int tieCollections,
@@ -23,10 +32,12 @@ record IntentAwareCandidateMetrics(
             IntentAwareCandidateMetrics::compareDensity;
 
     private static final Comparator<IntentAwareCandidateMetrics> COVERAGE = Comparator
-            .comparing(IntentAwareCandidateMetrics::teamNewBrand).reversed()
+            .comparing(IntentAwareCandidateMetrics::teamNewForecastRealizableBrand).reversed()
             .thenComparing(Comparator.comparingInt(IntentAwareCandidateMetrics::adjustedScore).reversed())
             .thenComparing(Comparator.comparingInt(
                     IntentAwareCandidateMetrics::forecastRealizableGain).reversed())
+            .thenComparing(Comparator.comparing(
+                    IntentAwareCandidateMetrics::teamNewLocalBrand).reversed())
             .thenComparing(Comparator.comparingInt(IntentAwareCandidateMetrics::rawGain).reversed())
             .thenComparingInt(IntentAwareCandidateMetrics::likelyClaimedFirst)
             .thenComparingInt(IntentAwareCandidateMetrics::routeSteps)
@@ -38,6 +49,8 @@ record IntentAwareCandidateMetrics(
             .comparingInt(IntentAwareCandidateMetrics::adjustedScore).reversed()
             .thenComparing(Comparator.comparingInt(
                     IntentAwareCandidateMetrics::forecastRealizableGain).reversed())
+            .thenComparing(Comparator.comparingInt(
+                    IntentAwareCandidateMetrics::forecastRealizableBrandGain).reversed())
             .thenComparing(Comparator.comparingInt(IntentAwareCandidateMetrics::rawGain).reversed())
             .thenComparingInt(IntentAwareCandidateMetrics::likelyClaimedFirst)
             .thenComparingInt(IntentAwareCandidateMetrics::tieCollections)
@@ -51,6 +64,17 @@ record IntentAwareCandidateMetrics(
     IntentAwareCandidateMetrics {
         Objects.requireNonNull(targetPosition, "Target position must not be null");
         Objects.requireNonNull(patrolAgentId, "PATROL agent ID must not be null");
+        if (forecastRealizableBrandGain < 0 || forecastRealizableGain < 0) {
+            throw new IllegalArgumentException("Forecast-realizable candidate gains must be non-negative");
+        }
+        if (teamNewForecastRealizableBrand != forecastRealizableBrandGain > 0) {
+            throw new IllegalArgumentException(
+                    "New realizable brand flag must agree with the realizable brand gain");
+        }
+        if (forecastRealizableBrandGain > forecastRealizableGain) {
+            throw new IllegalArgumentException(
+                    "Realizable brand gain cannot exceed realizable collection gain");
+        }
     }
 
     static Comparator<IntentAwareCandidateMetrics> coveragePreference() {

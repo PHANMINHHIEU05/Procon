@@ -10,6 +10,8 @@ import vn.ptit.procon.domain.map.Position;
 import vn.ptit.procon.domain.map.Direction;
 import vn.ptit.procon.domain.map.Terrain;
 import vn.ptit.procon.domain.movement.MoveCost;
+import vn.ptit.procon.domain.udon.BrandId;
+import vn.ptit.procon.domain.udon.UdonSpot;
 import vn.ptit.procon.engine.DaySimulationResult;
 import vn.ptit.procon.engine.DayState;
 import vn.ptit.procon.engine.UdonCollectedEvent;
@@ -31,10 +33,12 @@ public final class IntentForecastEvaluator {
 
     IntentRouteMetrics evaluateRoute(
             DayState state,
+            Map<Position, UdonSpot> spotsByPosition,
             Route route,
             int initialArrivalStep,
             Map<Position, Integer> branchStock,
             java.util.Set<Position> alreadyVisited,
+            java.util.Set<BrandId> alreadyRealizableTeamBrands,
             OpponentIntentForecast forecast,
             IntentAdjustmentWeights weights) {
         Map<Position, Integer> available = new HashMap<>(branchStock);
@@ -47,6 +51,7 @@ public final class IntentForecastEvaluator {
         int claimedFirst = 0;
         int ties = 0;
         int unforecasted = 0;
+        java.util.Set<BrandId> realizableBrands = new java.util.LinkedHashSet<>();
         List<ForecastOwnCollection> events = new ArrayList<>();
         for (Direction direction : route.directions()) {
             TrafficStatus traffic = state.matchData().map().terrainAt(cursor) == Terrain.ROAD
@@ -67,6 +72,10 @@ public final class IntentForecastEvaluator {
             score += assessment.intentValueUnits();
             if (assessment.forecastRealizable()) {
                 realizable++;
+                UdonSpot spot = spotsByPosition.get(event.spot());
+                if (spot != null) {
+                    realizableBrands.add(spot.brand());
+                }
             }
             switch (assessment.classification()) {
                 case LIKELY_CLAIMED_FIRST -> claimedFirst++;
@@ -76,7 +85,12 @@ public final class IntentForecastEvaluator {
                 }
             }
         }
-        return new IntentRouteMetrics(gain, score, realizable, claimedFirst, ties, unforecasted);
+        int brandGain = (int) realizableBrands.stream()
+                .filter(brand -> !alreadyRealizableTeamBrands.contains(brand))
+                .count();
+        return new IntentRouteMetrics(
+                gain, score, realizable, claimedFirst, ties, unforecasted,
+                realizableBrands, brandGain);
     }
 
     public IntentCollectionAttribution evaluate(
@@ -100,6 +114,8 @@ public final class IntentForecastEvaluator {
                 .toList();
         Map<Position, Integer> priorOwnCollections = new HashMap<>();
         List<ForecastCollectionAssessment> assessments = new ArrayList<>();
+        java.util.Set<BrandId> localBrands = new java.util.LinkedHashSet<>();
+        java.util.Set<BrandId> realizableBrands = new java.util.LinkedHashSet<>();
         int score = 0;
         int realizable = 0;
         int available = 0;
@@ -139,8 +155,10 @@ public final class IntentForecastEvaluator {
             }
             int units = weights.weightFor(classification);
             score = Math.addExact(score, units);
+            localBrands.add(event.brand());
             if (remaining > 0) {
                 realizable++;
+                realizableBrands.add(event.brand());
             }
             assessments.add(new ForecastCollectionAssessment(
                     event.position(), event.step(), classification, remaining, remaining > 0, units));
@@ -154,6 +172,8 @@ public final class IntentForecastEvaluator {
                 ties,
                 claimedFirst,
                 unforecasted,
+                localBrands,
+                realizableBrands,
                 assessments);
     }
 
@@ -192,7 +212,8 @@ public final class IntentForecastEvaluator {
 
     private IntentCollectionAttribution empty() {
         return new IntentCollectionAttribution(
-                new IntentAdjustedCollectionScore(0), 0, 0, 0, 0, 0, 0, List.of());
+                new IntentAdjustedCollectionScore(0), 0, 0, 0, 0, 0, 0,
+                java.util.Set.of(), java.util.Set.of(), List.of());
     }
 
     private record ForecastOwnCollection(Position spot, int step) {

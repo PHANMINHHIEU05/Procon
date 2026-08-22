@@ -174,4 +174,34 @@ class RuntimeConfigTest {
 
         assertEquals(PlannerMode.ANYTIME_INTENT_AWARE, config.plannerMode());
     }
+
+    @Test
+    void parsesAnytimeDiverseIntentAwareMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_diverse_intent_aware"));
+
+        assertEquals(PlannerMode.ANYTIME_DIVERSE_INTENT_AWARE, config.plannerMode());
+    }
+
+    @Test
+    void parsesAnytimeStratifiedIntentAwareMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_intent_aware"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_INTENT_AWARE, config.plannerMode());
+    }
+
+    @Test
+    void parsesAnytimeStratifiedCommitmentAwareMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_commitment_aware"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_COMMITMENT_AWARE, config.plannerMode());
+    }
 }

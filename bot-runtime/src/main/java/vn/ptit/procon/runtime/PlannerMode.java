@@ -14,7 +14,11 @@ public enum PlannerMode {
     ANYTIME_ARRIVAL_CONTENTION,
     ANYTIME_WEIGHTED_ARRIVAL_CONTENTION,
     ANYTIME_RISK_ADJUSTED,
-    ANYTIME_INTENT_AWARE;
+    ANYTIME_INTENT_AWARE,
+    ANYTIME_DIVERSE_INTENT_AWARE,
+    ANYTIME_STRATIFIED_INTENT_AWARE,
+    ANYTIME_STRATIFIED_COMMITMENT_AWARE,
+    ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE;
 
     static PlannerMode parse(String value) {
         String normalized = value == null || value.isBlank() ? WAIT.name() : value.trim().toUpperCase();
@@ -26,7 +30,10 @@ public enum PlannerMode {
                             + " REFUEL_PROBE, TEAM_COORDINATED, ANYTIME, ANYTIME_HARVEST,"
                             + " ANYTIME_CONTENTION, ANYTIME_ARRIVAL_CONTENTION,"
                             + " ANYTIME_WEIGHTED_ARRIVAL_CONTENTION, ANYTIME_RISK_ADJUSTED,"
-                            + " or ANYTIME_INTENT_AWARE: " + value,
+                            + " ANYTIME_INTENT_AWARE, ANYTIME_DIVERSE_INTENT_AWARE,"
+                            + " ANYTIME_STRATIFIED_INTENT_AWARE,"
+                            + " ANYTIME_STRATIFIED_COMMITMENT_AWARE, or"
+                            + " ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE: " + value,
                     exception);
         }
     }
