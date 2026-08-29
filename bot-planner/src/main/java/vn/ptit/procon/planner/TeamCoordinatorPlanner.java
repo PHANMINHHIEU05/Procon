@@ -29,7 +29,7 @@ import vn.ptit.procon.engine.TeamPlan;
  * Deterministic bounded-greedy team planner. It first compares optional start-position
  * rendezvous against one no-refill team projection, then runs the final global target loop.
  */
-public final class TeamCoordinatorPlanner implements DayPlanner {
+public class TeamCoordinatorPlanner implements DayPlanner {
 
     private static final Comparator<TeamTargetCandidate> TARGET_PREFERENCE = Comparator
             .comparing(TeamTargetCandidate::newBrandForTeamToday).reversed()
@@ -86,6 +86,7 @@ public final class TeamCoordinatorPlanner implements DayPlanner {
             CoordinationResult withoutRefill = coordinate(state, Optional.empty(), routeCache, false);
             Optional<RefuelAssignment> assignment = selectRefuelAssignment(
                     state, withoutRefill, routeCache);
+            logRefuelDecision(state, withoutRefill, assignment);
             if (assignment.isPresent()) {
                 RefuelAssignment chosen = assignment.orElseThrow();
                 log("TEAM_REFUEL_ASSIGN",
@@ -158,11 +159,37 @@ public final class TeamCoordinatorPlanner implements DayPlanner {
             }
         }
         return candidates.stream()
-                .filter(RefuelAssignment::positiveTeamValue)
-                .min(REFUEL_PREFERENCE);
+                .filter(candidate -> acceptableRefuelAssignment(
+                        state, withoutRefill, candidate, routeCache))
+                .min(refuelPreference(state, withoutRefill, routeCache));
     }
 
-    private CoordinationResult coordinate(
+    /** Mode-isolated candidate ordering hook. Existing modes return the original comparator. */
+    protected Comparator<RefuelAssignment> refuelPreference(
+            DayState state,
+            CoordinationResult withoutRefill,
+            Map<PatrolRouteKey, Optional<Route>> routeCache) {
+        return REFUEL_PREFERENCE;
+    }
+
+    /** Extension point used only by the M13 coordinator. Existing modes keep current-day gain. */
+    protected boolean acceptableRefuelAssignment(
+            DayState state,
+            CoordinationResult withoutRefill,
+            RefuelAssignment candidate,
+            Map<PatrolRouteKey, Optional<Route>> routeCache) {
+        return candidate.positiveTeamValue();
+    }
+
+    /** Diagnostics-only hook; ordinary coordinator behavior remains unchanged. */
+    protected void logRefuelDecision(
+            DayState state,
+            CoordinationResult withoutRefill,
+            Optional<RefuelAssignment> assignment) {
+        // Intentionally empty for pre-M13 modes.
+    }
+
+    protected CoordinationResult coordinate(
             DayState state,
             Optional<RefuelAssignment> assignment,
             Map<PatrolRouteKey, Optional<Route>> routeCache,
@@ -427,18 +454,18 @@ public final class TeamCoordinatorPlanner implements DayPlanner {
         }
     }
 
-    private record PatrolRouteKey(
+    protected record PatrolRouteKey(
             AgentId agentId, Position start, int fuel, Position target) {
     }
 
-    private record CoordinationResult(TeamPlan plan, int collections, Set<BrandId> brands) {
+    protected record CoordinationResult(TeamPlan plan, int collections, Set<BrandId> brands) {
 
-        private CoordinationResult {
+        protected CoordinationResult {
             brands = Set.copyOf(brands);
         }
     }
 
-    private record RefuelAssignment(
+    protected record RefuelAssignment(
             AgentState refuel,
             AgentState patrol,
             Route route,
@@ -447,7 +474,7 @@ public final class TeamCoordinatorPlanner implements DayPlanner {
             int teamCollectionGain,
             int teamBrandGain) {
 
-        private boolean positiveTeamValue() {
+        protected boolean positiveTeamValue() {
             return teamBrandGain > 0 || teamBrandGain == 0 && teamCollectionGain > 0;
         }
     }

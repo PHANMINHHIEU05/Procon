@@ -1,0 +1,238 @@
+CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-4278 plannerMode=ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN PROCON_TOKEN=<set>
+SETUP_WAITING matchId=m-4278
+SETUP_RECEIVED matchId=m-4278 agents=4 days=4
+ASSIGNMENT_SUBMITTED matchId=m-4278 agents=4
+ASSIGNMENT_ACCEPTED matchId=m-4278 agents=4
+MATCH_STARTED matchId=m-4278
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=0 remainingFutureDays=3 patrolAgents=3 nextDayStepBudget=30 minimumPatrolDistinctSpots=7 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=21 totalPatrolDistinctBrandCapacity=12 routeCostCacheEntries=488 pathfindingExecutions=8
+TEAM_REFUEL_HARVEST_HORIZON_NO_ASSIGN day=0 reason=NO_HARVEST_CAPACITY_GAIN currentSemiBrandDelta=0 currentSemiCollectionDelta=0 weakestCapacityDelta=0 totalSpotCapacityDelta=0 totalBrandCapacityDelta=0 fuelRestored=0 arrivalStep=0
+TEAM_REFUEL_NO_ASSIGN day=0 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=0 iteration=1 agent=1 target=3 brand=numeric:3 teamNewBrand=true steps=13 fuel=11
+TEAM_TARGET_SELECT day=0 iteration=2 agent=1 target=49 brand=numeric:2 teamNewBrand=true steps=11 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=3 agent=2 target=33 brand=numeric:1 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=0 iteration=4 agent=0 target=47 brand=numeric:0 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=0 iteration=5 agent=2 target=10 brand=numeric:3 teamNewBrand=false steps=4 fuel=5
+TEAM_TARGET_SELECT day=0 iteration=6 agent=0 target=19 brand=numeric:1 teamNewBrand=false steps=7 fuel=8
+TEAM_TARGET_SELECT day=0 iteration=7 agent=0 target=10 brand=numeric:3 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=0 iteration=8 agent=2 target=47 brand=numeric:0 teamNewBrand=false steps=10 fuel=11
+TEAM_TARGET_SELECT day=0 iteration=9 agent=2 target=6 brand=numeric:2 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=10 agent=0 target=33 brand=numeric:1 teamNewBrand=false steps=4 fuel=5
+TEAM_PLAN_VALID day=0
+OPPONENT_FULL_DAY_BASELINE day=0 stepBudget=30 collectors=3 stockedSpots=8 baselineOpponentCollections=15 observedNow=0 directIntent=3 followOnIntent=12 strongCollections=3 maxCollectorCollections=6 rolloutEvents=18 routeCostCacheEntries=488 pathfindingExecutions=8
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=0 kind=0 spot=47 arrivalStep=2 collectorOrdinal=0 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=1 kind=0 spot=47 arrivalStep=2 collectorOrdinal=0 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=2 kind=0 spot=33 arrivalStep=2 collectorOrdinal=0 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=0 kind=0 spot=38 arrivalStep=4 collectorOrdinal=1 legSteps=2 legFuel=1 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=2 kind=0 spot=19 arrivalStep=6 collectorOrdinal=1 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=0 kind=0 spot=19 arrivalStep=9 collectorOrdinal=2 legSteps=5 legFuel=7 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=1 kind=0 spot=19 arrivalStep=9 collectorOrdinal=1 legSteps=7 legFuel=8 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=2 kind=0 spot=10 arrivalStep=10 collectorOrdinal=2 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=0 kind=0 spot=33 arrivalStep=13 collectorOrdinal=3 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=1 kind=0 spot=33 arrivalStep=13 collectorOrdinal=2 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=2 kind=0 spot=3 arrivalStep=14 collectorOrdinal=3 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=0 kind=0 spot=10 arrivalStep=17 collectorOrdinal=4 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=1 kind=0 spot=49 arrivalStep=17 collectorOrdinal=3 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=2 kind=0 spot=47 arrivalStep=25 collectorOrdinal=4 legSteps=11 legFuel=10 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=0 group=1 agent=0 kind=0 spot=6 arrivalStep=28 collectorOrdinal=5 legSteps=11 legFuel=10 commitment=FOLLOW_ON_INTENT
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_START day=0 remainingFutureDays=3 ownSemiBrands=4 ownSemiCollections=14 baselineOpponentCollections=15 residualOpponentCollections=12 netOpponentCollectionsRemoved=3 replacementCollections=2 residualObservedNow=0 residualDirect=3 residualFollowOn=9 projectedReplacementAwareMargin=2 semiScore=36 minimumPatrolDistinctSpots=7 totalPatrolDistinctSpotCapacity=21 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=0 ownSemiBrands=4 ownSemiCollections=14 residualOpponentCollections=12 netOpponentCollectionsRemoved=3 replacementCollections=0 projectedReplacementAwareMargin=2 expanded=14
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=0 ownSemiBrands=4 ownSemiCollections=15 residualOpponentCollections=12 netOpponentCollectionsRemoved=3 replacementCollections=0 projectedReplacementAwareMargin=3 expanded=16
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=0 ownSemiBrands=4 ownSemiCollections=15 residualOpponentCollections=11 netOpponentCollectionsRemoved=4 replacementCollections=0 projectedReplacementAwareMargin=4 expanded=41
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_DONE day=0 remainingFutureDays=3 ownSemiBrands=4 ownSemiCollections=15 rawUdon=15 baselineOpponentCollections=15 residualOpponentCollections=11 netOpponentCollectionsRemoved=4 replacementCollections=0 residualObservedNow=0 residualDirect=3 residualFollowOn=8 projectedReplacementAwareMargin=4 semiScore=40 baselineRolloutEvents=18 residualRolloutEvents=13 maxBaselineCollectorCollections=6 maxResidualCollectorCollections=5 routeCostCacheEntries=488 pathfindingExecutions=8 minimumPatrolDistinctSpots=7 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=21 totalPatrolDistinctBrandCapacity=12 expanded=64 completedPlans=65 improvements=3 strategiesDiscovered=20 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=6 maxStrategyExpansionCount=23 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=0 remainingFutureDays=3 patrolAgents=3 nextDayStepBudget=30 minimumPatrolDistinctSpots=7 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=21 totalPatrolDistinctBrandCapacity=12 routeCostCacheEntries=488 pathfindingExecutions=8
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=0 endPosition=33 endFuel=44 stationaryOpportunity=true maxDistinctSpots=7 maxDistinctBrands=4 bestRemainingFuel=26
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=1 endPosition=33 endFuel=42 stationaryOpportunity=true maxDistinctSpots=7 maxDistinctBrands=4 bestRemainingFuel=24
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=2 endPosition=47 endFuel=40 stationaryOpportunity=true maxDistinctSpots=7 maxDistinctBrands=4 bestRemainingFuel=24
+LOCAL_PLAN_VALID matchId=m-4278 day=0 mode=ReplacementAwareRelativeMarginPlanner
+ACTIONS_SUBMITTED matchId=m-4278 day=0
+ACTION_RESPONSE_POST_ADVANCE matchId=m-4278 submittedDay=0 responseDay=1
+UDON_OBSERVABILITY matchId=m-4278 day=0 predictedDayUdon=15 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-4278 day=0
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+PARITY_OBSERVED matchId=m-4278 day=0 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-4278 from=0 to=1
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=1 remainingFutureDays=2 patrolAgents=3 nextDayStepBudget=30 minimumPatrolDistinctSpots=7 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=21 totalPatrolDistinctBrandCapacity=12 routeCostCacheEntries=488 pathfindingExecutions=8
+TEAM_REFUEL_HARVEST_HORIZON_NO_ASSIGN day=1 reason=NO_HARVEST_CAPACITY_GAIN currentSemiBrandDelta=0 currentSemiCollectionDelta=0 weakestCapacityDelta=0 totalSpotCapacityDelta=0 totalBrandCapacityDelta=0 fuelRestored=0 arrivalStep=0
+TEAM_REFUEL_NO_ASSIGN day=1 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=1 iteration=1 agent=2 target=3 brand=numeric:3 teamNewBrand=true steps=11 fuel=10
+TEAM_TARGET_SELECT day=1 iteration=2 agent=2 target=49 brand=numeric:2 teamNewBrand=true steps=11 fuel=7
+TEAM_TARGET_SELECT day=1 iteration=3 agent=0 target=10 brand=numeric:3 teamNewBrand=false steps=4 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=4 agent=1 target=10 brand=numeric:3 teamNewBrand=false steps=4 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=5 agent=0 target=47 brand=numeric:0 teamNewBrand=false steps=10 fuel=11
+TEAM_TARGET_SELECT day=1 iteration=6 agent=0 target=6 brand=numeric:2 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=1 iteration=7 agent=1 target=47 brand=numeric:0 teamNewBrand=false steps=10 fuel=11
+TEAM_TARGET_SELECT day=1 iteration=8 agent=1 target=19 brand=numeric:1 teamNewBrand=false steps=7 fuel=8
+TEAM_PLAN_VALID day=1
+OPPONENT_FULL_DAY_BASELINE day=1 stepBudget=30 collectors=3 stockedSpots=8 baselineOpponentCollections=15 observedNow=2 directIntent=3 followOnIntent=10 strongCollections=5 maxCollectorCollections=5 rolloutEvents=17 routeCostCacheEntries=488 pathfindingExecutions=8
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=0 kind=0 spot=33 arrivalStep=0 collectorOrdinal=0 legSteps=0 legFuel=0 commitment=OBSERVED_NOW
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=2 kind=0 spot=38 arrivalStep=0 collectorOrdinal=0 legSteps=0 legFuel=0 commitment=OBSERVED_NOW
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=1 kind=0 spot=19 arrivalStep=2 collectorOrdinal=0 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=2 kind=0 spot=47 arrivalStep=2 collectorOrdinal=1 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=0 kind=0 spot=19 arrivalStep=4 collectorOrdinal=1 legSteps=4 legFuel=5 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=1 kind=0 spot=33 arrivalStep=6 collectorOrdinal=1 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=0 kind=0 spot=10 arrivalStep=8 collectorOrdinal=2 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=2 kind=0 spot=19 arrivalStep=9 collectorOrdinal=2 legSteps=7 legFuel=8 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=1 kind=0 spot=10 arrivalStep=10 collectorOrdinal=2 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=0 kind=0 spot=3 arrivalStep=12 collectorOrdinal=3 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=2 kind=0 spot=33 arrivalStep=13 collectorOrdinal=3 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=2 kind=0 spot=49 arrivalStep=17 collectorOrdinal=4 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=1 kind=0 spot=47 arrivalStep=20 collectorOrdinal=3 legSteps=10 legFuel=11 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=0 kind=0 spot=47 arrivalStep=23 collectorOrdinal=4 legSteps=11 legFuel=10 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=1 group=1 agent=1 kind=0 spot=6 arrivalStep=29 collectorOrdinal=4 legSteps=9 legFuel=6 commitment=FOLLOW_ON_INTENT
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_START day=1 remainingFutureDays=2 ownSemiBrands=4 ownSemiCollections=13 baselineOpponentCollections=15 residualOpponentCollections=11 netOpponentCollectionsRemoved=4 replacementCollections=3 residualObservedNow=2 residualDirect=3 residualFollowOn=6 projectedReplacementAwareMargin=2 semiScore=35 minimumPatrolDistinctSpots=7 totalPatrolDistinctSpotCapacity=21 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=1 ownSemiBrands=4 ownSemiCollections=13 residualOpponentCollections=9 netOpponentCollectionsRemoved=6 replacementCollections=2 projectedReplacementAwareMargin=4 expanded=11
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=1 ownSemiBrands=4 ownSemiCollections=14 residualOpponentCollections=10 netOpponentCollectionsRemoved=5 replacementCollections=1 projectedReplacementAwareMargin=4 expanded=51
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_DONE day=1 remainingFutureDays=2 ownSemiBrands=4 ownSemiCollections=14 rawUdon=15 baselineOpponentCollections=15 residualOpponentCollections=10 netOpponentCollectionsRemoved=5 replacementCollections=1 residualObservedNow=2 residualDirect=3 residualFollowOn=5 projectedReplacementAwareMargin=4 semiScore=38 baselineRolloutEvents=17 residualRolloutEvents=16 maxBaselineCollectorCollections=5 maxResidualCollectorCollections=4 routeCostCacheEntries=488 pathfindingExecutions=8 minimumPatrolDistinctSpots=6 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=19 totalPatrolDistinctBrandCapacity=12 expanded=64 completedPlans=65 improvements=2 strategiesDiscovered=17 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=6 maxStrategyExpansionCount=21 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=1 remainingFutureDays=2 patrolAgents=3 nextDayStepBudget=30 minimumPatrolDistinctSpots=6 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=19 totalPatrolDistinctBrandCapacity=12 routeCostCacheEntries=488 pathfindingExecutions=8
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=1 agent=0 endPosition=47 endFuel=29 stationaryOpportunity=true maxDistinctSpots=7 maxDistinctBrands=4 bestRemainingFuel=13
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=1 agent=1 endPosition=19 endFuel=17 stationaryOpportunity=true maxDistinctSpots=6 maxDistinctBrands=4 bestRemainingFuel=2
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=1 agent=2 endPosition=10 endFuel=16 stationaryOpportunity=true maxDistinctSpots=6 maxDistinctBrands=4 bestRemainingFuel=2
+LOCAL_PLAN_VALID matchId=m-4278 day=1 mode=ReplacementAwareRelativeMarginPlanner
+ACTIONS_SUBMITTED matchId=m-4278 day=1
+ACTION_RESPONSE_POST_ADVANCE matchId=m-4278 submittedDay=1 responseDay=2
+UDON_OBSERVABILITY matchId=m-4278 day=1 predictedDayUdon=15 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-4278 day=1
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+PARITY_OBSERVED matchId=m-4278 day=1 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-4278 from=1 to=2
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=2 remainingFutureDays=1 patrolAgents=3 nextDayStepBudget=30 minimumPatrolDistinctSpots=1 minimumPatrolDistinctBrands=1 totalPatrolDistinctSpotCapacity=8 totalPatrolDistinctBrandCapacity=5 routeCostCacheEntries=488 pathfindingExecutions=8
+TEAM_REFUEL_HARVEST_HORIZON_ASSIGN day=2 refuelAgent=3 patrolAgent=2 currentSemiBrandDelta=0 currentSemiCollectionDelta=0 minimumSpotCapacityDelta=0 minimumBrandCapacityDelta=0 totalSpotCapacityDelta=5 totalBrandCapacityDelta=3 fuelRestored=44 arrivalStep=9
+TEAM_REFUEL_ASSIGN day=2 refuelAgent=3 patrolAgent=2 projectedBrandGain=0 projectedCollectionGain=0 arrivalStep=9
+TEAM_TARGET_SELECT day=2 iteration=1 agent=0 target=6 brand=numeric:2 teamNewBrand=true steps=9 fuel=6
+TEAM_TARGET_SELECT day=2 iteration=2 agent=0 target=3 brand=numeric:3 teamNewBrand=false steps=12 fuel=6
+TEAM_TARGET_SELECT day=2 iteration=3 agent=2 target=19 brand=numeric:1 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=2 iteration=4 agent=1 target=10 brand=numeric:3 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=2 iteration=5 agent=2 target=49 brand=numeric:2 teamNewBrand=false steps=8 fuel=6
+TEAM_TARGET_SELECT day=2 iteration=6 agent=1 target=47 brand=numeric:0 teamNewBrand=false steps=13 fuel=8
+TEAM_TARGET_SELECT day=2 iteration=7 agent=2 target=33 brand=numeric:1 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=2 iteration=8 agent=0 target=33 brand=numeric:1 teamNewBrand=false steps=8 fuel=5
+TEAM_TARGET_SELECT day=2 iteration=9 agent=1 target=33 brand=numeric:1 teamNewBrand=false steps=12 fuel=6
+TEAM_PLAN_VALID day=2
+OPPONENT_FULL_DAY_BASELINE day=2 stepBudget=30 collectors=3 stockedSpots=8 baselineOpponentCollections=14 observedNow=2 directIntent=3 followOnIntent=9 strongCollections=5 maxCollectorCollections=5 rolloutEvents=18 routeCostCacheEntries=488 pathfindingExecutions=8
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=0 kind=0 spot=38 arrivalStep=0 collectorOrdinal=0 legSteps=0 legFuel=0 commitment=OBSERVED_NOW
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=2 kind=0 spot=49 arrivalStep=0 collectorOrdinal=0 legSteps=0 legFuel=0 commitment=OBSERVED_NOW
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=0 kind=0 spot=47 arrivalStep=2 collectorOrdinal=1 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=1 kind=0 spot=6 arrivalStep=2 collectorOrdinal=0 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=2 kind=0 spot=33 arrivalStep=4 collectorOrdinal=1 legSteps=4 legFuel=2 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=2 kind=0 spot=19 arrivalStep=9 collectorOrdinal=2 legSteps=5 legFuel=4 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=1 kind=0 spot=19 arrivalStep=10 collectorOrdinal=1 legSteps=8 legFuel=4 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=0 kind=0 spot=19 arrivalStep=12 collectorOrdinal=2 legSteps=10 legFuel=6 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=2 kind=0 spot=10 arrivalStep=13 collectorOrdinal=3 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=1 kind=0 spot=10 arrivalStep=14 collectorOrdinal=2 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=0 kind=0 spot=3 arrivalStep=16 collectorOrdinal=3 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=1 kind=0 spot=33 arrivalStep=19 collectorOrdinal=3 legSteps=5 legFuel=4 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=0 kind=0 spot=33 arrivalStep=24 collectorOrdinal=4 legSteps=8 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=2 group=1 agent=2 kind=0 spot=47 arrivalStep=26 collectorOrdinal=4 legSteps=13 legFuel=8 commitment=FOLLOW_ON_INTENT
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_START day=2 remainingFutureDays=1 ownSemiBrands=3 ownSemiCollections=11 baselineOpponentCollections=14 residualOpponentCollections=12 netOpponentCollectionsRemoved=2 replacementCollections=2 residualObservedNow=2 residualDirect=3 residualFollowOn=7 projectedReplacementAwareMargin=-1 semiScore=35 minimumPatrolDistinctSpots=1 totalPatrolDistinctSpotCapacity=13 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=2 ownSemiBrands=3 ownSemiCollections=11 residualOpponentCollections=11 netOpponentCollectionsRemoved=3 replacementCollections=1 projectedReplacementAwareMargin=0 expanded=10
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=2 ownSemiBrands=3 ownSemiCollections=11 residualOpponentCollections=11 netOpponentCollectionsRemoved=3 replacementCollections=1 projectedReplacementAwareMargin=0 expanded=15
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=2 ownSemiBrands=3 ownSemiCollections=11 residualOpponentCollections=10 netOpponentCollectionsRemoved=4 replacementCollections=1 projectedReplacementAwareMargin=1 expanded=35
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=2 ownSemiBrands=3 ownSemiCollections=12 residualOpponentCollections=10 netOpponentCollectionsRemoved=4 replacementCollections=1 projectedReplacementAwareMargin=2 expanded=36
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_DONE day=2 remainingFutureDays=1 ownSemiBrands=3 ownSemiCollections=12 rawUdon=14 baselineOpponentCollections=14 residualOpponentCollections=10 netOpponentCollectionsRemoved=4 replacementCollections=1 residualObservedNow=2 residualDirect=3 residualFollowOn=5 projectedReplacementAwareMargin=2 semiScore=37 baselineRolloutEvents=18 residualRolloutEvents=12 maxBaselineCollectorCollections=5 maxResidualCollectorCollections=4 routeCostCacheEntries=488 pathfindingExecutions=8 minimumPatrolDistinctSpots=2 minimumPatrolDistinctBrands=1 totalPatrolDistinctSpotCapacity=10 totalPatrolDistinctBrandCapacity=7 expanded=64 completedPlans=65 improvements=4 strategiesDiscovered=21 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=7 maxStrategyExpansionCount=25 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=2 remainingFutureDays=1 patrolAgents=3 nextDayStepBudget=30 minimumPatrolDistinctSpots=2 minimumPatrolDistinctBrands=1 totalPatrolDistinctSpotCapacity=10 totalPatrolDistinctBrandCapacity=7 routeCostCacheEntries=488 pathfindingExecutions=8
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=2 agent=0 endPosition=49 endFuel=14 stationaryOpportunity=true maxDistinctSpots=6 maxDistinctBrands=4 bestRemainingFuel=0
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=2 agent=1 endPosition=47 endFuel=5 stationaryOpportunity=true maxDistinctSpots=2 maxDistinctBrands=1 bestRemainingFuel=4
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=2 agent=2 endPosition=33 endFuel=2 stationaryOpportunity=true maxDistinctSpots=2 maxDistinctBrands=2 bestRemainingFuel=0
+LOCAL_PLAN_VALID matchId=m-4278 day=2 mode=ReplacementAwareRelativeMarginPlanner
+ACTIONS_SUBMITTED matchId=m-4278 day=2
+ACTION_RESPONSE_POST_ADVANCE matchId=m-4278 submittedDay=2 responseDay=3
+UDON_OBSERVABILITY matchId=m-4278 day=2 predictedDayUdon=14 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-4278 day=2
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4278 day=3 agents=4
+PARITY_OBSERVED matchId=m-4278 day=2 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-4278 from=2 to=3
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=3 remainingFutureDays=0 patrolAgents=3 nextDayStepBudget=0 minimumPatrolDistinctSpots=0 minimumPatrolDistinctBrands=0 totalPatrolDistinctSpotCapacity=0 totalPatrolDistinctBrandCapacity=0 routeCostCacheEntries=0 pathfindingExecutions=0
+TEAM_REFUEL_HARVEST_HORIZON_ASSIGN day=3 refuelAgent=3 patrolAgent=2 currentSemiBrandDelta=0 currentSemiCollectionDelta=4 minimumSpotCapacityDelta=0 minimumBrandCapacityDelta=0 totalSpotCapacityDelta=0 totalBrandCapacityDelta=0 fuelRestored=58 arrivalStep=4
+TEAM_REFUEL_ASSIGN day=3 refuelAgent=3 patrolAgent=2 projectedBrandGain=0 projectedCollectionGain=5 arrivalStep=4
+TEAM_TARGET_SELECT day=3 iteration=1 agent=0 target=10 brand=numeric:3 teamNewBrand=true steps=8 fuel=7
+TEAM_TARGET_SELECT day=3 iteration=2 agent=2 target=47 brand=numeric:0 teamNewBrand=false steps=10 fuel=12
+TEAM_TARGET_SELECT day=3 iteration=3 agent=2 target=3 brand=numeric:3 teamNewBrand=false steps=12 fuel=10
+TEAM_TARGET_SELECT day=3 iteration=4 agent=0 target=6 brand=numeric:2 teamNewBrand=false steps=12 fuel=6
+TEAM_TARGET_SELECT day=3 iteration=5 agent=2 target=10 brand=numeric:3 teamNewBrand=false steps=4 fuel=2
+TEAM_PLAN_VALID day=3
+OPPONENT_FULL_DAY_BASELINE day=3 stepBudget=30 collectors=3 stockedSpots=8 baselineOpponentCollections=15 observedNow=2 directIntent=3 followOnIntent=10 strongCollections=5 maxCollectorCollections=6 rolloutEvents=16 routeCostCacheEntries=488 pathfindingExecutions=8
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=0 kind=0 spot=49 arrivalStep=0 collectorOrdinal=0 legSteps=0 legFuel=0 commitment=OBSERVED_NOW
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=2 kind=0 spot=38 arrivalStep=0 collectorOrdinal=0 legSteps=0 legFuel=0 commitment=OBSERVED_NOW
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=1 kind=0 spot=6 arrivalStep=2 collectorOrdinal=0 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=2 kind=0 spot=47 arrivalStep=2 collectorOrdinal=1 legSteps=2 legFuel=1 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=0 kind=0 spot=33 arrivalStep=4 collectorOrdinal=1 legSteps=4 legFuel=2 commitment=DIRECT_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=0 kind=0 spot=19 arrivalStep=8 collectorOrdinal=2 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=1 kind=0 spot=19 arrivalStep=10 collectorOrdinal=1 legSteps=8 legFuel=4 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=2 kind=0 spot=19 arrivalStep=10 collectorOrdinal=2 legSteps=8 legFuel=8 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=0 kind=0 spot=10 arrivalStep=12 collectorOrdinal=3 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=1 kind=0 spot=33 arrivalStep=14 collectorOrdinal=2 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=2 kind=0 spot=33 arrivalStep=14 collectorOrdinal=3 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=0 kind=0 spot=3 arrivalStep=16 collectorOrdinal=4 legSteps=4 legFuel=2 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=1 kind=0 spot=10 arrivalStep=18 collectorOrdinal=3 legSteps=4 legFuel=5 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=0 kind=0 spot=47 arrivalStep=28 collectorOrdinal=5 legSteps=12 legFuel=10 commitment=FOLLOW_ON_INTENT
+OPPONENT_FULL_DAY_ROUTE day=3 group=1 agent=1 kind=0 spot=47 arrivalStep=29 collectorOrdinal=4 legSteps=11 legFuel=11 commitment=FOLLOW_ON_INTENT
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_START day=3 remainingFutureDays=0 ownSemiBrands=4 ownSemiCollections=10 baselineOpponentCollections=15 residualOpponentCollections=12 netOpponentCollectionsRemoved=3 replacementCollections=0 residualObservedNow=2 residualDirect=3 residualFollowOn=7 projectedReplacementAwareMargin=-2 semiScore=33 minimumPatrolDistinctSpots=0 totalPatrolDistinctSpotCapacity=0 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_IMPROVEMENT day=3 ownSemiBrands=4 ownSemiCollections=10 residualOpponentCollections=11 netOpponentCollectionsRemoved=4 replacementCollections=0 projectedReplacementAwareMargin=-1 expanded=59
+ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_DONE day=3 remainingFutureDays=0 ownSemiBrands=4 ownSemiCollections=10 rawUdon=11 baselineOpponentCollections=15 residualOpponentCollections=11 netOpponentCollectionsRemoved=4 replacementCollections=0 residualObservedNow=2 residualDirect=3 residualFollowOn=6 projectedReplacementAwareMargin=-1 semiScore=32 baselineRolloutEvents=16 residualRolloutEvents=13 maxBaselineCollectorCollections=6 maxResidualCollectorCollections=5 routeCostCacheEntries=488 pathfindingExecutions=8 minimumPatrolDistinctSpots=0 minimumPatrolDistinctBrands=0 totalPatrolDistinctSpotCapacity=0 totalPatrolDistinctBrandCapacity=0 expanded=64 completedPlans=65 improvements=1 strategiesDiscovered=13 strategiesQualified=8 strategiesWithAtLeast2Expansions=9 strategiesWithAtLeast3Expansions=9 maxStrategyExpansionCount=12 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=25 budgetExhausted=true
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=3 remainingFutureDays=0 patrolAgents=3 nextDayStepBudget=0 minimumPatrolDistinctSpots=0 minimumPatrolDistinctBrands=0 totalPatrolDistinctSpotCapacity=0 totalPatrolDistinctBrandCapacity=0 routeCostCacheEntries=0 pathfindingExecutions=0
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=3 agent=0 endPosition=19 endFuel=51 stationaryOpportunity=false maxDistinctSpots=0 maxDistinctBrands=0 bestRemainingFuel=0
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=3 agent=1 endPosition=47 endFuel=5 stationaryOpportunity=false maxDistinctSpots=0 maxDistinctBrands=0 bestRemainingFuel=0
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=3 agent=2 endPosition=19 endFuel=36 stationaryOpportunity=false maxDistinctSpots=0 maxDistinctBrands=0 bestRemainingFuel=0
+LOCAL_PLAN_VALID matchId=m-4278 day=3 mode=ReplacementAwareRelativeMarginPlanner
+ACTIONS_SUBMITTED matchId=m-4278 day=3
+ACTION_RESPONSE_POST_ADVANCE matchId=m-4278 submittedDay=3 responseDay=4
+UDON_OBSERVABILITY matchId=m-4278 day=3 predictedDayUdon=11 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-4278 day=3
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_WAITING matchId=m-4278 httpStatus=425
+RESULT_RECEIVED matchId=m-4278 submittedDays=4
+FINAL matchId=m-4278 submittedDays=4 rateLimits=0 result={"protocol_version":"v0.1-draft","type":"match_result","match_id":"m-4278","standings":[{"rank":1,"team_id":"team-B","udon_types":4,"daily_types_sum":16,"udon_total":56,"response_ms_total":1124},{"rank":2,"team_id":"team-A","udon_types":4,"daily_types_sum":15,"udon_total":48,"response_ms_total":4836}]}

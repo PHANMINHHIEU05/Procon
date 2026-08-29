@@ -204,4 +204,92 @@ class RuntimeConfigTest {
 
         assertEquals(PlannerMode.ANYTIME_STRATIFIED_COMMITMENT_AWARE, config.plannerMode());
     }
+
+    @Test
+    void parsesAnytimeStratifiedSemiCommitmentAwareMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_semi_commitment_aware"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE, config.plannerMode());
+    }
+
+    @Test
+    void parsesAnytimeStratifiedSemiCommitmentHorizonAwareMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_semi_commitment_horizon_aware"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_SEMI_COMMITMENT_HORIZON_AWARE,
+                config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.HorizonAwareSemiCommitmentPlanner);
+    }
+
+    @Test
+    void parsesAnytimeStratifiedSemiCommitmentHarvestHorizonAwareMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE",
+                "anytime_stratified_semi_commitment_harvest_horizon_aware"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_SEMI_COMMITMENT_HARVEST_HORIZON_AWARE,
+                config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.HarvestHorizonAwareSemiCommitmentPlanner);
+    }
+
+    @Test
+    void parsesRelativeMarginAwareMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_relative_margin_aware"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE, config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.RelativeMarginAwarePlanner);
+    }
+
+    @Test
+    void parsesReplacementAwareRelativeMarginModeWithoutDisplacingTheM14Mode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_replacement_aware_relative_margin"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN,
+                config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.ReplacementAwareRelativeMarginPlanner);
+        assertTrue(MatchRuntime.plannerFor(
+                PlannerMode.ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE, false)
+                instanceof vn.ptit.procon.planner.RelativeMarginAwarePlanner);
+        assertThrows(IllegalArgumentException.class, () -> RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_replacement_aware")));
+    }
+
+    @Test
+    void parsesCoupledCompetitiveMarginModeWithoutDisplacingTheM15Mode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_coupled_competitive_margin"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN, config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.CoupledCompetitiveMarginPlanner);
+        assertTrue(MatchRuntime.plannerFor(
+                PlannerMode.ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN, false)
+                instanceof vn.ptit.procon.planner.ReplacementAwareRelativeMarginPlanner);
+        assertThrows(IllegalArgumentException.class, () -> RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_coupled_competitive")));
+    }
 }

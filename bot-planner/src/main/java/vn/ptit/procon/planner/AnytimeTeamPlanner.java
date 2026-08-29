@@ -38,6 +38,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
     private static final int MAX_CONTENTION_SPOT_DIAGNOSTICS = 8;
     private static final int MAX_CONTENTION_CANDIDATE_DIAGNOSTICS = 4;
     private static final int MAX_STRATEGY_DEPTH_DIAGNOSTICS = 8;
+    private static final int MAX_OPPONENT_FULL_DAY_ROUTE_DIAGNOSTICS = 24;
+    private static final int MAX_COUPLED_COMPETITIVE_EVENT_DIAGNOSTICS = 24;
 
     private static final Comparator<SearchState> ORIGINAL_STATE_PREFERENCE = Comparator
             .comparingInt((SearchState state) -> state.teamBrands.size()).reversed()
@@ -103,6 +105,21 @@ public final class AnytimeTeamPlanner implements DayPlanner {
     private static final Comparator<SearchState> SEMI_COMMITMENT_AWARE_STATE_PREFERENCE = Comparator
             .comparing(AnytimeTeamPlanner::semiCommitmentAwareFrontierMetrics,
                     SemiCommitmentAwareFrontierMetrics.preference());
+
+    // Partial states retain the unchanged M12.1 frontier tuple. The full terminal
+    // evaluation below is where geometric future readiness is applied.
+    private static final Comparator<SearchState> HORIZON_AWARE_STATE_PREFERENCE =
+            SEMI_COMMITMENT_AWARE_STATE_PREFERENCE;
+
+    // M14 keeps the same partial-state data and bounded frontier architecture, but protects
+    // own semi-realizable count above its soft score. Exact denial is evaluated on complete plans.
+    private static final Comparator<SearchState> RELATIVE_MARGIN_STATE_PREFERENCE = Comparator
+            .comparingInt((SearchState state) -> state.semiCommitment.realizableTeamBrands().size()).reversed()
+            .thenComparing(Comparator.comparingInt(
+                    (SearchState state) -> state.semiCommitment.realizableCollections()).reversed())
+            .thenComparing(Comparator.comparingInt(
+                    (SearchState state) -> state.semiCommitment.adjustedScore()).reversed())
+            .thenComparing(HORIZON_AWARE_STATE_PREFERENCE);
 
     private static final Comparator<RefuelSchedule> REFUEL_ROOT_PREFERENCE = Comparator
             .comparingInt(RefuelSchedule::currentFuel)
@@ -468,11 +485,21 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         this.validator = Objects.requireNonNull(validator, "Plan validator must not be null");
         this.simulator = Objects.requireNonNull(simulator, "Day simulator must not be null");
         this.teamCoordinator = teamCoordinator == null
-                ? new TeamCoordinatorPlanner(this.patrolRouteFinder, this.refuelRouteFinder, this.validator)
+                ? usesHarvestHorizon(policy)
+                        ? new HarvestHorizonAwareTeamCoordinatorPlanner(
+                                this.patrolRouteFinder, this.refuelRouteFinder, this.validator,
+                                contentionDiagnostics)
+                        : isHorizonAwarePolicy(policy)
+                        ? new HorizonAwareTeamCoordinatorPlanner(
+                                this.patrolRouteFinder, this.refuelRouteFinder, this.validator,
+                                contentionDiagnostics)
+                        : new TeamCoordinatorPlanner(
+                                this.patrolRouteFinder, this.refuelRouteFinder, this.validator)
                 : teamCoordinator;
         this.contentionFallback = (policy == AnytimeSearchPolicy.CONTENTION
                 || isArrivalPolicy(policy) || isIntentAwarePolicy(policy)
-                || isCommitmentAwarePolicy(policy) || isSemiCommitmentAwarePolicy(policy))
+                || isCommitmentAwarePolicy(policy) || isSemiCommitmentAwarePolicy(policy)
+                || isAnyHorizonAwarePolicy(policy))
                 ? new HarvestAnytimeTeamPlanner(config)
                 : null;
         this.riskAdjustmentWeights = Objects.requireNonNull(
@@ -512,8 +539,28 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         IntentAwareEvaluatedPlan intentAwareIncumbent = null;
         CommitmentAwareEvaluatedPlan commitmentIncumbent = null;
         SemiCommitmentAwareEvaluatedPlan semiCommitmentIncumbent = null;
+        HorizonAwareEvaluatedPlan horizonIncumbent = null;
+        HarvestHorizonAwareEvaluatedPlan harvestHorizonIncumbent = null;
+        RelativeMarginEvaluatedPlan relativeMarginIncumbent = null;
+        ReplacementAwareEvaluatedPlan replacementAwareIncumbent = null;
+        CoupledCompetitiveEvaluatedPlan coupledCompetitiveIncumbent = null;
         EvaluatedPlan incumbent = null;
-        if (isSemiCommitmentAwarePolicy()) {
+        if (isCoupledCompetitivePolicy()) {
+            coupledCompetitiveIncumbent = initialCoupledCompetitiveIncumbent(state, stats, context);
+            incumbent = coupledCompetitiveIncumbent.base();
+        } else if (isReplacementAwarePolicy()) {
+            replacementAwareIncumbent = initialReplacementAwareIncumbent(state, stats, context);
+            incumbent = replacementAwareIncumbent.base();
+        } else if (isRelativeMarginPolicy()) {
+            relativeMarginIncumbent = initialRelativeMarginIncumbent(state, stats, context);
+            incumbent = relativeMarginIncumbent.base();
+        } else if (isHarvestHorizonAwarePolicy()) {
+            harvestHorizonIncumbent = initialHarvestHorizonAwareIncumbent(state, stats, context);
+            incumbent = harvestHorizonIncumbent.base();
+        } else if (isHorizonAwarePolicy()) {
+            horizonIncumbent = initialHorizonAwareIncumbent(state, stats, context);
+            incumbent = horizonIncumbent.base();
+        } else if (isSemiCommitmentAwarePolicy()) {
             semiCommitmentIncumbent = initialSemiCommitmentAwareIncumbent(state, stats, context);
             incumbent = semiCommitmentIncumbent.base();
         } else if (isCommitmentAwarePolicy()) {
@@ -555,7 +602,120 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         if (isIntentAwarePolicy() && contentionDiagnostics) {
             logIntentForecast(state, context);
         }
-        if (isSemiCommitmentAwarePolicy()) {
+        if (isCoupledCompetitivePolicy()) {
+            CoupledCompetitiveMarginEvaluation start = coupledCompetitiveIncumbent.evaluation();
+            TeamNextDayHarvestCapacity capacity = start.nextDayHarvestCapacity();
+            logOpponentCoupledBaseline(state, context.coupledCompetitiveBaseline);
+            if (contentionDiagnostics) {
+                logCoupledCompetitiveEvents(state, start.coupled());
+            }
+            log(event("START"), "day", state.day().value(),
+                    "remainingFutureDays", capacity.remainingFutureDays(),
+                    "plannedOwnOpportunityEvents", start.plannedOwnOpportunityEvents(),
+                    "coupledOwnBrands", start.coupledOwnBrands(),
+                    "coupledOwnCollections", start.coupledOwnCollections(),
+                    "opponentBaselineCollections", start.opponentBaselineCollections(),
+                    "coupledOpponentCollections", start.coupledOpponentCollections(),
+                    "opponentCollectionsRemovedVsBaseline",
+                    start.opponentCollectionsRemovedVsBaseline(),
+                    "ownPlannedEventsInvalidatedByOpponent",
+                    start.ownPlannedEventsInvalidatedByOpponent(),
+                    "opponentReplacementCollections", start.opponentReplacementCollections(),
+                    "projectedCoupledMargin", start.projectedCoupledMargin(),
+                    "ownSemiBrands", start.ownSemiBrands(),
+                    "ownSemiCollections", start.ownSemiCollections(),
+                    "semiScore", start.semiScore(),
+                    "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                    "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                    "budget", config.maxExpandedStates(),
+                    "discoveryBudget", stratifiedSearchConfig.discoveryBudget(),
+                    "qualificationBudget", stratifiedSearchConfig.qualificationBudget(),
+                    "exploitationBudget", stratifiedSearchConfig.exploitationBudget());
+        } else if (isReplacementAwarePolicy()) {
+            ReplacementAwareRelativeMarginEvaluation start = replacementAwareIncumbent.evaluation();
+            TeamNextDayHarvestCapacity capacity = start.nextDayHarvestCapacity();
+            logOpponentFullDayBaseline(state, context.opponentFullDayBaseline);
+            if (contentionDiagnostics) {
+                logOpponentFullDayRoutes(state, context.opponentFullDayBaseline);
+            }
+            log(event("START"), "day", state.day().value(),
+                    "remainingFutureDays", capacity.remainingFutureDays(),
+                    "ownSemiBrands", start.ownSemiBrands(),
+                    "ownSemiCollections", start.ownSemiCollections(),
+                    "baselineOpponentCollections", start.baselineOpponentCollections(),
+                    "residualOpponentCollections", start.residualOpponentCollections(),
+                    "netOpponentCollectionsRemoved", start.netOpponentCollectionsRemoved(),
+                    "replacementCollections", start.replacementCollections(),
+                    "residualObservedNow", start.opponentFullDay().residualObservedNow(),
+                    "residualDirect", start.opponentFullDay().residualDirectIntent(),
+                    "residualFollowOn", start.opponentFullDay().residualFollowOnIntent(),
+                    "projectedReplacementAwareMargin", start.projectedReplacementAwareMargin(),
+                    "semiScore", start.semiScore(),
+                    "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                    "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                    "budget", config.maxExpandedStates(),
+                    "discoveryBudget", stratifiedSearchConfig.discoveryBudget(),
+                    "qualificationBudget", stratifiedSearchConfig.qualificationBudget(),
+                    "exploitationBudget", stratifiedSearchConfig.exploitationBudget());
+        } else if (isRelativeMarginPolicy()) {
+            RelativeMarginPlanEvaluation start = relativeMarginIncumbent.evaluation();
+            TeamNextDayHarvestCapacity capacity = start.nextDayHarvestCapacity();
+            if (contentionDiagnostics) {
+                logOpponentDenialBaseline(state, context.opponentClaimBaseline);
+            }
+            log(event("START"), "day", state.day().value(),
+                    "remainingFutureDays", capacity.remainingFutureDays(),
+                    "ownSemiBrands", start.ownSemiBrands(),
+                    "ownSemiCollections", start.ownSemiCollections(),
+                    "baselineStrongOpponentRealizable", start.opponentBaselineStrongRealizable(),
+                    "residualStrongOpponentRealizable", start.opponentResidualStrongRealizable(),
+                    "deniedObservedNow", start.opponentClaims().deniedObservedNow(),
+                    "deniedDirect", start.opponentClaims().deniedDirectIntent(),
+                    "deniedFollowOn", start.opponentClaims().deniedFollowOnIntent(),
+                    "strongDenied", start.strongDeniedOpponentCollections(),
+                    "projectedStrongRelativeSwing", start.projectedStrongRelativeSwing(),
+                    "semiScore", start.semiScore(),
+                    "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                    "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                    "budget", config.maxExpandedStates(),
+                    "discoveryBudget", stratifiedSearchConfig.discoveryBudget(),
+                    "qualificationBudget", stratifiedSearchConfig.qualificationBudget(),
+                    "exploitationBudget", stratifiedSearchConfig.exploitationBudget());
+        } else if (isHarvestHorizonAwarePolicy()) {
+            HarvestHorizonAwarePlanEvaluation start = harvestHorizonIncumbent.evaluation();
+            TeamNextDayHarvestCapacity capacity = start.nextDayHarvestCapacity();
+            log(event("START"), "day", state.day().value(),
+                    "remainingFutureDays", capacity.remainingFutureDays(),
+                    "semiBrands", start.semiCommitment().semiCommitmentRealizableBrandCount(),
+                    "semiScore", start.semiCommitment().adjustedCollectionScore().value(),
+                    "semiCollections", start.semiCommitment().semiCommitmentRealizableCollections(),
+                    "rawUdon", start.semiCommitment().base().udonTotal(),
+                    "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                    "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                    "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                    "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                    "budget", config.maxExpandedStates(),
+                    "discoveryBudget", stratifiedSearchConfig.discoveryBudget(),
+                    "qualificationBudget", stratifiedSearchConfig.qualificationBudget(),
+                    "exploitationBudget", stratifiedSearchConfig.exploitationBudget());
+        } else if (isHorizonAwarePolicy()) {
+            HorizonAwarePlanEvaluation start = horizonIncumbent.evaluation();
+            TeamFutureReadiness future = start.futureReadiness();
+            log(event("START"),
+                    "day", state.day().value(),
+                    "remainingFutureDays", future.remainingFutureDays(),
+                    "incumbentSemiBrands", start.semiCommitment().semiCommitmentRealizableBrandCount(),
+                    "incumbentSemiScore", start.semiCommitment().adjustedCollectionScore().value(),
+                    "incumbentSemiCollections", start.semiCommitment().semiCommitmentRealizableCollections(),
+                    "incumbentRawUdon", start.semiCommitment().base().udonTotal(),
+                    "incumbentFutureReadyPatrols", future.futureReadyPatrolCount(),
+                    "incumbentFutureReachableSpots", future.totalReachableOpportunitySpots(),
+                    "incumbentFutureReachableBrands", future.totalReachableOpportunityBrands(),
+                    "budget", config.maxExpandedStates(),
+                    "discoveryBudget", stratifiedSearchConfig.discoveryBudget(),
+                    "qualificationBudget", stratifiedSearchConfig.qualificationBudget(),
+                    "exploitationBudget", stratifiedSearchConfig.exploitationBudget());
+        } else if (isSemiCommitmentAwarePolicy()) {
             if (contentionDiagnostics) {
                 logSemiCommitmentForecast(state, context);
             }
@@ -725,7 +885,104 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 stats.expandedStates++;
                 TeamPlan complete = current.completePlan(context.state);
                 stats.completedPlans++;
-                if (isSemiCommitmentAwarePolicy()) {
+                if (isCoupledCompetitivePolicy()) {
+                    Optional<CoupledCompetitiveEvaluatedPlan> evaluated =
+                            evaluateCoupledCompetitive(context.state, complete, context);
+                    if (evaluated.isPresent()
+                            && evaluated.orElseThrow().evaluation().betterThan(
+                                    coupledCompetitiveIncumbent.evaluation())) {
+                        coupledCompetitiveIncumbent = evaluated.orElseThrow();
+                        incumbent = coupledCompetitiveIncumbent.base();
+                        stats.incumbentImprovements++;
+                        CoupledCompetitiveMarginEvaluation improved =
+                                coupledCompetitiveIncumbent.evaluation();
+                        log(event("IMPROVEMENT"), "day", state.day().value(),
+                                "coupledOwnBrands", improved.coupledOwnBrands(),
+                                "coupledOwnCollections", improved.coupledOwnCollections(),
+                                "coupledOpponentCollections", improved.coupledOpponentCollections(),
+                                "opponentCollectionsRemovedVsBaseline",
+                                improved.opponentCollectionsRemovedVsBaseline(),
+                                "ownPlannedEventsInvalidatedByOpponent",
+                                improved.ownPlannedEventsInvalidatedByOpponent(),
+                                "opponentReplacementCollections",
+                                improved.opponentReplacementCollections(),
+                                "projectedCoupledMargin", improved.projectedCoupledMargin(),
+                                "expanded", stats.expandedStates);
+                    }
+                } else if (isReplacementAwarePolicy()) {
+                    Optional<ReplacementAwareEvaluatedPlan> evaluated =
+                            evaluateReplacementAware(context.state, complete, context);
+                    if (evaluated.isPresent()
+                            && evaluated.orElseThrow().evaluation().betterThan(
+                                    replacementAwareIncumbent.evaluation())) {
+                        replacementAwareIncumbent = evaluated.orElseThrow();
+                        incumbent = replacementAwareIncumbent.base();
+                        stats.incumbentImprovements++;
+                        ReplacementAwareRelativeMarginEvaluation improved =
+                                replacementAwareIncumbent.evaluation();
+                        log(event("IMPROVEMENT"), "day", state.day().value(),
+                                "ownSemiBrands", improved.ownSemiBrands(),
+                                "ownSemiCollections", improved.ownSemiCollections(),
+                                "residualOpponentCollections", improved.residualOpponentCollections(),
+                                "netOpponentCollectionsRemoved", improved.netOpponentCollectionsRemoved(),
+                                "replacementCollections", improved.replacementCollections(),
+                                "projectedReplacementAwareMargin",
+                                improved.projectedReplacementAwareMargin(),
+                                "expanded", stats.expandedStates);
+                    }
+                } else if (isRelativeMarginPolicy()) {
+                    Optional<RelativeMarginEvaluatedPlan> evaluated =
+                            evaluateRelativeMargin(context.state, complete, context);
+                    if (evaluated.isPresent()
+                            && evaluated.orElseThrow().evaluation().betterThan(
+                                    relativeMarginIncumbent.evaluation())) {
+                        relativeMarginIncumbent = evaluated.orElseThrow();
+                        incumbent = relativeMarginIncumbent.base();
+                        stats.incumbentImprovements++;
+                        RelativeMarginPlanEvaluation improved = relativeMarginIncumbent.evaluation();
+                        log(event("IMPROVEMENT"), "day", state.day().value(),
+                                "ownSemiBrands", improved.ownSemiBrands(),
+                                "ownSemiCollections", improved.ownSemiCollections(),
+                                "strongDenied", improved.strongDeniedOpponentCollections(),
+                                "projectedStrongRelativeSwing", improved.projectedStrongRelativeSwing(),
+                                "expanded", stats.expandedStates);
+                    }
+                } else if (isHarvestHorizonAwarePolicy()) {
+                    Optional<HarvestHorizonAwareEvaluatedPlan> evaluated =
+                            evaluateHarvestHorizonAware(context.state, complete, context);
+                    if (evaluated.isPresent()
+                            && canReplaceHarvestHorizonIncumbent(
+                                    current, evaluated.orElseThrow(), harvestHorizonIncumbent)) {
+                        harvestHorizonIncumbent = evaluated.orElseThrow();
+                        incumbent = harvestHorizonIncumbent.base();
+                        stats.incumbentImprovements++;
+                        HarvestHorizonAwarePlanEvaluation improved = harvestHorizonIncumbent.evaluation();
+                        log(event("IMPROVEMENT"), "day", state.day().value(),
+                                "semiBrands", improved.semiCommitment().semiCommitmentRealizableBrandCount(),
+                                "semiScore", improved.semiCommitment().adjustedCollectionScore().value(),
+                                "semiCollections", improved.semiCommitment().semiCommitmentRealizableCollections(),
+                                "minimumPatrolDistinctSpots",
+                                improved.nextDayHarvestCapacity().minimumPatrolDistinctSpots(),
+                                "expanded", stats.expandedStates);
+                    }
+                } else if (isHorizonAwarePolicy()) {
+                    Optional<HorizonAwareEvaluatedPlan> evaluated =
+                            evaluateHorizonAware(context.state, complete, context);
+                    if (evaluated.isPresent()
+                            && evaluated.orElseThrow().evaluation().betterThan(horizonIncumbent.evaluation())) {
+                        horizonIncumbent = evaluated.orElseThrow();
+                        incumbent = horizonIncumbent.base();
+                        stats.incumbentImprovements++;
+                        HorizonAwarePlanEvaluation improved = horizonIncumbent.evaluation();
+                        log(event("IMPROVEMENT"),
+                                "day", state.day().value(),
+                                "semiBrands", improved.semiCommitment().semiCommitmentRealizableBrandCount(),
+                                "semiScore", improved.semiCommitment().adjustedCollectionScore().value(),
+                                "semiCollections", improved.semiCommitment().semiCommitmentRealizableCollections(),
+                                "futureReadyPatrols", improved.futureReadiness().futureReadyPatrolCount(),
+                                "expanded", stats.expandedStates);
+                    }
+                } else if (isSemiCommitmentAwarePolicy()) {
                     Optional<SemiCommitmentAwareEvaluatedPlan> evaluated =
                             evaluateSemiCommitmentAware(context.state, complete, context);
                     if (evaluated.isPresent() && currentStrategy != null) {
@@ -965,7 +1222,203 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 ? Optional.empty()
                 : Optional.of(stratifiedStats(
                         stratifiedFrontier, scheduler, diverseStats, budgetExhausted));
-        if (isSemiCommitmentAwarePolicy()) {
+        if (isCoupledCompetitivePolicy()) {
+            CoupledCompetitiveMarginEvaluation evaluation = coupledCompetitiveIncumbent.evaluation();
+            TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+            CoupledCompetitiveRolloutResult coupled = evaluation.coupled();
+            CoupledCompetitiveBaseline coupledBaseline = context.coupledCompetitiveBaseline;
+            StratifiedSearchStats depth = stratifiedSearchStats.orElseThrow();
+            log(event("DONE"), "day", state.day().value(),
+                    "remainingFutureDays", capacity.remainingFutureDays(),
+                    "plannedOwnOpportunityEvents", evaluation.plannedOwnOpportunityEvents(),
+                    "coupledOwnBrands", evaluation.coupledOwnBrands(),
+                    "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                    "rawUdon", evaluation.semiCommitment().base().udonTotal(),
+                    "opponentBaselineCollections", evaluation.opponentBaselineCollections(),
+                    "coupledOpponentCollections", evaluation.coupledOpponentCollections(),
+                    "opponentCollectionsRemovedVsBaseline",
+                    evaluation.opponentCollectionsRemovedVsBaseline(),
+                    "ownPlannedEventsInvalidatedByOpponent",
+                    evaluation.ownPlannedEventsInvalidatedByOpponent(),
+                    "ownPlannedEventsExhaustedByOwnTeam",
+                    coupled.ownPlannedEventsExhaustedByOwnTeam(),
+                    "opponentReplacementCollections", evaluation.opponentReplacementCollections(),
+                    "coupledObservedNow", coupled.coupledObservedNow(),
+                    "coupledDirect", coupled.coupledDirectIntent(),
+                    "coupledFollowOn", coupled.coupledFollowOnIntent(),
+                    "equalStepContests", coupled.equalStepContests(),
+                    "projectedCoupledMargin", evaluation.projectedCoupledMargin(),
+                    "ownSemiBrands", evaluation.ownSemiBrands(),
+                    "ownSemiCollections", evaluation.ownSemiCollections(),
+                    "semiScore", evaluation.semiScore(),
+                    "baselineRolloutEvents", coupledBaseline.rolloutEvents(),
+                    "coupledRolloutEvents", coupled.rolloutEvents(),
+                    "maxBaselineCollectorCollections", coupledBaseline.maxCollectorCollections(),
+                    "maxCoupledCollectorCollections", coupled.maxCollectorCollections(),
+                    "routeCostCacheEntries", coupledBaseline.routeCostCacheEntries(),
+                    "pathfindingExecutions", coupledBaseline.pathfindingExecutions(),
+                    "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                    "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                    "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                    "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                    "expanded", finalStats.expandedStates(), "completedPlans", finalStats.completedPlans(),
+                    "improvements", finalStats.incumbentImprovements(),
+                    "strategiesDiscovered", depth.strategiesDiscovered(),
+                    "strategiesQualified", depth.strategiesQualified(),
+                    "strategiesWithAtLeast2Expansions", depth.strategiesWithAtLeast2Expansions(),
+                    "strategiesWithAtLeast3Expansions", depth.strategiesWithAtLeast3Expansions(),
+                    "maxStrategyExpansionCount", depth.maxStrategyExpansionCount(),
+                    "discoveryExpansions", depth.discoveryExpansions(),
+                    "qualificationExpansions", depth.qualificationExpansions(),
+                    "exploitationExpansions", depth.exploitationExpansions(),
+                    "frontierPeak", depth.frontierPeak(), "budgetExhausted", finalStats.budgetExhausted());
+            if (contentionDiagnostics) {
+                logCoupledCompetitiveEvents(state, coupled);
+                logHarvestCapacity(state, capacity);
+            }
+        } else if (isReplacementAwarePolicy()) {
+            ReplacementAwareRelativeMarginEvaluation evaluation =
+                    replacementAwareIncumbent.evaluation();
+            TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+            OpponentFullDayResidualEvaluation residual = evaluation.opponentFullDay();
+            OpponentFullDayBaseline baseline = context.opponentFullDayBaseline;
+            StratifiedSearchStats depth = stratifiedSearchStats.orElseThrow();
+            log(event("DONE"), "day", state.day().value(),
+                    "remainingFutureDays", capacity.remainingFutureDays(),
+                    "ownSemiBrands", evaluation.ownSemiBrands(),
+                    "ownSemiCollections", evaluation.ownSemiCollections(),
+                    "rawUdon", evaluation.semiCommitment().base().udonTotal(),
+                    "baselineOpponentCollections", evaluation.baselineOpponentCollections(),
+                    "residualOpponentCollections", evaluation.residualOpponentCollections(),
+                    "netOpponentCollectionsRemoved", evaluation.netOpponentCollectionsRemoved(),
+                    "replacementCollections", evaluation.replacementCollections(),
+                    "residualObservedNow", residual.residualObservedNow(),
+                    "residualDirect", residual.residualDirectIntent(),
+                    "residualFollowOn", residual.residualFollowOnIntent(),
+                    "projectedReplacementAwareMargin", evaluation.projectedReplacementAwareMargin(),
+                    "semiScore", evaluation.semiScore(),
+                    "baselineRolloutEvents", baseline.rolloutEvents(),
+                    "residualRolloutEvents", residual.rolloutEvents(),
+                    "maxBaselineCollectorCollections", baseline.maxCollectorCollections(),
+                    "maxResidualCollectorCollections", residual.maxCollectorCollections(),
+                    "routeCostCacheEntries", baseline.routeCostCacheEntries(),
+                    "pathfindingExecutions", baseline.pathfindingExecutions(),
+                    "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                    "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                    "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                    "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                    "expanded", finalStats.expandedStates(), "completedPlans", finalStats.completedPlans(),
+                    "improvements", finalStats.incumbentImprovements(),
+                    "strategiesDiscovered", depth.strategiesDiscovered(),
+                    "strategiesQualified", depth.strategiesQualified(),
+                    "strategiesWithAtLeast2Expansions", depth.strategiesWithAtLeast2Expansions(),
+                    "strategiesWithAtLeast3Expansions", depth.strategiesWithAtLeast3Expansions(),
+                    "maxStrategyExpansionCount", depth.maxStrategyExpansionCount(),
+                    "discoveryExpansions", depth.discoveryExpansions(),
+                    "qualificationExpansions", depth.qualificationExpansions(),
+                    "exploitationExpansions", depth.exploitationExpansions(),
+                    "frontierPeak", depth.frontierPeak(), "budgetExhausted", finalStats.budgetExhausted());
+            if (contentionDiagnostics) {
+                logHarvestCapacity(state, capacity);
+            }
+        } else if (isRelativeMarginPolicy()) {
+            RelativeMarginPlanEvaluation evaluation = relativeMarginIncumbent.evaluation();
+            TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+            OpponentResidualClaimEvaluation denial = evaluation.opponentClaims();
+            StratifiedSearchStats depth = stratifiedSearchStats.orElseThrow();
+            log(event("DONE"), "day", state.day().value(),
+                    "remainingFutureDays", capacity.remainingFutureDays(),
+                    "ownSemiBrands", evaluation.ownSemiBrands(),
+                    "ownSemiCollections", evaluation.ownSemiCollections(),
+                    "rawUdon", evaluation.semiCommitment().base().udonTotal(),
+                    "opponentBaselineStrongRealizable", evaluation.opponentBaselineStrongRealizable(),
+                    "opponentResidualStrongRealizable", evaluation.opponentResidualStrongRealizable(),
+                    "deniedObservedNow", denial.deniedObservedNow(),
+                    "deniedDirect", denial.deniedDirectIntent(),
+                    "deniedFollowOn", denial.deniedFollowOnIntent(),
+                    "strongDeniedOpponentCollections", evaluation.strongDeniedOpponentCollections(),
+                    "projectedStrongRelativeSwing", evaluation.projectedStrongRelativeSwing(),
+                    "semiScore", evaluation.semiScore(),
+                    "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                    "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                    "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                    "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                    "expanded", finalStats.expandedStates(), "completedPlans", finalStats.completedPlans(),
+                    "improvements", finalStats.incumbentImprovements(),
+                    "strategiesDiscovered", depth.strategiesDiscovered(),
+                    "strategiesQualified", depth.strategiesQualified(),
+                    "strategiesWithAtLeast2Expansions", depth.strategiesWithAtLeast2Expansions(),
+                    "strategiesWithAtLeast3Expansions", depth.strategiesWithAtLeast3Expansions(),
+                    "maxStrategyExpansionCount", depth.maxStrategyExpansionCount(),
+                    "discoveryExpansions", depth.discoveryExpansions(),
+                    "qualificationExpansions", depth.qualificationExpansions(),
+                    "exploitationExpansions", depth.exploitationExpansions(),
+                    "frontierPeak", depth.frontierPeak(), "budgetExhausted", finalStats.budgetExhausted());
+            if (contentionDiagnostics) {
+                logHarvestCapacity(state, capacity);
+            }
+        } else if (isHarvestHorizonAwarePolicy()) {
+            HarvestHorizonAwarePlanEvaluation evaluation = harvestHorizonIncumbent.evaluation();
+            TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+            StratifiedSearchStats depth = stratifiedSearchStats.orElseThrow();
+            log(event("DONE"), "day", state.day().value(),
+                    "remainingFutureDays", capacity.remainingFutureDays(),
+                    "semiBrands", evaluation.semiCommitment().semiCommitmentRealizableBrandCount(),
+                    "semiScore", evaluation.semiCommitment().adjustedCollectionScore().value(),
+                    "semiCollections", evaluation.semiCommitment().semiCommitmentRealizableCollections(),
+                    "rawUdon", evaluation.semiCommitment().base().udonTotal(),
+                    "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                    "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                    "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                    "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                    "expanded", finalStats.expandedStates(), "completedPlans", finalStats.completedPlans(),
+                    "improvements", finalStats.incumbentImprovements(),
+                    "strategiesDiscovered", depth.strategiesDiscovered(),
+                    "strategiesQualified", depth.strategiesQualified(),
+                    "strategiesWithAtLeast2Expansions", depth.strategiesWithAtLeast2Expansions(),
+                    "strategiesWithAtLeast3Expansions", depth.strategiesWithAtLeast3Expansions(),
+                    "maxStrategyExpansionCount", depth.maxStrategyExpansionCount(),
+                    "discoveryExpansions", depth.discoveryExpansions(),
+                    "qualificationExpansions", depth.qualificationExpansions(),
+                    "exploitationExpansions", depth.exploitationExpansions(),
+                    "frontierPeak", depth.frontierPeak(), "budgetExhausted", finalStats.budgetExhausted());
+            if (contentionDiagnostics) {
+                logHarvestCapacity(state, capacity);
+            }
+        } else if (isHorizonAwarePolicy()) {
+            HorizonAwarePlanEvaluation evaluation = horizonIncumbent.evaluation();
+            SemiCommitmentAwarePlanEvaluation semi = evaluation.semiCommitment();
+            TeamFutureReadiness future = evaluation.futureReadiness();
+            StratifiedSearchStats depth = stratifiedSearchStats.orElseThrow();
+            log(event("DONE"),
+                    "day", state.day().value(),
+                    "remainingFutureDays", future.remainingFutureDays(),
+                    "semiBrands", semi.semiCommitmentRealizableBrandCount(),
+                    "semiScore", semi.adjustedCollectionScore().value(),
+                    "semiCollections", semi.semiCommitmentRealizableCollections(),
+                    "rawUdon", semi.base().udonTotal(),
+                    "projectedFinalPatrolFuel", future.totalProjectedPatrolFuel(),
+                    "futureReadyPatrols", future.futureReadyPatrolCount(),
+                    "futureReachableSpots", future.totalReachableOpportunitySpots(),
+                    "futureReachableBrands", future.totalReachableOpportunityBrands(),
+                    "minimumPatrolReadiness", future.minimumPatrolReadiness(),
+                    "expanded", finalStats.expandedStates(),
+                    "completedPlans", finalStats.completedPlans(),
+                    "improvements", finalStats.incumbentImprovements(),
+                    "strategiesDiscovered", depth.strategiesDiscovered(),
+                    "strategiesQualified", depth.strategiesQualified(),
+                    "strategiesWithAtLeast2Expansions", depth.strategiesWithAtLeast2Expansions(),
+                    "strategiesWithAtLeast3Expansions", depth.strategiesWithAtLeast3Expansions(),
+                    "maxStrategyExpansionCount", depth.maxStrategyExpansionCount(),
+                    "discoveryExpansions", depth.discoveryExpansions(),
+                    "qualificationExpansions", depth.qualificationExpansions(),
+                    "exploitationExpansions", depth.exploitationExpansions(),
+                    "frontierPeak", depth.frontierPeak(),
+                    "budgetExhausted", finalStats.budgetExhausted());
+            if (contentionDiagnostics) {
+                logHorizonReadiness(state, future);
+            }
+        } else if (isSemiCommitmentAwarePolicy()) {
             SemiCommitmentAwarePlanEvaluation evaluation = semiCommitmentIncumbent.evaluation();
             StratifiedSearchStats depth = stratifiedSearchStats.orElseThrow();
             log(event("DONE"),
@@ -1225,10 +1678,26 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 isSemiCommitmentAwarePolicy()
                         ? Optional.of(semiCommitmentIncumbent.evaluation())
                         : Optional.empty();
+        Optional<HorizonAwarePlanEvaluation> horizonAwareEvaluation = isHorizonAwarePolicy()
+                ? Optional.of(horizonIncumbent.evaluation()) : Optional.empty();
+        Optional<HarvestHorizonAwarePlanEvaluation> harvestHorizonAwareEvaluation =
+                isHarvestHorizonAwarePolicy()
+                        ? Optional.of(harvestHorizonIncumbent.evaluation()) : Optional.empty();
+        Optional<RelativeMarginPlanEvaluation> relativeMarginEvaluation =
+                isRelativeMarginPolicy()
+                        ? Optional.of(relativeMarginIncumbent.evaluation()) : Optional.empty();
+        Optional<ReplacementAwareRelativeMarginEvaluation> replacementAwareEvaluation =
+                isReplacementAwarePolicy()
+                        ? Optional.of(replacementAwareIncumbent.evaluation()) : Optional.empty();
+        Optional<CoupledCompetitiveMarginEvaluation> coupledCompetitiveEvaluation =
+                isCoupledCompetitivePolicy()
+                        ? Optional.of(coupledCompetitiveIncumbent.evaluation()) : Optional.empty();
         return new AnytimePlanResult(
                 incumbent.plan, incumbent.evaluation, finalStats,
                 riskAdjustedEvaluation, intentAwareEvaluation, diverseSearchStats,
-                stratifiedSearchStats, commitmentAwareEvaluation, semiCommitmentAwareEvaluation);
+                stratifiedSearchStats, commitmentAwareEvaluation, semiCommitmentAwareEvaluation,
+                horizonAwareEvaluation, harvestHorizonAwareEvaluation, relativeMarginEvaluation,
+                replacementAwareEvaluation, coupledCompetitiveEvaluation);
     }
 
     /**
@@ -1344,6 +1813,17 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 "followOnIntentClaims", forecast.followOnIntentClaims(),
                 "hardConsumedPortions", forecast.hardConsumedPortions(),
                 "stockedSpots", forecast.stockedSpotCount());
+    }
+
+    private void logOpponentDenialBaseline(DayState state, OpponentClaimBaseline baseline) {
+        log("OPPONENT_DENIAL_BASELINE",
+                "day", state.day().value(),
+                "forecastClaims", baseline.forecastClaims(),
+                "baselineObservedNowRealizable", baseline.observedNowRealizable(),
+                "baselineDirectRealizable", baseline.directIntentRealizable(),
+                "baselineFollowOnRealizable", baseline.followOnIntentRealizable(),
+                "baselineStrongRealizable", baseline.strongRealizable(),
+                "stockedSpots", baseline.stockedSpots());
     }
 
     /**
@@ -1605,6 +2085,79 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         return Optional.of(new SemiCommitmentAwareEvaluatedPlan(plan, evaluation, base));
     }
 
+    private Optional<HorizonAwareEvaluatedPlan> evaluateHorizonAware(
+            DayState state, TeamPlan plan, SearchContext context) {
+        Optional<SemiCommitmentAwareEvaluatedPlan> semi =
+                evaluateSemiCommitmentAware(state, plan, context);
+        if (semi.isEmpty()) {
+            return Optional.empty();
+        }
+        DaySimulationResult simulation = simulator.simulate(state, plan);
+        if (!(simulation instanceof ValidDaySimulationResult valid)) {
+            return Optional.empty();
+        }
+        SemiCommitmentAwareEvaluatedPlan current = semi.orElseThrow();
+        HorizonAwarePlanEvaluation evaluation = new HorizonAwarePlanEvaluation(
+                current.evaluation(), context.futureReadinessCalculator.evaluate(valid));
+        return Optional.of(new HorizonAwareEvaluatedPlan(plan, evaluation, current.base()));
+    }
+
+    private Optional<HarvestHorizonAwareEvaluatedPlan> evaluateHarvestHorizonAware(
+            DayState state, TeamPlan plan, SearchContext context) {
+        Optional<SemiCommitmentAwareEvaluatedPlan> semi =
+                evaluateSemiCommitmentAware(state, plan, context);
+        if (semi.isEmpty()) {
+            return Optional.empty();
+        }
+        DaySimulationResult simulation = simulator.simulate(state, plan);
+        if (!(simulation instanceof ValidDaySimulationResult valid)) {
+            return Optional.empty();
+        }
+        SemiCommitmentAwareEvaluatedPlan current = semi.orElseThrow();
+        HarvestHorizonAwarePlanEvaluation evaluation = new HarvestHorizonAwarePlanEvaluation(
+                current.evaluation(), context.nextDayHarvestCapacityCalculator.evaluate(valid));
+        return Optional.of(new HarvestHorizonAwareEvaluatedPlan(plan, evaluation, current.base()));
+    }
+
+    private Optional<RelativeMarginEvaluatedPlan> evaluateRelativeMargin(
+            DayState state, TeamPlan plan, SearchContext context) {
+        if (!validator.validate(state, plan).valid()) {
+            return Optional.empty();
+        }
+        DaySimulationResult simulation = simulator.simulate(state, plan);
+        if (!(simulation instanceof ValidDaySimulationResult valid)) {
+            return Optional.empty();
+        }
+        EvaluatedPlan base = new EvaluatedPlan(plan, baseEvaluation(state, plan, valid));
+        SemiCommitmentCollectionAttribution attribution = context.semiCommitmentEvaluator.evaluate(
+                state, valid, context.semiCommitmentForecast.commitment(),
+                semiCommitmentAdjustmentWeights);
+        SemiCommitmentAwarePlanEvaluation semi = semiEvaluation(base.evaluation(), attribution);
+        OpponentResidualClaimEvaluation denial = context.opponentDenialEvaluator.evaluate(
+                state, context.opponentClaimBaseline, valid, attribution);
+        RelativeMarginPlanEvaluation evaluation = new RelativeMarginPlanEvaluation(
+                semi, denial,
+                context.nextDayHarvestCapacityCalculator.evaluate(valid));
+        return Optional.of(new RelativeMarginEvaluatedPlan(plan, evaluation, base));
+    }
+
+    private SemiCommitmentAwarePlanEvaluation semiEvaluation(
+            PlanEvaluation base, SemiCommitmentCollectionAttribution attribution) {
+        return new SemiCommitmentAwarePlanEvaluation(
+                base,
+                attribution.adjustedScore(),
+                attribution.semiCommitmentRealizableBrands().size(),
+                attribution.semiCommitmentRealizableCollections(),
+                attribution.commitmentRealizableCollections(),
+                attribution.oldForecastRealizableCollections(),
+                attribution.hardClaimedFirstCollections(),
+                attribution.semiClaimedFirstCollections(),
+                attribution.directIntentBeforeCollections(),
+                attribution.followOnIntentBeforeCollections(),
+                attribution.tieCollections(),
+                attribution.unforecastedCollections());
+    }
+
     private ArrivalEvaluatedPlan initialArrivalIncumbent(
             DayState state, MutableStats stats, SearchContext context) {
         TeamPlan m7Plan;
@@ -1719,6 +2272,160 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         return safe.orElseThrow();
     }
 
+    private HorizonAwareEvaluatedPlan initialHorizonAwareIncumbent(
+            DayState state, MutableStats stats, SearchContext context) {
+        TeamPlan fallback;
+        try {
+            fallback = teamCoordinator.plan(state);
+        } catch (RuntimeException exception) {
+            fallback = SafePlanFactory.waitAll(state);
+        }
+        stats.completedPlans++;
+        Optional<HorizonAwareEvaluatedPlan> evaluated = evaluateHorizonAware(state, fallback, context);
+        if (evaluated.isPresent()) {
+            return evaluated.orElseThrow();
+        }
+        TeamPlan waitAll = SafePlanFactory.waitAll(state);
+        stats.completedPlans++;
+        return evaluateHorizonAware(state, waitAll, context).orElseThrow(() ->
+                new IllegalStateException("Validated all-WAIT incumbent could not be simulated"));
+    }
+
+    private HarvestHorizonAwareEvaluatedPlan initialHarvestHorizonAwareIncumbent(
+            DayState state, MutableStats stats, SearchContext context) {
+        TeamPlan fallback;
+        try {
+            fallback = teamCoordinator.plan(state);
+        } catch (RuntimeException exception) {
+            fallback = SafePlanFactory.waitAll(state);
+        }
+        stats.completedPlans++;
+        Optional<HarvestHorizonAwareEvaluatedPlan> evaluated =
+                evaluateHarvestHorizonAware(state, fallback, context);
+        if (evaluated.isPresent()) {
+            return evaluated.orElseThrow();
+        }
+        TeamPlan waitAll = SafePlanFactory.waitAll(state);
+        stats.completedPlans++;
+        return evaluateHarvestHorizonAware(state, waitAll, context).orElseThrow(() ->
+                new IllegalStateException("Validated all-WAIT incumbent could not be simulated"));
+    }
+
+    private RelativeMarginEvaluatedPlan initialRelativeMarginIncumbent(
+            DayState state, MutableStats stats, SearchContext context) {
+        TeamPlan fallback;
+        try {
+            fallback = teamCoordinator.plan(state);
+        } catch (RuntimeException exception) {
+            fallback = SafePlanFactory.waitAll(state);
+        }
+        stats.completedPlans++;
+        Optional<RelativeMarginEvaluatedPlan> evaluated = evaluateRelativeMargin(state, fallback, context);
+        if (evaluated.isPresent()) {
+            return evaluated.orElseThrow();
+        }
+        TeamPlan waitAll = SafePlanFactory.waitAll(state);
+        stats.completedPlans++;
+        return evaluateRelativeMargin(state, waitAll, context).orElseThrow(() ->
+                new IllegalStateException("Validated all-WAIT incumbent could not be simulated"));
+    }
+
+    /**
+     * M15: the same M12.1 attribution, then one residual full-day opponent rollout against the
+     * immutable baseline that {@link SearchContext} computed once for this planning run.
+     */
+    private Optional<ReplacementAwareEvaluatedPlan> evaluateReplacementAware(
+            DayState state, TeamPlan plan, SearchContext context) {
+        if (!validator.validate(state, plan).valid()) {
+            return Optional.empty();
+        }
+        DaySimulationResult simulation = simulator.simulate(state, plan);
+        if (!(simulation instanceof ValidDaySimulationResult valid)) {
+            return Optional.empty();
+        }
+        EvaluatedPlan base = new EvaluatedPlan(plan, baseEvaluation(state, plan, valid));
+        SemiCommitmentCollectionAttribution attribution = context.semiCommitmentEvaluator.evaluate(
+                state, valid, context.semiCommitmentForecast.commitment(),
+                semiCommitmentAdjustmentWeights);
+        SemiCommitmentAwarePlanEvaluation semi = semiEvaluation(base.evaluation(), attribution);
+        OpponentFullDayResidualEvaluation residual = context.fullDayOpponentRollout.evaluate(
+                context.opponentFullDayBaseline, valid, attribution);
+        ReplacementAwareRelativeMarginEvaluation evaluation =
+                new ReplacementAwareRelativeMarginEvaluation(
+                        semi, residual, context.nextDayHarvestCapacityCalculator.evaluate(valid));
+        return Optional.of(new ReplacementAwareEvaluatedPlan(plan, evaluation, base));
+    }
+
+    private ReplacementAwareEvaluatedPlan initialReplacementAwareIncumbent(
+            DayState state, MutableStats stats, SearchContext context) {
+        TeamPlan fallback;
+        try {
+            fallback = teamCoordinator.plan(state);
+        } catch (RuntimeException exception) {
+            fallback = SafePlanFactory.waitAll(state);
+        }
+        stats.completedPlans++;
+        Optional<ReplacementAwareEvaluatedPlan> evaluated =
+                evaluateReplacementAware(state, fallback, context);
+        if (evaluated.isPresent()) {
+            return evaluated.orElseThrow();
+        }
+        TeamPlan waitAll = SafePlanFactory.waitAll(state);
+        stats.completedPlans++;
+        return evaluateReplacementAware(state, waitAll, context).orElseThrow(() ->
+                new IllegalStateException("Validated all-WAIT incumbent could not be simulated"));
+    }
+
+    /**
+     * M16: the same unchanged M12.1 attribution for risk and diagnostics, then ONE coupled
+     * competitive rollout of the plan's fixed PATROL arrivals against the immutable no-own-plan
+     * baseline that {@link SearchContext} computed once for this planning run.
+     *
+     * <p>The M12.1 semi-realizable collections are deliberately NOT injected as guaranteed stock
+     * removals. They stay a risk signal at ordering key 7; the authoritative own quantities come from
+     * the shared timeline.</p>
+     */
+    private Optional<CoupledCompetitiveEvaluatedPlan> evaluateCoupledCompetitive(
+            DayState state, TeamPlan plan, SearchContext context) {
+        if (!validator.validate(state, plan).valid()) {
+            return Optional.empty();
+        }
+        DaySimulationResult simulation = simulator.simulate(state, plan);
+        if (!(simulation instanceof ValidDaySimulationResult valid)) {
+            return Optional.empty();
+        }
+        EvaluatedPlan base = new EvaluatedPlan(plan, baseEvaluation(state, plan, valid));
+        SemiCommitmentCollectionAttribution attribution = context.semiCommitmentEvaluator.evaluate(
+                state, valid, context.semiCommitmentForecast.commitment(),
+                semiCommitmentAdjustmentWeights);
+        SemiCommitmentAwarePlanEvaluation semi = semiEvaluation(base.evaluation(), attribution);
+        CoupledCompetitiveRolloutResult coupled = context.coupledCompetitiveRollout.evaluate(
+                context.coupledCompetitiveBaseline, valid);
+        CoupledCompetitiveMarginEvaluation evaluation = new CoupledCompetitiveMarginEvaluation(
+                semi, coupled, context.nextDayHarvestCapacityCalculator.evaluate(valid));
+        return Optional.of(new CoupledCompetitiveEvaluatedPlan(plan, evaluation, base));
+    }
+
+    private CoupledCompetitiveEvaluatedPlan initialCoupledCompetitiveIncumbent(
+            DayState state, MutableStats stats, SearchContext context) {
+        TeamPlan fallback;
+        try {
+            fallback = teamCoordinator.plan(state);
+        } catch (RuntimeException exception) {
+            fallback = SafePlanFactory.waitAll(state);
+        }
+        stats.completedPlans++;
+        Optional<CoupledCompetitiveEvaluatedPlan> evaluated =
+                evaluateCoupledCompetitive(state, fallback, context);
+        if (evaluated.isPresent()) {
+            return evaluated.orElseThrow();
+        }
+        TeamPlan waitAll = SafePlanFactory.waitAll(state);
+        stats.completedPlans++;
+        return evaluateCoupledCompetitive(state, waitAll, context).orElseThrow(() ->
+                new IllegalStateException("Validated all-WAIT incumbent could not be simulated"));
+    }
+
     private boolean canReplaceArrivalIncumbent(
             SearchState state,
             ArrivalEvaluatedPlan candidate,
@@ -1738,6 +2445,38 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             RiskAdjustedEvaluatedPlan candidate,
             RiskAdjustedEvaluatedPlan incumbent) {
         return candidate.evaluation().betterThan(incumbent.evaluation());
+    }
+
+    /**
+     * M13.1-only fuel-only guard. A REFUEL-root challenger cannot win when every objective key
+     * before final PATROL fuel is identical; otherwise the ordinary sixteen-key comparator decides.
+     */
+    private boolean canReplaceHarvestHorizonIncumbent(
+            SearchState state,
+            HarvestHorizonAwareEvaluatedPlan candidate,
+            HarvestHorizonAwareEvaluatedPlan incumbent) {
+        HarvestHorizonAwarePlanEvaluation next = candidate.evaluation();
+        HarvestHorizonAwarePlanEvaluation current = incumbent.evaluation();
+        if (!next.betterThan(current)) {
+            return false;
+        }
+        if (state.refuelSchedule.isEmpty()) {
+            return true;
+        }
+        SemiCommitmentAwarePlanEvaluation a = next.semiCommitment();
+        SemiCommitmentAwarePlanEvaluation b = current.semiCommitment();
+        return a.semiCommitmentRealizableBrandCount() != b.semiCommitmentRealizableBrandCount()
+                || a.semiCommitmentRealizableCollections() != b.semiCommitmentRealizableCollections()
+                || TeamNextDayHarvestCapacity.compareStructural(
+                        next.nextDayHarvestCapacity(), current.nextDayHarvestCapacity()) != 0
+                || a.adjustedCollectionScore().value() != b.adjustedCollectionScore().value()
+                || a.base().udonTotal() != b.base().udonTotal()
+                || a.base().teamBrandCount() != b.base().teamBrandCount()
+                || a.hardClaimedFirstCollections() != b.hardClaimedFirstCollections()
+                || a.semiClaimedFirstCollections() != b.semiClaimedFirstCollections()
+                || a.directIntentBeforeCollections() != b.directIntentBeforeCollections()
+                || a.tieCollections() != b.tieCollections()
+                || a.followOnIntentBeforeCollections() != b.followOnIntentBeforeCollections();
     }
 
     private ContentionAttribution finalContentionAttribution(
@@ -1801,10 +2540,67 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         return isSemiCommitmentAwarePolicy(policy);
     }
 
+    private static boolean isHorizonAwarePolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_SEMI_COMMITMENT_HORIZON_AWARE;
+    }
+
+    private boolean isHorizonAwarePolicy() {
+        return isHorizonAwarePolicy(policy);
+    }
+
+    private static boolean isHarvestHorizonAwarePolicy(AnytimeSearchPolicy policy) {
+        return policy
+                == AnytimeSearchPolicy.ANYTIME_STRATIFIED_SEMI_COMMITMENT_HARVEST_HORIZON_AWARE;
+    }
+
+    private static boolean isRelativeMarginPolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE;
+    }
+
+    private boolean isRelativeMarginPolicy() {
+        return isRelativeMarginPolicy(policy);
+    }
+
+    /** M15 only: the full-day replacement-aware opponent objective. M14 stays exactly as shipped. */
+    private static boolean isReplacementAwarePolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN;
+    }
+
+    private boolean isReplacementAwarePolicy() {
+        return isReplacementAwarePolicy(policy);
+    }
+
+    /**
+     * M16 only: the coupled competitive objective resolved on ONE shared chronological stock timeline.
+     * M15 and every earlier mode stay exactly as shipped.
+     */
+    private static boolean isCoupledCompetitivePolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN;
+    }
+
+    private boolean isCoupledCompetitivePolicy() {
+        return isCoupledCompetitivePolicy(policy);
+    }
+
+    private static boolean usesHarvestHorizon(AnytimeSearchPolicy policy) {
+        return isHarvestHorizonAwarePolicy(policy) || isRelativeMarginPolicy(policy)
+                || isReplacementAwarePolicy(policy) || isCoupledCompetitivePolicy(policy);
+    }
+
+    private boolean isHarvestHorizonAwarePolicy() {
+        return isHarvestHorizonAwarePolicy(policy);
+    }
+
+    private static boolean isAnyHorizonAwarePolicy(AnytimeSearchPolicy policy) {
+        return isHorizonAwarePolicy(policy) || isHarvestHorizonAwarePolicy(policy)
+                || isRelativeMarginPolicy(policy) || isReplacementAwarePolicy(policy)
+                || isCoupledCompetitivePolicy(policy);
+    }
+
     /** The M10 opponent intent forecast is the shared input of the M10, M12 and M12.1 semantics. */
     private static boolean usesOpponentIntentForecast(AnytimeSearchPolicy policy) {
         return isIntentAwarePolicy(policy) || isCommitmentAwarePolicy(policy)
-                || isSemiCommitmentAwarePolicy(policy);
+                || isSemiCommitmentAwarePolicy(policy) || isAnyHorizonAwarePolicy(policy);
     }
 
     /**
@@ -1819,7 +2615,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
     /** Every mode running the M11 stratified search mechanics, M12 and M12.1 included. */
     private static boolean isStratifiedPolicy(AnytimeSearchPolicy policy) {
         return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_INTENT_AWARE
-                || isCommitmentAwarePolicy(policy) || isSemiCommitmentAwarePolicy(policy);
+                || isCommitmentAwarePolicy(policy) || isSemiCommitmentAwarePolicy(policy)
+                || isAnyHorizonAwarePolicy(policy);
     }
 
     /** True when the M11 candidate portfolio selector replaces plain top-K candidate pruning. */
@@ -2096,20 +2893,48 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                             searchState.forecastRealizableTeamBrands,
                             context.intentForecast,
                             intentAdjustmentWeights));
-                } else if (isSemiCommitmentAwarePolicy()) {
+                } else if (isSemiCommitmentAwarePolicy() || isRelativeMarginPolicy()
+                        || isReplacementAwarePolicy() || isCoupledCompetitivePolicy()) {
                     int initialArrivalStep = context.state.stepBudget() - patrol.remainingSteps;
-                    context.candidateSemiCommitment.put(
-                            candidate,
+                    context.candidateSemiCommitment.put(candidate,
                             context.semiCommitmentEvaluator.evaluateRoute(
-                                    context.state,
-                                    context.spotsByPosition,
-                                    route,
-                                    initialArrivalStep,
-                                    searchState.stock,
-                                    patrol.visitedSpots,
+                                    context.state, context.spotsByPosition, route, initialArrivalStep,
+                                    searchState.stock, patrol.visitedSpots,
                                     searchState.semiCommitment.realizableTeamBrands(),
                                     context.semiCommitmentForecast.commitment(),
                                     semiCommitmentAdjustmentWeights));
+                    if (isRelativeMarginPolicy()) {
+                        context.candidateOpponentResidual.put(candidate,
+                                context.opponentDenialEvaluator.evaluateRoute(
+                                        context.state, context.opponentClaimBaseline,
+                                        context.commitmentForecast, context.semiCommitmentEvaluator,
+                                        semiCommitmentAdjustmentWeights, context.spotsByPosition,
+                                        route, initialArrivalStep, searchState.stock,
+                                        patrol.visitedSpots, patrol.id.value()));
+                    } else if (isReplacementAwarePolicy()) {
+                        // M15 only: a linear walk over the fixed full-day baseline. No pathfinding,
+                        // no rollout, and no opponent re-forecast happens per candidate.
+                        context.candidateFullDayContest.put(candidate,
+                                context.fullDayOpponentRollout.contestRoute(
+                                        context.opponentFullDayBaseline,
+                                        context.semiCommitmentForecast.commitment(),
+                                        context.semiCommitmentEvaluator,
+                                        semiCommitmentAdjustmentWeights, context.spotsByPosition,
+                                        route, initialArrivalStep, searchState.stock,
+                                        patrol.visitedSpots));
+                    } else if (isCoupledCompetitivePolicy()) {
+                        // M16 only: the same linear walk, over the fixed no-own-plan coupled
+                        // baseline. Guidance only; the coupled rollout stays authoritative and no
+                        // pathfinding or rollout runs per candidate.
+                        context.candidateCoupledContest.put(candidate,
+                                context.coupledCompetitiveRollout.contestRoute(
+                                        context.coupledCompetitiveBaseline,
+                                        context.semiCommitmentForecast.commitment(),
+                                        context.semiCommitmentEvaluator,
+                                        semiCommitmentAdjustmentWeights, context.spotsByPosition,
+                                        route, initialArrivalStep, searchState.stock,
+                                        patrol.visitedSpots));
+                    }
                 } else if (isCommitmentAwarePolicy()) {
                     int initialArrivalStep = context.state.stepBudget() - patrol.remainingSteps;
                     context.candidateCommitment.put(
@@ -2170,6 +2995,27 @@ public final class AnytimeTeamPlanner implements DayPlanner {
 
     private Comparator<TeamTargetCandidate> candidatePreference(
             SearchContext context, boolean coveragePhase) {
+        if (isCoupledCompetitivePolicy()) {
+            Comparator<CoupledCompetitiveCandidateMetrics> preference = coveragePhase
+                    ? CoupledCompetitiveCandidateMetrics.coveragePreference()
+                    : CoupledCompetitiveCandidateMetrics.harvestPreference();
+            return Comparator.comparing(
+                    candidate -> coupledCompetitiveCandidateMetrics(context, candidate), preference);
+        }
+        if (isReplacementAwarePolicy()) {
+            Comparator<ReplacementAwareCandidateMetrics> preference = coveragePhase
+                    ? ReplacementAwareCandidateMetrics.coveragePreference()
+                    : ReplacementAwareCandidateMetrics.harvestPreference();
+            return Comparator.comparing(
+                    candidate -> replacementAwareCandidateMetrics(context, candidate), preference);
+        }
+        if (isRelativeMarginPolicy()) {
+            Comparator<RelativeMarginCandidateMetrics> preference = coveragePhase
+                    ? RelativeMarginCandidateMetrics.coveragePreference()
+                    : RelativeMarginCandidateMetrics.harvestPreference();
+            return Comparator.comparing(
+                    candidate -> relativeMarginCandidateMetrics(context, candidate), preference);
+        }
         if (isSemiCommitmentAwarePolicy()) {
             Comparator<SemiCommitmentAwareCandidateMetrics> preference = coveragePhase
                     ? SemiCommitmentAwareCandidateMetrics.coveragePreference()
@@ -2375,6 +3221,75 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 candidate.patrolAgentId());
     }
 
+    private RelativeMarginCandidateMetrics relativeMarginCandidateMetrics(
+            SearchContext context, TeamTargetCandidate candidate) {
+        SemiCommitmentRouteMetrics semi = context.candidateSemiCommitment.getOrDefault(
+                candidate, SemiCommitmentRouteMetrics.empty());
+        OpponentResidualClaimEvaluation denial = context.candidateOpponentResidual.getOrDefault(
+                candidate, noDenial(context.opponentClaimBaseline));
+        return new RelativeMarginCandidateMetrics(
+                semi.semiCommitmentRealizableBrandGain() > 0,
+                semi.semiCommitmentRealizableCollections(),
+                denial.strongDeniedOpponentCollections(),
+                denial.deniedFollowOnIntent(),
+                semi.adjustedScore(),
+                candidate.projectedCollectionGain(),
+                candidate.routeSteps(), candidate.routeFuel(), candidate.resultingFuel(),
+                candidate.targetPosition(), candidate.patrolAgentId());
+    }
+
+    /**
+     * M15-only candidate guidance. {@code fullDayContestGain} comes from the whole-day baseline, so a
+     * target late in an opponent's route is still visible to top-K. Old modes are untouched.
+     */
+    private ReplacementAwareCandidateMetrics replacementAwareCandidateMetrics(
+            SearchContext context, TeamTargetCandidate candidate) {
+        SemiCommitmentRouteMetrics semi = context.candidateSemiCommitment.getOrDefault(
+                candidate, SemiCommitmentRouteMetrics.empty());
+        FullDayOpponentHarvestRollout.FullDayRouteContest contest =
+                context.candidateFullDayContest.getOrDefault(
+                        candidate, FullDayOpponentHarvestRollout.FullDayRouteContest.empty());
+        return new ReplacementAwareCandidateMetrics(
+                semi.semiCommitmentRealizableBrandGain() > 0,
+                semi.semiCommitmentRealizableCollections(),
+                contest.contestedCollections(),
+                contest.strongContestedCollections(),
+                semi.adjustedScore(),
+                candidate.projectedCollectionGain(),
+                candidate.routeSteps(), candidate.routeFuel(), candidate.resultingFuel(),
+                candidate.targetPosition(), candidate.patrolAgentId());
+    }
+
+    /**
+     * M16-only candidate guidance. {@code coupledContestGain} comes from the whole-day coupled
+     * baseline, so a target late in an opponent's adversarial route is still visible to top-K. Old
+     * modes are untouched.
+     */
+    private CoupledCompetitiveCandidateMetrics coupledCompetitiveCandidateMetrics(
+            SearchContext context, TeamTargetCandidate candidate) {
+        SemiCommitmentRouteMetrics semi = context.candidateSemiCommitment.getOrDefault(
+                candidate, SemiCommitmentRouteMetrics.empty());
+        CoupledCompetitiveRollout.CoupledRouteContest contest =
+                context.candidateCoupledContest.getOrDefault(
+                        candidate, CoupledCompetitiveRollout.CoupledRouteContest.empty());
+        return new CoupledCompetitiveCandidateMetrics(
+                semi.semiCommitmentRealizableBrandGain() > 0,
+                semi.semiCommitmentRealizableCollections(),
+                contest.contestedCollections(),
+                contest.strongContestedCollections(),
+                semi.adjustedScore(),
+                candidate.projectedCollectionGain(),
+                candidate.routeSteps(), candidate.routeFuel(), candidate.resultingFuel(),
+                candidate.targetPosition(), candidate.patrolAgentId());
+    }
+
+    private OpponentResidualClaimEvaluation noDenial(OpponentClaimBaseline baseline) {
+        return new OpponentResidualClaimEvaluation(
+                baseline,
+                baseline.observedNowRealizable(), baseline.directIntentRealizable(),
+                baseline.followOnIntentRealizable(), 0, 0, 0);
+    }
+
     private ContentionCandidateMetrics contentionMetrics(
             SearchContext context, TeamTargetCandidate candidate) {
         RouteContentionMetrics contention = contentionFor(context, candidate);
@@ -2420,6 +3335,11 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         if (!(result instanceof ValidDaySimulationResult valid)) {
             return Optional.empty();
         }
+        return Optional.of(new EvaluatedPlan(plan, baseEvaluation(state, plan, valid)));
+    }
+
+    private PlanEvaluation baseEvaluation(
+            DayState state, TeamPlan plan, ValidDaySimulationResult valid) {
         int udonTotal = valid.portionsCollectedByAgent().values().stream()
                 .mapToInt(Integer::intValue)
                 .sum();
@@ -2441,14 +3361,13 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 .map(MoveStartedEvent.class::cast)
                 .mapToInt(MoveStartedEvent::duration)
                 .sum();
-        PlanEvaluation evaluation = new PlanEvaluation(
+        return new PlanEvaluation(
                 valid.brandsCollected().size(),
                 udonTotal,
                 activePatrols,
                 remainingFuel,
                 movementSteps,
                 signature(plan));
-        return Optional.of(new EvaluatedPlan(plan, evaluation));
     }
 
     private String signature(TeamPlan plan) {
@@ -2497,6 +3416,18 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             case ANYTIME_STRATIFIED_COMMITMENT_AWARE -> COMMITMENT_AWARE_STATE_PREFERENCE;
             case ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE ->
                     SEMI_COMMITMENT_AWARE_STATE_PREFERENCE;
+            case ANYTIME_STRATIFIED_SEMI_COMMITMENT_HORIZON_AWARE ->
+                    HORIZON_AWARE_STATE_PREFERENCE;
+            case ANYTIME_STRATIFIED_SEMI_COMMITMENT_HARVEST_HORIZON_AWARE ->
+                    HORIZON_AWARE_STATE_PREFERENCE;
+            case ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE -> RELATIVE_MARGIN_STATE_PREFERENCE;
+            // M15 adds no new search stage and no new partial-state data: it reuses the M14 frontier
+            // tuple unchanged and differs only in the complete-plan objective.
+            case ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN ->
+                    RELATIVE_MARGIN_STATE_PREFERENCE;
+            // M16 adds no new search stage and no new partial-state data either: the same M14 frontier
+            // tuple orders partial states, and only the complete-plan objective changes.
+            case ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN -> RELATIVE_MARGIN_STATE_PREFERENCE;
         };
     }
 
@@ -2515,7 +3446,123 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             case ANYTIME_STRATIFIED_COMMITMENT_AWARE -> "ANYTIME_STRATIFIED_COMMITMENT_" + suffix;
             case ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE ->
                     "ANYTIME_STRATIFIED_SEMI_COMMITMENT_" + suffix;
+            case ANYTIME_STRATIFIED_SEMI_COMMITMENT_HORIZON_AWARE ->
+                    "ANYTIME_STRATIFIED_HORIZON_" + suffix;
+            case ANYTIME_STRATIFIED_SEMI_COMMITMENT_HARVEST_HORIZON_AWARE ->
+                    "ANYTIME_STRATIFIED_HARVEST_HORIZON_" + suffix;
+            case ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE ->
+                    "ANYTIME_STRATIFIED_RELATIVE_MARGIN_" + suffix;
+            case ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN ->
+                    "ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_" + suffix;
+            case ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN ->
+                    "ANYTIME_STRATIFIED_COUPLED_MARGIN_" + suffix;
         };
+    }
+
+    private void logHarvestCapacity(DayState state, TeamNextDayHarvestCapacity capacity) {
+        log("NEXT_DAY_HARVEST_CAPACITY_SUMMARY",
+                "day", state.day().value(),
+                "remainingFutureDays", capacity.remainingFutureDays(),
+                "patrolAgents", capacity.patrols().size(),
+                "nextDayStepBudget", capacity.nextDayStepBudget(),
+                "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                "routeCostCacheEntries", capacity.routeCostCacheEntries(),
+                "pathfindingExecutions", capacity.pathfindingExecutions());
+        for (PatrolNextDayHarvestCapacity patrol : capacity.patrols()) {
+            log("PATROL_NEXT_DAY_HARVEST_CAPACITY",
+                    "day", state.day().value(), "agent", patrol.agentId().value(),
+                    "endPosition", patrol.projectedEndPosition().value(),
+                    "endFuel", patrol.projectedEndFuel(),
+                    "stationaryOpportunity", patrol.stationaryOpportunityAvailable(),
+                    "maxDistinctSpots", patrol.maxReachableDistinctSpots(),
+                    "maxDistinctBrands", patrol.maxReachableDistinctBrands(),
+                    "bestRemainingFuel", patrol.bestRemainingFuelAtMaxSpotCount());
+        }
+    }
+
+    /** One bounded line for the immutable M15 full-day opponent baseline. */
+    private void logOpponentFullDayBaseline(DayState state, OpponentFullDayBaseline baseline) {
+        log("OPPONENT_FULL_DAY_BASELINE",
+                "day", state.day().value(),
+                "stepBudget", baseline.stepBudget(),
+                "collectors", baseline.collectorCount(),
+                "stockedSpots", baseline.stockedSpots(),
+                "baselineOpponentCollections", baseline.totalCollections(),
+                "observedNow", baseline.observedNowCollections(),
+                "directIntent", baseline.directIntentCollections(),
+                "followOnIntent", baseline.followOnIntentCollections(),
+                "strongCollections", baseline.strongCollections(),
+                "maxCollectorCollections", baseline.maxCollectorCollections(),
+                "rolloutEvents", baseline.rolloutEvents(),
+                "routeCostCacheEntries", baseline.routeCostCacheEntries(),
+                "pathfindingExecutions", baseline.pathfindingExecutions());
+    }
+
+    /**
+     * Optional per-collector route rows, capped by
+     * {@link #MAX_OPPONENT_FULL_DAY_ROUTE_DIAGNOSTICS}. Diagnostics only: the commitment label never
+     * changes the rollout itself.
+     */
+    private void logOpponentFullDayRoutes(DayState state, OpponentFullDayBaseline baseline) {
+        int logged = 0;
+        for (OpponentFullDayClaim claim : baseline.claims()) {
+            if (logged >= MAX_OPPONENT_FULL_DAY_ROUTE_DIAGNOSTICS) {
+                break;
+            }
+            logged++;
+            log("OPPONENT_FULL_DAY_ROUTE",
+                    "day", state.day().value(),
+                    "group", claim.groupRawId(), "agent", claim.agentIndex(),
+                    "kind", claim.rawKind(), "spot", claim.spot().value(),
+                    "arrivalStep", claim.arrivalStep(),
+                    "collectorOrdinal", claim.collectorOrdinal(),
+                    "legSteps", claim.legSteps(), "legFuel", claim.legFuel(),
+                    "commitment", claim.commitment());
+        }
+    }
+
+    /** One bounded line for the immutable M16 no-own-plan coupled opponent baseline. */
+    private void logOpponentCoupledBaseline(DayState state, CoupledCompetitiveBaseline baseline) {
+        log("OPPONENT_COUPLED_BASELINE",
+                "day", state.day().value(),
+                "stepBudget", baseline.stepBudget(),
+                "collectors", baseline.collectorCount(),
+                "stockedSpots", baseline.stockedSpots(),
+                "opponentBaselineCollections", baseline.totalCollections(),
+                "observedNow", baseline.observedNowCollections(),
+                "directIntent", baseline.directIntentCollections(),
+                "followOnIntent", baseline.followOnIntentCollections(),
+                "strongCollections", baseline.strongCollections(),
+                "maxCollectorCollections", baseline.maxCollectorCollections(),
+                "rolloutEvents", baseline.rolloutEvents(),
+                "routeCostCacheEntries", baseline.routeCostCacheEntries(),
+                "pathfindingExecutions", baseline.pathfindingExecutions());
+    }
+
+    /**
+     * Optional per-event rows for the INCUMBENT coupled rollout only, capped by
+     * {@link #MAX_COUPLED_COMPETITIVE_EVENT_DIAGNOSTICS}. Never emitted per candidate plan.
+     */
+    private void logCoupledCompetitiveEvents(DayState state, CoupledCompetitiveRolloutResult coupled) {
+        int logged = 0;
+        for (CoupledOwnEventResult result : coupled.ownEventResults()) {
+            if (logged >= MAX_COUPLED_COMPETITIVE_EVENT_DIAGNOSTICS) {
+                break;
+            }
+            logged++;
+            log("COUPLED_COMPETITIVE_EVENT",
+                    "day", state.day().value(),
+                    "agent", result.event().agentId().value(),
+                    "spot", result.event().spot().value(),
+                    "arrivalStep", result.event().arrivalStep(),
+                    "stableOrdinal", result.event().stableOrdinal(),
+                    "brand", result.brand().value(),
+                    "outcome", result.outcome(),
+                    "equalStepContest", result.equalStepContest());
+        }
     }
 
     private void log(String event, Object... fields) {
@@ -2524,6 +3571,31 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             message.append(' ').append(fields[index]).append('=').append(fields[index + 1]);
         }
         System.out.println(message);
+    }
+
+    private void logHorizonReadiness(DayState state, TeamFutureReadiness readiness) {
+        log("HORIZON_FUEL_SUMMARY",
+                "day", state.day().value(),
+                "remainingFutureDays", readiness.remainingFutureDays(),
+                "patrolAgents", readiness.patrols().size(),
+                "projectedTotalPatrolFuel", readiness.totalProjectedPatrolFuel(),
+                "futureReadyPatrolCount", readiness.futureReadyPatrolCount(),
+                "reachableOpportunitySpots", readiness.totalReachableOpportunitySpots(),
+                "reachableOpportunityBrands", readiness.totalReachableOpportunityBrands(),
+                "minimumPatrolReadiness", readiness.minimumPatrolReadiness(),
+                "routeCostCacheEntries", readiness.routeCostCacheEntries(),
+                "pathfindingExecutions", readiness.routeCostPathfindingExecutions());
+        for (PatrolFutureReadiness patrol : readiness.patrols()) {
+            log("PATROL_HORIZON_READINESS",
+                    "day", state.day().value(),
+                    "agent", patrol.agentId().value(),
+                    "endPosition", patrol.projectedEndPosition().value(),
+                    "endFuel", patrol.projectedEndFuel(),
+                    "reachableSpots", patrol.reachableOpportunitySpotCount(),
+                    "reachableBrands", patrol.reachableOpportunityBrandCount(),
+                    "minimumFuelToOpportunity", patrol.minimumFuelToAnyOpportunity(),
+                    "fuelSlack", patrol.fuelSlackAfterNearestOpportunity());
+        }
     }
 
     private static final class SearchContext {
@@ -2546,6 +3618,12 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 new LinkedHashMap<>();
         private final Map<TeamTargetCandidate, SemiCommitmentRouteMetrics> candidateSemiCommitment =
                 new LinkedHashMap<>();
+        private final Map<TeamTargetCandidate, OpponentResidualClaimEvaluation> candidateOpponentResidual =
+                new LinkedHashMap<>();
+        private final Map<TeamTargetCandidate, FullDayOpponentHarvestRollout.FullDayRouteContest>
+                candidateFullDayContest = new LinkedHashMap<>();
+        private final Map<TeamTargetCandidate, CoupledCompetitiveRollout.CoupledRouteContest>
+                candidateCoupledContest = new LinkedHashMap<>();
         private final AnytimeSearchPolicy policy;
         private final RiskAdjustmentWeights riskAdjustmentWeights;
         private final OpponentIntentForecast intentForecast;
@@ -2559,6 +3637,18 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         private final SemiCommitmentForecastEvaluator semiCommitmentEvaluator =
                 new SemiCommitmentForecastEvaluator();
         private final SemiCommitmentAdjustmentWeights semiCommitmentAdjustmentWeights;
+        private final FutureReadinessCalculator futureReadinessCalculator;
+        private final NextDayHarvestCapacityCalculator nextDayHarvestCapacityCalculator;
+        private final OpponentDenialEvaluator opponentDenialEvaluator = new OpponentDenialEvaluator();
+        private final OpponentClaimBaseline opponentClaimBaseline;
+        /** M15 only: the route cache is built once here, so no challenger ever runs a Dijkstra. */
+        private final FullDayOpponentHarvestRollout fullDayOpponentRollout;
+        /** M15 only: the immutable whole-day opponent harvest, computed once per planning run. */
+        private final OpponentFullDayBaseline opponentFullDayBaseline;
+        /** M16 only: one shared route cache serving the baseline and every coupled rollout alike. */
+        private final CoupledCompetitiveRollout coupledCompetitiveRollout;
+        /** M16 only: the immutable no-own-plan coupled baseline, computed once per planning run. */
+        private final CoupledCompetitiveBaseline coupledCompetitiveBaseline;
         private long sequence;
         private int loggedCandidateDiagnostics;
 
@@ -2576,6 +3666,10 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             this.intentAdjustmentWeights = intentAdjustmentWeights;
             this.commitmentAdjustmentWeights = commitmentAdjustmentWeights;
             this.semiCommitmentAdjustmentWeights = semiCommitmentAdjustmentWeights;
+            this.futureReadinessCalculator = isHorizonAwarePolicy(policy)
+                    ? FutureReadinessCalculator.forState(state) : null;
+            this.nextDayHarvestCapacityCalculator = usesHarvestHorizon(policy)
+                    ? NextDayHarvestCapacityCalculator.forState(state) : null;
             this.intentForecast = usesOpponentIntentForecast(policy)
                     ? new OpponentIntentForecaster().forecast(state, opponentIntentConfig)
                     : new OpponentIntentForecast(List.of(), Map.of(), 0, 0, 0, 0, 0, 0, 0);
@@ -2583,13 +3677,37 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             // is recomputed and no shortest path is searched for commitment.
             this.commitmentForecast =
                     isCommitmentAwarePolicy(policy) || isSemiCommitmentAwarePolicy(policy)
-                            ? OpponentCommitmentForecast.annotate(this.intentForecast)
-                            : OpponentCommitmentForecast.empty();
+                            || isAnyHorizonAwarePolicy(policy)
+                    ? OpponentCommitmentForecast.annotate(this.intentForecast)
+                    : OpponentCommitmentForecast.empty();
             // One further linear pass for the bounded per-spot aggregates. Nothing is re-forecast,
             // and the per-plan evaluation reads this same view rather than rebuilding it.
             this.semiCommitmentForecast = isSemiCommitmentAwarePolicy(policy)
+                            || isAnyHorizonAwarePolicy(policy)
                     ? SemiCommitmentForecast.derive(this.commitmentForecast)
                     : SemiCommitmentForecast.empty();
+            this.opponentClaimBaseline = isRelativeMarginPolicy(policy)
+                    ? opponentDenialEvaluator.baseline(state, commitmentForecast)
+                    : new OpponentClaimBaseline(Map.of(), 0, 0, 0, 0, state.spotStock().size());
+            // M15: one bounded reverse-Pareto pass per Udon spot, then one baseline rollout. Every
+            // later per-plan residual rollout only reads these cached route costs.
+            this.fullDayOpponentRollout = isReplacementAwarePolicy(policy)
+                    ? FullDayOpponentHarvestRollout.forState(state, opponentIntentConfig)
+                    : null;
+            this.opponentFullDayBaseline = fullDayOpponentRollout == null
+                    ? OpponentFullDayBaseline.empty()
+                    : fullDayOpponentRollout.baseline();
+            // M16: exactly one bounded reverse-Pareto pass per Udon spot, then one no-own-plan
+            // baseline rollout. Every later coupled rollout only reads these cached route costs, so
+            // no terminal plan, no opponent reroute and no timeline event ever runs a Dijkstra. The
+            // baseline is produced by the SAME adversarial selection rule the coupled rollout uses,
+            // so opponentCollectionsRemovedVsBaseline measures our plan rather than a model change.
+            this.coupledCompetitiveRollout = isCoupledCompetitivePolicy(policy)
+                    ? CoupledCompetitiveRollout.forState(state, opponentIntentConfig)
+                    : null;
+            this.coupledCompetitiveBaseline = coupledCompetitiveRollout == null
+                    ? CoupledCompetitiveBaseline.empty()
+                    : coupledCompetitiveRollout.baseline();
             this.orderedSpots = state.matchData().udonSpots().stream()
                     .sorted(Comparator.comparingInt(spot -> spot.position().value()))
                     .toList();
@@ -2780,7 +3898,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                         adjustedScore = Math.addExact(
                                 adjustedScore,
                                 context.riskAdjustmentWeights.weightFor(arrivalMetrics.classification()));
-                    } else if (isSemiCommitmentAwarePolicy(context.policy)) {
+                    } else if (isSemiCommitmentAwarePolicy(context.policy)
+                            || isHorizonAwarePolicy(context.policy)) {
                         SemiCommitmentCollectionAssessment assessment =
                                 context.semiCommitmentEvaluator.assessCollection(
                                         state.spotStock(), patrol.position, 0,
@@ -3305,6 +4424,36 @@ public final class AnytimeTeamPlanner implements DayPlanner {
     private record SemiCommitmentAwareEvaluatedPlan(
             TeamPlan plan,
             SemiCommitmentAwarePlanEvaluation evaluation,
+            EvaluatedPlan base) {
+    }
+
+    private record HorizonAwareEvaluatedPlan(
+            TeamPlan plan,
+            HorizonAwarePlanEvaluation evaluation,
+            EvaluatedPlan base) {
+    }
+
+    private record HarvestHorizonAwareEvaluatedPlan(
+            TeamPlan plan,
+            HarvestHorizonAwarePlanEvaluation evaluation,
+            EvaluatedPlan base) {
+    }
+
+    private record RelativeMarginEvaluatedPlan(
+            TeamPlan plan,
+            RelativeMarginPlanEvaluation evaluation,
+            EvaluatedPlan base) {
+    }
+
+    private record ReplacementAwareEvaluatedPlan(
+            TeamPlan plan,
+            ReplacementAwareRelativeMarginEvaluation evaluation,
+            EvaluatedPlan base) {
+    }
+
+    private record CoupledCompetitiveEvaluatedPlan(
+            TeamPlan plan,
+            CoupledCompetitiveMarginEvaluation evaluation,
             EvaluatedPlan base) {
     }
 

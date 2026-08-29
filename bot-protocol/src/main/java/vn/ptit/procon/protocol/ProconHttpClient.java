@@ -90,8 +90,13 @@ public final class ProconHttpClient {
 
     public SubmissionResult postActions(TeamPlan plan, int agentCount)
             throws IOException, InterruptedException {
+        return postEncodedActions(actionEncoder.encode(plan, agentCount));
+    }
+
+    public SubmissionResult postEncodedActions(List<List<Integer>> encodedActions)
+            throws IOException, InterruptedException {
         HttpResponse<String> response = send(postRequest(
-                "/actions", write(actionEncoder.encode(plan, agentCount), "/actions")));
+                "/actions", write(encodedActions, "/actions")));
         return submissionResult(response, "/actions");
     }
 

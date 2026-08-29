@@ -18,7 +18,12 @@ public enum PlannerMode {
     ANYTIME_DIVERSE_INTENT_AWARE,
     ANYTIME_STRATIFIED_INTENT_AWARE,
     ANYTIME_STRATIFIED_COMMITMENT_AWARE,
-    ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE;
+    ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE,
+    ANYTIME_STRATIFIED_SEMI_COMMITMENT_HORIZON_AWARE,
+    ANYTIME_STRATIFIED_SEMI_COMMITMENT_HARVEST_HORIZON_AWARE,
+    ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE,
+    ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN,
+    ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN;
 
     static PlannerMode parse(String value) {
         String normalized = value == null || value.isBlank() ? WAIT.name() : value.trim().toUpperCase();
@@ -33,7 +38,12 @@ public enum PlannerMode {
                             + " ANYTIME_INTENT_AWARE, ANYTIME_DIVERSE_INTENT_AWARE,"
                             + " ANYTIME_STRATIFIED_INTENT_AWARE,"
                             + " ANYTIME_STRATIFIED_COMMITMENT_AWARE, or"
-                            + " ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE: " + value,
+                            + " ANYTIME_STRATIFIED_SEMI_COMMITMENT_AWARE, or"
+                            + " ANYTIME_STRATIFIED_SEMI_COMMITMENT_HORIZON_AWARE, or"
+                            + " ANYTIME_STRATIFIED_SEMI_COMMITMENT_HARVEST_HORIZON_AWARE, or"
+                            + " ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE, or"
+                            + " ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN, or"
+                            + " ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN: " + value,
                     exception);
         }
     }

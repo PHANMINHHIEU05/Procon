@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import vn.ptit.procon.domain.agent.AgentId;
 import vn.ptit.procon.domain.agent.AgentState;
@@ -27,6 +28,23 @@ public final class ParityRecorder {
         if (observation == null) {
             return Optional.empty();
         }
+
+        ParityComparison comparison = compare(observation, authoritative);
+        comparisons.add(comparison);
+        return Optional.of(comparison);
+    }
+
+    /**
+     * Pure re-comparison of a retained observation against any authoritative state.
+     *
+     * <p>Unlike {@link #observeNextState(DayState)} this neither consumes the pending observation
+     * nor appends to the recorded history, so a bounded parity resync may re-check the same
+     * prediction against a refreshed state without an empty result being misread as recovery.
+     */
+    public static ParityComparison compare(ParityObservation observation, DayState authoritative) {
+        Objects.requireNonNull(observation, "Parity observation must not be null");
+        Objects.requireNonNull(authoritative, "Authoritative state must not be null");
+        int precedingDay = observation.beginningState().day().value();
 
         Map<AgentId, AgentState> actual = index(authoritative.agents());
         boolean positionMatch = true;
@@ -65,15 +83,20 @@ public final class ParityRecorder {
             }
         }
 
-        ParityComparison comparison = new ParityComparison(
+        return new ParityComparison(
                 precedingDay,
                 positionMatch ? ParityStatus.MATCH : ParityStatus.MISMATCH,
                 !fuelObservable
                         ? ParityStatus.NOT_OBSERVABLE
                         : fuelMatch ? ParityStatus.MATCH : ParityStatus.MISMATCH,
                 agentMismatches);
-        comparisons.add(comparison);
-        return Optional.of(comparison);
+    }
+
+    /** True when either observable dimension explicitly disagrees; NOT_OBSERVABLE never does. */
+    public static boolean disagrees(ParityComparison comparison) {
+        Objects.requireNonNull(comparison, "Parity comparison must not be null");
+        return comparison.position() == ParityStatus.MISMATCH
+                || comparison.patrolFuel() == ParityStatus.MISMATCH;
     }
 
     public synchronized List<ParityComparison> comparisons() {
@@ -98,7 +121,7 @@ public final class ParityRecorder {
                 Map.entry("SAME_STEP_UDON_STOCK_TIE", SemanticParityStatus.NOT_TESTED));
     }
 
-    private Map<AgentId, AgentState> index(List<AgentState> agents) {
+    private static Map<AgentId, AgentState> index(List<AgentState> agents) {
         Map<AgentId, AgentState> result = new LinkedHashMap<>();
         agents.stream()
                 .sorted(Comparator.comparingInt(agent -> agent.id().value()))

@@ -1,0 +1,192 @@
+CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-4120 plannerMode=ANYTIME_STRATIFIED_SEMI_COMMITMENT_HORIZON_AWARE PROCON_TOKEN=<set>
+SETUP_WAITING matchId=m-4120
+SETUP_RECEIVED matchId=m-4120 agents=4 days=4
+ASSIGNMENT_SUBMITTED matchId=m-4120 agents=4
+ASSIGNMENT_ACCEPTED matchId=m-4120 agents=4
+MATCH_STARTED matchId=m-4120
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+HORIZON_FUEL_SUMMARY day=0 remainingFutureDays=3 patrolAgents=3 projectedTotalPatrolFuel=135 futureReadyPatrolCount=3 reachableOpportunitySpots=24 reachableOpportunityBrands=12 minimumPatrolReadiness=8
+TEAM_REFUEL_HORIZON_NO_ASSIGN day=0 reason=NO_FUTURE_READINESS_GAIN currentBrandDelta=0 currentSemiCollectionDelta=0 futureReadyPatrolDelta=0 futureReachableSpotDelta=0 futureReachableBrandDelta=0 fuelRestored=0 arrivalStep=0
+TEAM_REFUEL_NO_ASSIGN day=0 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=0 iteration=1 agent=0 target=59 brand=numeric:3 teamNewBrand=true steps=11 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=2 agent=1 target=28 brand=numeric:0 teamNewBrand=true steps=4 fuel=2
+TEAM_TARGET_SELECT day=0 iteration=3 agent=2 target=2 brand=numeric:1 teamNewBrand=true steps=9 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=4 agent=2 target=35 brand=numeric:0 teamNewBrand=false steps=7 fuel=5
+TEAM_TARGET_SELECT day=0 iteration=5 agent=0 target=28 brand=numeric:0 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=6 agent=1 target=2 brand=numeric:1 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=7 agent=0 target=2 brand=numeric:1 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=8 agent=2 target=38 brand=numeric:3 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=0 iteration=9 agent=1 target=33 brand=numeric:2 teamNewBrand=false steps=7 fuel=5
+TEAM_TARGET_SELECT day=0 iteration=10 agent=1 target=38 brand=numeric:3 teamNewBrand=false steps=10 fuel=5
+TEAM_PLAN_VALID day=0
+ANYTIME_STRATIFIED_HORIZON_START day=0 remainingFutureDays=3 incumbentSemiBrands=4 incumbentSemiScore=47 incumbentSemiCollections=16 incumbentRawUdon=16 incumbentFutureReadyPatrols=3 incumbentFutureReachableSpots=24 incumbentFutureReachableBrands=12 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=0 semiBrands=4 semiScore=47 semiCollections=16 futureReadyPatrols=3 expanded=15
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=0 semiBrands=4 semiScore=49 semiCollections=16 futureReadyPatrols=3 expanded=51
+ANYTIME_STRATIFIED_HORIZON_DONE day=0 remainingFutureDays=3 semiBrands=4 semiScore=49 semiCollections=16 rawUdon=16 projectedFinalPatrolFuel=138 futureReadyPatrols=3 futureReachableSpots=24 futureReachableBrands=12 minimumPatrolReadiness=8 expanded=64 completedPlans=65 improvements=2 strategiesDiscovered=16 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=7 maxStrategyExpansionCount=43 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+HORIZON_FUEL_SUMMARY day=0 remainingFutureDays=3 patrolAgents=3 projectedTotalPatrolFuel=138 futureReadyPatrolCount=3 reachableOpportunitySpots=24 reachableOpportunityBrands=12 minimumPatrolReadiness=8 routeCostCacheEntries=496 pathfindingExecutions=8
+PATROL_HORIZON_READINESS day=0 agent=0 endPosition=38 endFuel=46 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=46
+PATROL_HORIZON_READINESS day=0 agent=1 endPosition=57 endFuel=46 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=46
+PATROL_HORIZON_READINESS day=0 agent=2 endPosition=38 endFuel=46 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=46
+LOCAL_PLAN_VALID matchId=m-4120 day=0 mode=HorizonAwareSemiCommitmentPlanner
+ACTIONS_SUBMITTED matchId=m-4120 day=0
+UDON_OBSERVABILITY matchId=m-4120 day=0 predictedDayUdon=16 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-4120 day=0
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+PARITY_OBSERVED matchId=m-4120 day=0 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-4120 from=0 to=1
+HORIZON_FUEL_SUMMARY day=1 remainingFutureDays=2 patrolAgents=3 projectedTotalPatrolFuel=100 futureReadyPatrolCount=3 reachableOpportunitySpots=24 reachableOpportunityBrands=12 minimumPatrolReadiness=8
+TEAM_REFUEL_HORIZON_NO_ASSIGN day=1 reason=NO_FUTURE_READINESS_GAIN currentBrandDelta=0 currentSemiCollectionDelta=0 futureReadyPatrolDelta=0 futureReachableSpotDelta=0 futureReachableBrandDelta=0 fuelRestored=0 arrivalStep=0
+TEAM_REFUEL_NO_ASSIGN day=1 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=1 iteration=1 agent=1 target=28 brand=numeric:0 teamNewBrand=true steps=10 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=2 agent=0 target=33 brand=numeric:2 teamNewBrand=true steps=10 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=3 agent=1 target=59 brand=numeric:3 teamNewBrand=false steps=8 fuel=4
+TEAM_TARGET_SELECT day=1 iteration=4 agent=2 target=33 brand=numeric:2 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=5 agent=0 target=57 brand=numeric:1 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=1 iteration=6 agent=2 target=57 brand=numeric:1 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=1 iteration=7 agent=1 target=33 brand=numeric:2 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=1 iteration=8 agent=0 target=28 brand=numeric:0 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=1 iteration=9 agent=2 target=28 brand=numeric:0 teamNewBrand=false steps=10 fuel=5
+TEAM_PLAN_VALID day=1
+ANYTIME_STRATIFIED_HORIZON_START day=1 remainingFutureDays=2 incumbentSemiBrands=4 incumbentSemiScore=46 incumbentSemiCollections=14 incumbentRawUdon=16 incumbentFutureReadyPatrols=3 incumbentFutureReachableSpots=24 incumbentFutureReachableBrands=12 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=1 semiBrands=4 semiScore=47 semiCollections=15 futureReadyPatrols=3 expanded=13
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=1 semiBrands=4 semiScore=48 semiCollections=15 futureReadyPatrols=3 expanded=14
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=1 semiBrands=4 semiScore=49 semiCollections=15 futureReadyPatrols=3 expanded=33
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=1 semiBrands=4 semiScore=49 semiCollections=15 futureReadyPatrols=3 expanded=41
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=1 semiBrands=4 semiScore=51 semiCollections=16 futureReadyPatrols=3 expanded=43
+ANYTIME_STRATIFIED_HORIZON_DONE day=1 remainingFutureDays=2 semiBrands=4 semiScore=51 semiCollections=16 rawUdon=17 projectedFinalPatrolFuel=93 futureReadyPatrols=3 futureReachableSpots=24 futureReachableBrands=12 minimumPatrolReadiness=8 expanded=64 completedPlans=65 improvements=5 strategiesDiscovered=19 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=7 maxStrategyExpansionCount=41 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+HORIZON_FUEL_SUMMARY day=1 remainingFutureDays=2 patrolAgents=3 projectedTotalPatrolFuel=93 futureReadyPatrolCount=3 reachableOpportunitySpots=24 reachableOpportunityBrands=12 minimumPatrolReadiness=8 routeCostCacheEntries=496 pathfindingExecutions=8
+PATROL_HORIZON_READINESS day=1 agent=0 endPosition=28 endFuel=31 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=31
+PATROL_HORIZON_READINESS day=1 agent=1 endPosition=33 endFuel=32 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=32
+PATROL_HORIZON_READINESS day=1 agent=2 endPosition=2 endFuel=30 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=30
+LOCAL_PLAN_VALID matchId=m-4120 day=1 mode=HorizonAwareSemiCommitmentPlanner
+ACTIONS_SUBMITTED matchId=m-4120 day=1
+UDON_OBSERVABILITY matchId=m-4120 day=1 predictedDayUdon=17 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-4120 day=1
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+PARITY_OBSERVED matchId=m-4120 day=1 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-4120 from=1 to=2
+HORIZON_FUEL_SUMMARY day=2 remainingFutureDays=1 patrolAgents=3 projectedTotalPatrolFuel=54 futureReadyPatrolCount=3 reachableOpportunitySpots=24 reachableOpportunityBrands=12 minimumPatrolReadiness=8
+TEAM_REFUEL_HORIZON_ASSIGN day=2 refuelAgent=3 patrolAgent=2 currentBrandDelta=0 currentSemiCollectionDelta=0 futureReadyPatrolDelta=0 futureReachableSpotDelta=0 futureReachableBrandDelta=0 fuelRestored=30 arrivalStep=5
+TEAM_REFUEL_ASSIGN day=2 refuelAgent=3 patrolAgent=2 projectedBrandGain=0 projectedCollectionGain=0 arrivalStep=5
+TEAM_TARGET_SELECT day=2 iteration=1 agent=0 target=59 brand=numeric:3 teamNewBrand=true steps=8 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=2 agent=1 target=28 brand=numeric:0 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=2 iteration=3 agent=2 target=35 brand=numeric:0 teamNewBrand=false steps=7 fuel=5
+TEAM_TARGET_SELECT day=2 iteration=4 agent=0 target=2 brand=numeric:1 teamNewBrand=false steps=13 fuel=8
+TEAM_TARGET_SELECT day=2 iteration=5 agent=2 target=33 brand=numeric:2 teamNewBrand=false steps=4 fuel=2
+TEAM_TARGET_SELECT day=2 iteration=6 agent=1 target=2 brand=numeric:1 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=2 iteration=7 agent=2 target=38 brand=numeric:3 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=2 iteration=8 agent=1 target=38 brand=numeric:3 teamNewBrand=false steps=10 fuel=8
+TEAM_PLAN_VALID day=2
+ANYTIME_STRATIFIED_HORIZON_START day=2 remainingFutureDays=1 incumbentSemiBrands=4 incumbentSemiScore=38 incumbentSemiCollections=12 incumbentRawUdon=16 incumbentFutureReadyPatrols=3 incumbentFutureReachableSpots=24 incumbentFutureReachableBrands=12 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=2 semiBrands=4 semiScore=45 semiCollections=14 futureReadyPatrols=3 expanded=12
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=2 semiBrands=4 semiScore=45 semiCollections=14 futureReadyPatrols=3 expanded=35
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=2 semiBrands=4 semiScore=46 semiCollections=14 futureReadyPatrols=3 expanded=41
+ANYTIME_STRATIFIED_HORIZON_DONE day=2 remainingFutureDays=1 semiBrands=4 semiScore=46 semiCollections=14 rawUdon=16 projectedFinalPatrolFuel=58 futureReadyPatrols=3 futureReachableSpots=24 futureReachableBrands=12 minimumPatrolReadiness=8 expanded=64 completedPlans=65 improvements=3 strategiesDiscovered=25 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=5 maxStrategyExpansionCount=31 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+HORIZON_FUEL_SUMMARY day=2 remainingFutureDays=1 patrolAgents=3 projectedTotalPatrolFuel=58 futureReadyPatrolCount=3 reachableOpportunitySpots=24 reachableOpportunityBrands=12 minimumPatrolReadiness=8 routeCostCacheEntries=496 pathfindingExecutions=8
+PATROL_HORIZON_READINESS day=2 agent=0 endPosition=2 endFuel=19 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=19
+PATROL_HORIZON_READINESS day=2 agent=1 endPosition=57 endFuel=19 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=19
+PATROL_HORIZON_READINESS day=2 agent=2 endPosition=57 endFuel=20 reachableSpots=8 reachableBrands=4 minimumFuelToOpportunity=0 fuelSlack=20
+LOCAL_PLAN_VALID matchId=m-4120 day=2 mode=HorizonAwareSemiCommitmentPlanner
+ACTIONS_SUBMITTED matchId=m-4120 day=2
+UDON_OBSERVABILITY matchId=m-4120 day=2 predictedDayUdon=16 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-4120 day=2
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-4120 day=3 agents=4
+PARITY_OBSERVED matchId=m-4120 day=2 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-4120 from=2 to=3
+HORIZON_FUEL_SUMMARY day=3 remainingFutureDays=0 patrolAgents=3 projectedTotalPatrolFuel=0 futureReadyPatrolCount=0 reachableOpportunitySpots=0 reachableOpportunityBrands=0 minimumPatrolReadiness=0
+TEAM_REFUEL_HORIZON_NO_ASSIGN day=3 reason=FINAL_DAY_NO_PROACTIVE_REFUEL currentBrandDelta=0 currentSemiCollectionDelta=0 futureReadyPatrolDelta=0 futureReachableSpotDelta=0 futureReachableBrandDelta=0 fuelRestored=0 arrivalStep=0
+TEAM_REFUEL_NO_ASSIGN day=3 reason=NO_POSITIVE_TEAM_VALUE
+TEAM_TARGET_SELECT day=3 iteration=1 agent=0 target=59 brand=numeric:3 teamNewBrand=true steps=13 fuel=8
+TEAM_TARGET_SELECT day=3 iteration=2 agent=0 target=28 brand=numeric:0 teamNewBrand=true steps=8 fuel=4
+TEAM_TARGET_SELECT day=3 iteration=3 agent=2 target=28 brand=numeric:0 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=3 iteration=4 agent=1 target=28 brand=numeric:0 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=3 iteration=5 agent=2 target=33 brand=numeric:2 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=3 iteration=6 agent=1 target=33 brand=numeric:2 teamNewBrand=false steps=6 fuel=3
+TEAM_TARGET_SELECT day=3 iteration=7 agent=2 target=38 brand=numeric:3 teamNewBrand=false steps=10 fuel=5
+TEAM_TARGET_SELECT day=3 iteration=8 agent=1 target=38 brand=numeric:3 teamNewBrand=false steps=10 fuel=5
+TEAM_PLAN_VALID day=3
+ANYTIME_STRATIFIED_HORIZON_START day=3 remainingFutureDays=0 incumbentSemiBrands=4 incumbentSemiScore=47 incumbentSemiCollections=13 incumbentRawUdon=16 incumbentFutureReadyPatrols=0 incumbentFutureReachableSpots=0 incumbentFutureReachableBrands=0 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=3 semiBrands=4 semiScore=49 semiCollections=14 futureReadyPatrols=0 expanded=13
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=3 semiBrands=4 semiScore=50 semiCollections=14 futureReadyPatrols=0 expanded=14
+ANYTIME_STRATIFIED_HORIZON_IMPROVEMENT day=3 semiBrands=4 semiScore=50 semiCollections=14 futureReadyPatrols=0 expanded=43
+ANYTIME_STRATIFIED_HORIZON_DONE day=3 remainingFutureDays=0 semiBrands=4 semiScore=50 semiCollections=14 rawUdon=17 projectedFinalPatrolFuel=0 futureReadyPatrols=0 futureReachableSpots=0 futureReachableBrands=0 minimumPatrolReadiness=0 expanded=64 completedPlans=65 improvements=3 strategiesDiscovered=22 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=6 maxStrategyExpansionCount=29 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+HORIZON_FUEL_SUMMARY day=3 remainingFutureDays=0 patrolAgents=3 projectedTotalPatrolFuel=0 futureReadyPatrolCount=0 reachableOpportunitySpots=0 reachableOpportunityBrands=0 minimumPatrolReadiness=0 routeCostCacheEntries=496 pathfindingExecutions=8
+PATROL_HORIZON_READINESS day=3 agent=0 endPosition=38 endFuel=4 reachableSpots=0 reachableBrands=0 minimumFuelToOpportunity=0 fuelSlack=0
+PATROL_HORIZON_READINESS day=3 agent=1 endPosition=33 endFuel=6 reachableSpots=0 reachableBrands=0 minimumFuelToOpportunity=0 fuelSlack=0
+PATROL_HORIZON_READINESS day=3 agent=2 endPosition=2 endFuel=7 reachableSpots=0 reachableBrands=0 minimumFuelToOpportunity=0 fuelSlack=0
+LOCAL_PLAN_VALID matchId=m-4120 day=3 mode=HorizonAwareSemiCommitmentPlanner
+ACTIONS_SUBMITTED matchId=m-4120 day=3
+UDON_OBSERVABILITY matchId=m-4120 day=3 predictedDayUdon=17 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-4120 day=3
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_WAITING matchId=m-4120 httpStatus=425
+RESULT_RECEIVED matchId=m-4120 submittedDays=4
+FINAL matchId=m-4120 submittedDays=4 rateLimits=0 result={"protocol_version":"v0.1-draft","type":"match_result","match_id":"m-4120","standings":[{"rank":1,"team_id":"team-B","udon_types":4,"daily_types_sum":16,"udon_total":64,"response_ms_total":1039},{"rank":2,"team_id":"team-A","udon_types":4,"daily_types_sum":16,"udon_total":57,"response_ms_total":1031}]}
