@@ -23,6 +23,7 @@ class RuntimeConfigTest {
         assertFalse(config.othersShapeDiagnostics());
         assertFalse(config.othersValueDiagnostics());
         assertFalse(config.contentionDiagnostics());
+        assertFalse(config.r3RootFamilyAudit());
         assertFalse(config.toString().contains("never-print-this"));
     }
 
@@ -75,6 +76,20 @@ class RuntimeConfigTest {
                 "PROCON_MATCH_ID", "m-fake",
                 "PROCON_TOKEN", "fake",
                 "PROCON_CONTENTION_DIAGNOSTICS", "yes")));
+    }
+
+    @Test
+    void parsesStrictOptInR3RootFamilyShadowAudit() {
+        RuntimeConfig enabled = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_R3_ROOT_FAMILY_AUDIT", "TrUe"));
+
+        assertTrue(enabled.r3RootFamilyAudit());
+        assertThrows(IllegalArgumentException.class, () -> RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_R3_ROOT_FAMILY_AUDIT", "yes")));
     }
 
     @Test
@@ -291,5 +306,75 @@ class RuntimeConfigTest {
                 "PROCON_MATCH_ID", "m-fake",
                 "PROCON_TOKEN", "fake",
                 "PROCON_PLANNER_MODE", "anytime_stratified_coupled_competitive")));
+    }
+
+    @Test
+    void parsesAndFactoriesTheHybridCalibratedMarginMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_hybrid_calibrated_margin"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN, config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.HybridCalibratedMarginPlanner);
+        assertTrue(MatchRuntime.plannerFor(
+                PlannerMode.ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN, false)
+                instanceof vn.ptit.procon.planner.CoupledCompetitiveMarginPlanner);
+    }
+
+    @Test
+    void parsesAndFactoriesTheM17DiverseCandidateModeWithoutChangingM161() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_hybrid_diverse_candidates"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES,
+                config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.HybridDiverseCandidatePlanner);
+        assertTrue(MatchRuntime.plannerFor(
+                PlannerMode.ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN, false)
+                instanceof vn.ptit.procon.planner.HybridCalibratedMarginPlanner);
+    }
+
+    @Test
+    void parsesAndFactoriesTheM18TeamAllocatedHybridModeWithoutChangingM17() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_team_allocated_hybrid"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID, config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.HybridTeamAllocatedPlanner);
+        assertTrue(MatchRuntime.plannerFor(
+                PlannerMode.ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES, false)
+                instanceof vn.ptit.procon.planner.HybridDiverseCandidatePlanner);
+    }
+
+    @Test
+    void parsesAndFactoriesTheM19CapacityCompetitiveMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "anytime_stratified_capacity_competitive"));
+
+        assertEquals(PlannerMode.ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE, config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.CapacityCompetitivePlanner);
+    }
+
+    @Test
+    void parsesAndFactoriesThePlannerV2JointBeamMode() {
+        RuntimeConfig config = RuntimeConfig.fromEnvironment(Map.of(
+                "PROCON_MATCH_ID", "m-fake",
+                "PROCON_TOKEN", "fake",
+                "PROCON_PLANNER_MODE", "joint_team_beam_v2"));
+
+        assertEquals(PlannerMode.JOINT_TEAM_BEAM_V2, config.plannerMode());
+        assertTrue(MatchRuntime.plannerFor(config.plannerMode(), false)
+                instanceof vn.ptit.procon.planner.v2.JointTeamBeamPlanner);
     }
 }

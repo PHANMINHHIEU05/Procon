@@ -1,0 +1,147 @@
+CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-5070 plannerMode=JOINT_TEAM_BEAM_V2 PROCON_TOKEN=<set>
+SETUP_WAITING matchId=m-5070
+SETUP_RECEIVED matchId=m-5070 agents=4 days=4
+ASSIGNMENT_SUBMITTED matchId=m-5070 agents=4
+ASSIGNMENT_ACCEPTED matchId=m-5070 agents=4
+MATCH_STARTED matchId=m-5070
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+V2_JOINT_BEAM_START day=0 beamWidth=48 maxExpandedStates=64 maxChildrenPerState=24 maxNextTargetsPerAgent=4
+V2_PATHFINDING_AUDIT day=0 catalogPathfindingExecutions=11 searchPathfindingExecutions=0
+V2_JOINT_BEAM_EXPANSION_SUMMARY day=0 expanded=64 generatedChildren=240 uniqueStates=175 duplicateStatesRejected=66 frontierPeak=48 budgetExhausted=true
+V2_JOINT_BEAM_DONE day=0 beamWidth=48 maxExpandedStates=64 expanded=64 generatedChildren=240 uniqueStates=175 duplicateStatesRejected=66 dominatedStatesRejected=0 terminalStates=176 terminalPlansEvaluated=176 selectedOwnSemiBrands=4 selectedOwnSemiCollections=16 selectedHybridMarginScore4=-13 catalogPathfindingExecutions=11 searchPathfindingExecutions=0 planningMillis=1336
+LOCAL_PLAN_VALID matchId=m-5070 day=0 mode=JointTeamBeamPlanner
+ACTION_REQUEST_FINGERPRINT matchId=m-5070 day=0 agentCount=4 serializedLength=105 fingerprint=f735884e
+ACTION_DURATION_AUDIT matchId=m-5070 day=0 agent=0 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=15 finalAction=MOVE(UP_RIGHT) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=0 agent=0 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=38 wireReplayEndPosition=38 simulatedPatrolFuel=45 wireReplayPatrolFuel=45 actionCount=15 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=0 agent=1 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=18 finalAction=WAIT(3) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=0 agent=1 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=48 wireReplayEndPosition=48 simulatedPatrolFuel=36 wireReplayPatrolFuel=36 actionCount=18 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=0 agent=2 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=12 finalAction=WAIT(9) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=0 agent=2 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=48 wireReplayEndPosition=48 simulatedPatrolFuel=48 wireReplayPatrolFuel=48 actionCount=12 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=0 agent=3 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=1 finalAction=WAIT(30) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=0 agent=3 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=58 wireReplayEndPosition=58 simulatedPatrolFuel=UNAVAILABLE wireReplayPatrolFuel=UNAVAILABLE actionCount=1 durationMatch=true positionMatch=true fuelMatch=NA fuelCheckReason=nonPatrolOrUnavailableFuel
+ACTIONS_SUBMITTED matchId=m-5070 day=0 fingerprint=f735884e
+ACTION_RESPONSE_DAY_OBSERVED matchId=m-5070 submittedDay=0 responseDay=1 delta=1 fingerprint=f735884e
+UDON_OBSERVABILITY matchId=m-5070 day=0 predictedDayUdon=16 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-5070 day=0
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=0 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+PARITY_OBSERVED matchId=m-5070 day=0 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-5070 from=0 to=1
+V2_JOINT_BEAM_START day=1 beamWidth=48 maxExpandedStates=64 maxChildrenPerState=24 maxNextTargetsPerAgent=4
+V2_PATHFINDING_AUDIT day=1 catalogPathfindingExecutions=8 searchPathfindingExecutions=0
+V2_JOINT_BEAM_EXPANSION_SUMMARY day=1 expanded=64 generatedChildren=266 uniqueStates=210 duplicateStatesRejected=60 frontierPeak=48 budgetExhausted=true
+V2_JOINT_BEAM_DONE day=1 beamWidth=48 maxExpandedStates=64 expanded=64 generatedChildren=266 uniqueStates=210 duplicateStatesRejected=60 dominatedStatesRejected=0 terminalStates=211 terminalPlansEvaluated=211 selectedOwnSemiBrands=4 selectedOwnSemiCollections=13 selectedHybridMarginScore4=-25 catalogPathfindingExecutions=8 searchPathfindingExecutions=0 planningMillis=1297
+LOCAL_PLAN_VALID matchId=m-5070 day=1 mode=JointTeamBeamPlanner
+ACTION_REQUEST_FINGERPRINT matchId=m-5070 day=1 agentCount=4 serializedLength=112 fingerprint=d8905f54
+ACTION_DURATION_AUDIT matchId=m-5070 day=1 agent=0 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=17 finalAction=MOVE(UP_RIGHT) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=1 agent=0 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=3 wireReplayEndPosition=3 simulatedPatrolFuel=54 wireReplayPatrolFuel=54 actionCount=17 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=1 agent=1 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=12 finalAction=WAIT(8) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=1 agent=1 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=3 wireReplayEndPosition=3 simulatedPatrolFuel=48 wireReplayPatrolFuel=48 actionCount=12 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=1 agent=2 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=17 finalAction=WAIT(1) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=1 agent=2 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=61 wireReplayEndPosition=61 simulatedPatrolFuel=29 wireReplayPatrolFuel=29 actionCount=17 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=1 agent=3 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=3 finalAction=WAIT(26) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=1 agent=3 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=48 wireReplayEndPosition=48 simulatedPatrolFuel=UNAVAILABLE wireReplayPatrolFuel=UNAVAILABLE actionCount=3 durationMatch=true positionMatch=true fuelMatch=NA fuelCheckReason=nonPatrolOrUnavailableFuel
+ACTIONS_SUBMITTED matchId=m-5070 day=1 fingerprint=d8905f54
+ACTION_RESPONSE_DAY_OBSERVED matchId=m-5070 submittedDay=1 responseDay=2 delta=1 fingerprint=d8905f54
+UDON_OBSERVABILITY matchId=m-5070 day=1 predictedDayUdon=16 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-5070 day=1
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=1 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+PARITY_OBSERVED matchId=m-5070 day=1 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-5070 from=1 to=2
+V2_JOINT_BEAM_START day=2 beamWidth=48 maxExpandedStates=64 maxChildrenPerState=24 maxNextTargetsPerAgent=4
+V2_PATHFINDING_AUDIT day=2 catalogPathfindingExecutions=8 searchPathfindingExecutions=0
+V2_JOINT_BEAM_EXPANSION_SUMMARY day=2 expanded=64 generatedChildren=250 uniqueStates=194 duplicateStatesRejected=60 frontierPeak=48 budgetExhausted=true
+V2_JOINT_BEAM_DONE day=2 beamWidth=48 maxExpandedStates=64 expanded=64 generatedChildren=250 uniqueStates=194 duplicateStatesRejected=60 dominatedStatesRejected=0 terminalStates=195 terminalPlansEvaluated=195 selectedOwnSemiBrands=4 selectedOwnSemiCollections=16 selectedHybridMarginScore4=-9 catalogPathfindingExecutions=8 searchPathfindingExecutions=0 planningMillis=1264
+LOCAL_PLAN_VALID matchId=m-5070 day=2 mode=JointTeamBeamPlanner
+ACTION_REQUEST_FINGERPRINT matchId=m-5070 day=2 agentCount=4 serializedLength=123 fingerprint=3b6aff15
+ACTION_DURATION_AUDIT matchId=m-5070 day=2 agent=0 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=16 finalAction=MOVE(UP_RIGHT) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=2 agent=0 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=47 wireReplayEndPosition=47 simulatedPatrolFuel=56 wireReplayPatrolFuel=56 actionCount=16 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=2 agent=1 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=18 finalAction=WAIT(1) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=2 agent=1 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=47 wireReplayEndPosition=47 simulatedPatrolFuel=26 wireReplayPatrolFuel=26 actionCount=18 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=2 agent=2 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=14 finalAction=WAIT(1) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=2 agent=2 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=48 wireReplayEndPosition=48 simulatedPatrolFuel=43 wireReplayPatrolFuel=43 actionCount=14 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=2 agent=3 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=6 finalAction=WAIT(20) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=2 agent=3 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=61 wireReplayEndPosition=61 simulatedPatrolFuel=UNAVAILABLE wireReplayPatrolFuel=UNAVAILABLE actionCount=6 durationMatch=true positionMatch=true fuelMatch=NA fuelCheckReason=nonPatrolOrUnavailableFuel
+ACTIONS_SUBMITTED matchId=m-5070 day=2 fingerprint=3b6aff15
+ACTION_RESPONSE_DAY_OBSERVED matchId=m-5070 submittedDay=2 responseDay=3 delta=1 fingerprint=3b6aff15
+UDON_OBSERVABILITY matchId=m-5070 day=2 predictedDayUdon=17 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-5070 day=2
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=2 agents=4
+DAY_STATE_RECEIVED matchId=m-5070 day=3 agents=4
+PARITY_OBSERVED matchId=m-5070 day=2 position=MATCH patrolFuel=MATCH
+DAY_ADVANCED matchId=m-5070 from=2 to=3
+V2_JOINT_BEAM_START day=3 beamWidth=48 maxExpandedStates=64 maxChildrenPerState=24 maxNextTargetsPerAgent=4
+V2_PATHFINDING_AUDIT day=3 catalogPathfindingExecutions=8 searchPathfindingExecutions=0
+V2_JOINT_BEAM_EXPANSION_SUMMARY day=3 expanded=64 generatedChildren=271 uniqueStates=214 duplicateStatesRejected=61 frontierPeak=48 budgetExhausted=true
+V2_JOINT_BEAM_DONE day=3 beamWidth=48 maxExpandedStates=64 expanded=64 generatedChildren=271 uniqueStates=214 duplicateStatesRejected=61 dominatedStatesRejected=0 terminalStates=215 terminalPlansEvaluated=215 selectedOwnSemiBrands=4 selectedOwnSemiCollections=14 selectedHybridMarginScore4=-13 catalogPathfindingExecutions=8 searchPathfindingExecutions=0 planningMillis=50
+LOCAL_PLAN_VALID matchId=m-5070 day=3 mode=JointTeamBeamPlanner
+ACTION_REQUEST_FINGERPRINT matchId=m-5070 day=3 agentCount=4 serializedLength=114 fingerprint=ae3d7b58
+ACTION_DURATION_AUDIT matchId=m-5070 day=3 agent=0 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=14 finalAction=WAIT(4) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=3 agent=0 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=17 wireReplayEndPosition=17 simulatedPatrolFuel=43 wireReplayPatrolFuel=43 actionCount=14 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=3 agent=1 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=16 finalAction=WAIT(2) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=3 agent=1 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=48 wireReplayEndPosition=48 simulatedPatrolFuel=41 wireReplayPatrolFuel=41 actionCount=16 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=3 agent=2 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=16 finalAction=MOVE(RIGHT) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=3 agent=2 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=47 wireReplayEndPosition=47 simulatedPatrolFuel=60 wireReplayPatrolFuel=60 actionCount=16 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5070 day=3 agent=3 dayBudget=30 plannerDuration=30 validatedDuration=30 encodedDuration=30 actionCount=4 finalAction=WAIT(25) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5070 day=3 agent=3 dayBudget=30 simulatedDuration=30 wireReplayDuration=30 simulatedEndPosition=47 wireReplayEndPosition=47 simulatedPatrolFuel=UNAVAILABLE wireReplayPatrolFuel=UNAVAILABLE actionCount=4 durationMatch=true positionMatch=true fuelMatch=NA fuelCheckReason=nonPatrolOrUnavailableFuel
+ACTIONS_SUBMITTED matchId=m-5070 day=3 fingerprint=ae3d7b58
+ACTION_RESPONSE_DAY_OBSERVED matchId=m-5070 submittedDay=3 responseDay=4 delta=1 fingerprint=ae3d7b58
+UDON_OBSERVABILITY matchId=m-5070 day=3 predictedDayUdon=17 authoritativeActual=UNAVAILABLE
+ACTIONS_ACCEPTED matchId=m-5070 day=3
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_WAITING matchId=m-5070 httpStatus=425
+RESULT_RECEIVED matchId=m-5070 submittedDays=4
+FINAL matchId=m-5070 submittedDays=4 rateLimits=0 result={"protocol_version":"v0.1-draft","type":"match_result","match_id":"m-5070","standings":[{"rank":1,"team_id":"team-B","udon_types":4,"daily_types_sum":16,"udon_total":64,"response_ms_total":1768},{"rank":2,"team_id":"team-A","udon_types":4,"daily_types_sum":16,"udon_total":60,"response_ms_total":4685}]}

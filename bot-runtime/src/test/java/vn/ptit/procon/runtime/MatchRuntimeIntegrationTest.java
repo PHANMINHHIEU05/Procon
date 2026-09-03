@@ -595,24 +595,21 @@ class MatchRuntimeIntegrationTest {
     }
 
     @Test
-    void actionResponseDayIncompatibleWithTheSubmittedDayFailsInsteadOfCountingAsSuccess()
-            throws Exception {
+    void actionResponseDayOutsideCommonWindowIsDiagnosticOnly() throws Exception {
         restartForParityDesyncScenario(0, 3);
         CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
-        MatchRuntime runtime = runtimeWith(planner);
 
-        List<IllegalStateException> failure = new ArrayList<>();
-        String logs = capturing(() -> failure.add(
-                assertThrows(IllegalStateException.class, runtime::run)));
+        List<MatchRuntimeResult> results = new ArrayList<>();
+        String logs = capturing(() -> results.add(runtimeWith(planner).run()));
 
-        // Day 1 was submitted but the server answered for day 3: an accepted-looking desync.
+        // Day 1 was accepted even though its action_result reported day 3.
         assertEquals(2, calls.get("actions").get());
-        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
-        assertEquals(1, lines(logs, "ACTIONS_ACCEPTED "));
-        assertTrue(logs.contains("ACTION_RESPONSE_DAY_MISMATCH matchId=m-fake submittedDay=1 "
-                + "responseDay=3 submissionType=action_result httpStatus=200"));
-        assertTrue(failure.get(0).getMessage().contains(
-                "Action response day 3 is incompatible with submitted day 1"));
+        assertEquals(2, results.get(0).submittedDays());
+        assertEquals(2, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
+        assertTrue(logs.contains("ACTION_RESPONSE_DAY_ANOMALY matchId=m-fake submittedDay=1 "
+                + "responseDay=3 delta=2"));
+        assertEquals(2, lines(logs, "ACTIONS_ACCEPTED "));
         assertFalse(logs.contains("PARITY_RESYNC_REQUIRED"));
         assertFalse(logs.contains("fake-token"));
     }
@@ -627,14 +624,14 @@ class MatchRuntimeIntegrationTest {
 
         assertEquals(1, results.get(0).submittedDays());
         assertEquals(1, lines(logs, "ACTIONS_ACCEPTED matchId=m-fake day=0"));
-        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
-        assertEquals(0, lines(logs, "ACTION_RESPONSE_POST_ADVANCE "));
+        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
         assertEquals("FINAL", results.get(0).authoritativeResult().get("status").textValue());
     }
 
     /** The exact m-4277 shape: day 0 submitted, HTTP 200 action_result reporting day 1. */
     @Test
-    void submittedDay0ResponseDay1IsAcceptedAsPostActionAdvance() throws Exception {
+    void submittedDay0ResponseDay1IsAcceptedAsDiagnosticObservation() throws Exception {
         CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
         restartForResponseDayScenario(2, 0, List.of(1, 1));
 
@@ -643,16 +640,16 @@ class MatchRuntimeIntegrationTest {
 
         assertEquals(2, results.get(0).submittedDays());
         assertEquals(2, planner.calls.get());
-        assertEquals(1, lines(logs, "ACTION_RESPONSE_POST_ADVANCE "));
-        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
+        assertEquals(2, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
         assertTrue(logs.contains(
-                "ACTION_RESPONSE_POST_ADVANCE matchId=m-fake submittedDay=0 responseDay=1"));
+                "ACTION_RESPONSE_DAY_OBSERVED matchId=m-fake submittedDay=0 responseDay=1 delta=1"));
         assertEquals("FINAL", results.get(0).authoritativeResult().get("status").textValue());
         assertFalse(logs.contains("fake-token"));
     }
 
     @Test
-    void submittedDay1ResponseDay2IsAcceptedAsPostActionAdvance() throws Exception {
+    void submittedDay1ResponseDay2IsAcceptedAsDiagnosticObservation() throws Exception {
         CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
         restartForResponseDayScenario(2, 0, List.of(0, 2));
 
@@ -660,53 +657,42 @@ class MatchRuntimeIntegrationTest {
         String logs = capturing(() -> results.add(runtimeWith(planner).run()));
 
         assertEquals(2, results.get(0).submittedDays());
-        assertEquals(1, lines(logs, "ACTION_RESPONSE_POST_ADVANCE "));
-        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
+        assertEquals(2, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
         assertTrue(logs.contains(
-                "ACTION_RESPONSE_POST_ADVANCE matchId=m-fake submittedDay=1 responseDay=2"));
+                "ACTION_RESPONSE_DAY_OBSERVED matchId=m-fake submittedDay=1 responseDay=2 delta=1"));
         assertEquals("FINAL", results.get(0).authoritativeResult().get("status").textValue());
     }
 
-    /** N + 2 is outside the observed window, so the m-4157 shape stays a hard failure. */
+    /** Any response day is diagnostic only; authoritative state still controls progression. */
     @Test
-    void submittedDay1ResponseDay3StillFails() throws Exception {
+    void submittedDay1ResponseDay3IsAcceptedAndMarkedAnomalous() throws Exception {
         CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
         restartForResponseDayScenario(2, 0, List.of(0, 3));
-        MatchRuntime runtime = runtimeWith(planner);
 
-        List<IllegalStateException> failure = new ArrayList<>();
-        String logs = capturing(() -> failure.add(
-                assertThrows(IllegalStateException.class, runtime::run)));
+        List<MatchRuntimeResult> results = new ArrayList<>();
+        String logs = capturing(() -> results.add(runtimeWith(planner).run()));
 
-        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
-        assertEquals(0, lines(logs, "ACTION_RESPONSE_POST_ADVANCE "));
-        assertTrue(logs.contains("ACTION_RESPONSE_DAY_MISMATCH matchId=m-fake submittedDay=1 "
-                + "responseDay=3 submissionType=action_result httpStatus=200"));
-        assertTrue(failure.get(0).getMessage().contains(
-                "Action response day 3 is incompatible with submitted day 1"));
-        assertTrue(failure.get(0).getMessage().contains("the compatible window is [1, 2]"));
-        // Day 0 was accepted before day 1 failed, so exactly one day survived the contract check.
-        assertEquals(1, lines(logs, "ACTIONS_ACCEPTED matchId=m-fake day=0"));
-        assertEquals(0, lines(logs, "ACTIONS_ACCEPTED matchId=m-fake day=1"));
+        assertEquals(2, results.get(0).submittedDays());
+        assertEquals(2, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
+        assertEquals(2, lines(logs, "ACTIONS_ACCEPTED "));
+        assertEquals("FINAL", results.get(0).authoritativeResult().get("status").textValue());
     }
 
     @Test
-    void submittedDay2ResponseDay1FailsAsStale() throws Exception {
+    void submittedDay2ResponseDay1IsAcceptedAndMarkedAnomalous() throws Exception {
         CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
         restartForResponseDayScenario(3, 0, List.of(0, 1, 1));
-        MatchRuntime runtime = runtimeWith(planner);
 
-        List<IllegalStateException> failure = new ArrayList<>();
-        String logs = capturing(() -> failure.add(
-                assertThrows(IllegalStateException.class, runtime::run)));
+        List<MatchRuntimeResult> results = new ArrayList<>();
+        String logs = capturing(() -> results.add(runtimeWith(planner).run()));
 
-        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
-        assertTrue(logs.contains("ACTION_RESPONSE_DAY_MISMATCH matchId=m-fake submittedDay=2 "
-                + "responseDay=1 submissionType=action_result httpStatus=200"));
-        assertTrue(failure.get(0).getMessage().contains(
-                "Action response day 1 is incompatible with submitted day 2"));
-        assertEquals(2, lines(logs, "ACTIONS_ACCEPTED "));
-        assertEquals(0, lines(logs, "ACTION_RESPONSE_POST_ADVANCE "));
+        assertEquals(3, results.get(0).submittedDays());
+        assertEquals(3, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
+        assertEquals(3, lines(logs, "ACTIONS_ACCEPTED "));
+        assertEquals("FINAL", results.get(0).authoritativeResult().get("status").textValue());
     }
 
     @Test
@@ -719,14 +705,14 @@ class MatchRuntimeIntegrationTest {
 
         assertEquals(2, results.get(0).submittedDays());
         assertEquals(2, lines(logs, "ACTIONS_ACCEPTED "));
-        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
-        assertEquals(0, lines(logs, "ACTION_RESPONSE_POST_ADVANCE "));
+        assertEquals(2, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
         assertEquals("FINAL", results.get(0).authoritativeResult().get("status").textValue());
     }
 
     /**
-     * A post-advance response is informational only: the runtime keeps polling {@code /state} and
-     * plans day 1 from the authoritative read, not from the action_result that already said day 1.
+     * A response-day observation is informational only: the runtime keeps polling {@code /state}
+     * and plans day 1 from the authoritative read.
      */
     @Test
     void acceptedPostAdvanceResponseStillPollsAuthoritativeNextStateBeforePlanning() throws Exception {
@@ -739,13 +725,13 @@ class MatchRuntimeIntegrationTest {
 
         assertEquals(2, results.get(0).submittedDays());
         assertEquals(2, planner.calls.get());
-        // Two day-0 reads prove the post-advance response did not stand in for the next DayState.
+        // Two day-0 reads prove the response observation did not stand in for the next DayState.
         assertEquals(2, lines(logs, "DAY_STATE_RECEIVED matchId=m-fake day=0"));
         assertEquals(1, lines(logs, "DAY_STATE_RECEIVED matchId=m-fake day=1"));
         assertEquals(3, calls.get("state").get());
-        assertTrue(logs.indexOf("ACTION_RESPONSE_POST_ADVANCE matchId=m-fake submittedDay=0")
+        assertTrue(logs.indexOf("ACTION_RESPONSE_DAY_OBSERVED matchId=m-fake submittedDay=0")
                         < logs.indexOf("DAY_STATE_RECEIVED matchId=m-fake day=1"),
-                "the authoritative day-1 read must follow the post-advance response");
+                "the authoritative day-1 read must follow the response observation");
         assertTrue(logs.indexOf("DAY_STATE_RECEIVED matchId=m-fake day=1")
                         < logs.indexOf("ACTIONS_SUBMITTED matchId=m-fake day=1"),
                 "day 1 must be planned only after its authoritative state arrived");
@@ -753,7 +739,7 @@ class MatchRuntimeIntegrationTest {
     }
 
     @Test
-    void acceptedPostAdvanceResponseDoesNotCreateDuplicateSubmission() throws Exception {
+    void acceptedResponseDoesNotCreateDuplicateSubmission() throws Exception {
         CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
         restartForResponseDayScenario(2, 1, List.of(1, 1));
 
@@ -771,12 +757,92 @@ class MatchRuntimeIntegrationTest {
         assertEquals(0, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=2"));
     }
 
+    @Test
+    void m5042ResponseDayTwoResyncsFromAuthoritativeStateWithoutDuplicateDayZeroPost()
+            throws Exception {
+        CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
+        restartForResponseDayScenario(2, 1, List.of(2, 1));
+
+        List<MatchRuntimeResult> results = new ArrayList<>();
+        String logs = capturing(() -> results.add(runtimeWith(planner).run()));
+
+        assertEquals(2, results.get(0).submittedDays());
+        assertEquals(2, planner.calls.get());
+        assertEquals(2, calls.get("actions").get());
+        assertEquals(1, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=0"));
+        assertEquals(1, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=1"));
+        assertEquals(2, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
+        assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
+        assertEquals(2, lines(logs, "DAY_STATE_RECEIVED matchId=m-fake day=0"));
+        assertEquals(1, lines(logs, "DAY_STATE_RECEIVED matchId=m-fake day=1"));
+        assertTrue(logs.contains("DAY_ADVANCED matchId=m-fake from=0 to=1"));
+    }
+
+    @Test
+    void authoritativeDayGapAfterAcceptedActionFailsClosedWithoutInventingSkippedSubmission()
+            throws Exception {
+        restartForAuthoritativeGapScenario();
+        CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
+
+        List<IllegalStateException> failure = new ArrayList<>();
+        String logs = capturing(() -> failure.add(
+                assertThrows(IllegalStateException.class, () -> runtimeWith(planner).run())));
+
+        assertEquals(1, calls.get("actions").get());
+        assertEquals(1, planner.calls.get());
+        assertEquals(1, lines(logs, "ACTIONS_ACCEPTED matchId=m-fake day=0"));
+        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
+        assertEquals(1, lines(logs, "AUTHORITATIVE_DAY_GAP "));
+        assertTrue(logs.contains("AUTHORITATIVE_DAY_GAP matchId=m-fake submittedDay=0 "
+                + "authoritativeDay=2 skippedDays=1..1"));
+        assertEquals(0, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=1"));
+        assertEquals(0, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=2"));
+        assertTrue(failure.getFirst().getMessage().contains("refusing to pretend skipped days were submitted"));
+    }
+
+    @Test
+    void staleAuthoritativeStateIsRetriedWithoutResubmittingThePriorDay() throws Exception {
+        restartForStaleAuthoritativeStateScenario();
+        CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
+
+        List<MatchRuntimeResult> results = new ArrayList<>();
+        String logs = capturing(() -> results.add(runtimeWith(planner).run()));
+
+        assertEquals(3, results.getFirst().submittedDays());
+        assertEquals(3, calls.get("actions").get());
+        assertEquals(1, lines(logs, "AUTHORITATIVE_STATE_STALE "));
+        assertEquals(1, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=0"));
+        assertEquals(1, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=1"));
+        assertEquals(1, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=2"));
+        assertTrue(logs.contains("AUTHORITATIVE_STATE_STALE matchId=m-fake observedDay=0 "
+                + "lastObservedDay=1 submittedDay=1 attempt=1"));
+    }
+
+    @Test
+    void everyObservedResponseDayIsAcceptanceDiagnosticOnly() throws Exception {
+        for (int responseDay : List.of(0, 1, 2, 3)) {
+            restartForResponseDayScenario(2, 0, List.of(responseDay, 1));
+            CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
+            List<MatchRuntimeResult> results = new ArrayList<>();
+            String logs = capturing(() -> results.add(runtimeWith(planner).run()));
+
+            assertEquals(2, results.getFirst().submittedDays());
+            assertEquals(2, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
+            assertEquals(responseDay >= 2 ? 1 : 0,
+                    lines(logs, "ACTION_RESPONSE_DAY_ANOMALY "));
+            assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
+            assertEquals(1, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=0"));
+            assertEquals(1, lines(logs, "ACTIONS_SUBMITTED matchId=m-fake day=1"));
+        }
+    }
+
     /**
-     * Accepting an {@code N + 1} response must not disable the bounded parity-resync safety path:
+     * An accepted response-day observation must not disable the bounded parity-resync safety path:
      * {@code lastSubmittedDay} stays at N, so the authoritative day N+1 is still fully checked.
      */
     @Test
-    void parityMismatchAfterAnAcceptedPostAdvanceResponseStillTriggersBoundedResync()
+    void parityMismatchAfterAnAcceptedResponseStillTriggersBoundedResync()
             throws Exception {
         restartForParityDesyncScenario(99, 1, 1);
         CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
@@ -786,7 +852,7 @@ class MatchRuntimeIntegrationTest {
         String logs = capturing(() -> failure.add(
                 assertThrows(IllegalStateException.class, runtime::run)));
 
-        assertEquals(1, lines(logs, "ACTION_RESPONSE_POST_ADVANCE "));
+        assertEquals(1, lines(logs, "ACTION_RESPONSE_DAY_OBSERVED "));
         assertEquals(0, lines(logs, "ACTION_RESPONSE_DAY_MISMATCH "));
         assertEquals(1, planner.calls.get());
         assertEquals(1, calls.get("actions").get());
@@ -990,6 +1056,35 @@ class MatchRuntimeIntegrationTest {
         assertTrue(failure.get(0).getMessage().contains(
                 "Server rejected day 0 actions: type=action_result httpStatus=200 day=0 reason=E_STEP_OVERFLOW (xe 0, bước 60): kế hoạch thừa lệnh: tổng số bước vượt quá số bước trong ngày"));
         assertEquals(1, planner.calls.get());
+    }
+
+    @Test
+    void serverStepOverflowAddsBoundedArrayAndCorrelationDiagnosticsWithoutChangingFailure() throws Exception {
+        restartForInvalidActionScenario(
+                60, 3,
+                "E_STEP_OVERFLOW (xe 3, bước 59): không đủ bước để hoàn thành di chuyển trong ngày "
+                        + "(cần 2 bước, ngày còn 1)");
+        CountingPlanner planner = new CountingPlanner(new vn.ptit.procon.planner.WaitDayPlanner());
+        MatchRuntime runtime = runtimeWith(planner);
+
+        List<IllegalStateException> failure = new ArrayList<>();
+        String logs = capturing(() -> failure.add(
+                assertThrows(IllegalStateException.class, runtime::run)));
+
+        assertEquals(1, calls.get("actions").get());
+        assertTrue(logs.contains("SERVER_ACTION_REJECTED matchId=m-fake submittedDay=0 "
+                + "responseDay=3 httpStatus=200 reason=E_STEP_OVERFLOW (xe 3, bước 59):"));
+        assertTrue(logs.contains("rejectedAgent=3 serverStep=59 serverRequiredSteps=2 serverRemainingSteps=1"));
+        assertTrue(logs.lines().anyMatch(line -> line.contains(
+                "REJECTED_ACTION_ARRAY matchId=m-fake submittedDay=0 agent=0")
+                && line.contains("actions=[-60]")));
+        assertTrue(logs.lines().anyMatch(line -> line.contains(
+                "WIRE_MOVEMENT_DURATION_TRACE matchId=m-fake day=0 agent=0")
+                && line.contains("actionType=WAIT")
+                && line.contains("localStartStep=0")
+                && line.contains("localStepCost=60")
+                && line.contains("localEndStep=60")));
+        assertTrue(failure.getFirst().getMessage().contains("Server rejected day 0 actions"));
     }
 
     /**
@@ -1204,8 +1299,8 @@ class MatchRuntimeIntegrationTest {
     }
 
     /**
-     * WAIT-only match whose {@code /actions} reports a caller-chosen day, so the compatible
-     * response-day window can be probed directly without any other moving part.
+     * WAIT-only match whose {@code /actions} reports a caller-chosen day, so response-day
+     * diagnostics can be probed directly without any other moving part.
      *
      * <p>Every day predicts and observes the same agent row, so parity always agrees and the only
      * thing under test is the response-day contract.</p>
@@ -1214,7 +1309,7 @@ class MatchRuntimeIntegrationTest {
      * @param staleReadsPerDay how many {@code /state} reads after an accepted submission still report
      *                        the day that was just submitted before the authoritative day advances.
      *                        A positive value proves the runtime waits for the authoritative state
-     *                        instead of trusting a post-advance {@code action_result}
+     *                        instead of trusting the {@code action_result} day field
      * @param responseDays    day reported by {@code /actions} per submission, in order; a
      *                        {@code null} entry omits the {@code day} field entirely
      */
@@ -1266,6 +1361,107 @@ class MatchRuntimeIntegrationTest {
             json(exchange, 200, responseDay == null
                     ? actionResultWithoutDay("response-day-actions-" + attempt)
                     : actionResult(responseDay, "response-day-actions-" + attempt));
+        });
+        context("result", exchange -> {
+            count("result");
+            json(exchange, 200, "{\"status\":\"FINAL\",\"score\":0}");
+        });
+        server.start();
+    }
+
+    private void restartForAuthoritativeGapScenario() throws IOException {
+        server.stop(0);
+        calls.clear();
+        actionBodies.clear();
+        assignmentAttempts.set(0);
+        stateSuccesses.set(0);
+        AtomicBoolean actionsAccepted = new AtomicBoolean();
+        server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+        context("setup", exchange -> {
+            count("setup");
+            json(exchange, 200, """
+                    {"daySteps":[3,3],
+                     "map":{"width":3,"height":1,"cells":[[0,0,0]]},
+                     "spots":[{"brand":1,"pos":1,"stocks":2}],
+                     "agents":[0,2],"fuelLimits":8}
+                    """);
+        });
+        context("assignment", exchange -> {
+            count("assignment");
+            assertEquals("[0,1]", body(exchange));
+            json(exchange, 200, actionResult(0, "gap-assignment"));
+        });
+        context("start", exchange -> {
+            count("start");
+            json(exchange, 200, "{\"started\":true}");
+        });
+        context("state", exchange -> {
+            count("state");
+            int day = actionsAccepted.get() ? 2 : 0;
+            json(exchange, 200, desyncDayState(day, 0, 8));
+        });
+        context("actions", exchange -> {
+            count("actions");
+            actionBodies.add(body(exchange));
+            actionsAccepted.set(true);
+            json(exchange, 200, actionResult(2, "gap-actions-1"));
+        });
+        context("result", exchange -> {
+            count("result");
+            json(exchange, 200, "{\"status\":\"FINAL\",\"score\":0}");
+        });
+        server.start();
+    }
+
+    private void restartForStaleAuthoritativeStateScenario() throws IOException {
+        server.stop(0);
+        calls.clear();
+        actionBodies.clear();
+        assignmentAttempts.set(0);
+        stateSuccesses.set(0);
+        AtomicBoolean dayZeroAccepted = new AtomicBoolean();
+        AtomicBoolean dayOneAccepted = new AtomicBoolean();
+        AtomicInteger staleReads = new AtomicInteger();
+        server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+        context("setup", exchange -> {
+            count("setup");
+            json(exchange, 200, """
+                    {"daySteps":[3,3,3],
+                     "map":{"width":3,"height":1,"cells":[[0,0,0]]},
+                     "spots":[{"brand":1,"pos":1,"stocks":2}],
+                     "agents":[0,2],"fuelLimits":8}
+                    """);
+        });
+        context("assignment", exchange -> {
+            count("assignment");
+            assertEquals("[0,1]", body(exchange));
+            json(exchange, 200, actionResult(0, "stale-assignment"));
+        });
+        context("start", exchange -> {
+            count("start");
+            json(exchange, 200, "{\"started\":true}");
+        });
+        context("state", exchange -> {
+            count("state");
+            int day;
+            if (!dayZeroAccepted.get()) {
+                day = 0;
+            } else if (!dayOneAccepted.get()) {
+                day = 1;
+            } else {
+                day = staleReads.getAndIncrement() == 0 ? 0 : 2;
+            }
+            json(exchange, 200, desyncDayState(day, 0, 8));
+        });
+        context("actions", exchange -> {
+            int attempt = count("actions");
+            actionBodies.add(body(exchange));
+            if (!dayZeroAccepted.get()) {
+                dayZeroAccepted.set(true);
+            } else {
+                dayOneAccepted.set(true);
+            }
+            json(exchange, 200, actionResult(attempt - 1, "stale-actions-" + attempt));
         });
         context("result", exchange -> {
             count("result");

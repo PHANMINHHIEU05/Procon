@@ -98,6 +98,28 @@ class ProtocolMappingTest {
     }
 
     @Test
+    void mapsSparseRoadTrafficByProtocolPositionWithoutIndexOrCoordinateShift() throws Exception {
+        SetupDto setup = json.readValue("""
+                {"daySteps":[8],"map":{"width":4,"height":2,
+                 "cells":[[1,1,1,1],[1,1,1,1]]},"spots":[],"agents":[0],"fuelLimits":8}
+                """, SetupDto.class);
+        DayStateDto dto = json.readValue("""
+                {"day":0,"agents":[{"kind":0,"pos":5,"fuel":8}],
+                 "traffics":[{"pos":5,"status":1},{"pos":0,"status":2}]}
+                """, DayStateDto.class);
+
+        StaticMatchData matchData = new SetupMapper().toDomain(setup);
+        DayState state = new DayStateMapper().toDomain(
+                dto, matchData, List.of(AgentKind.PATROL));
+
+        assertEquals(1, matchData.map().rowOf(new Position(5)));
+        assertEquals(1, matchData.map().columnOf(new Position(5)));
+        assertEquals(TrafficStatus.CONGESTED, state.roadTraffic().get(new Position(5)));
+        assertEquals(TrafficStatus.JAMMED, state.roadTraffic().get(new Position(0)));
+        assertEquals(2, state.roadTraffic().size());
+    }
+
+    @Test
     void mapsStateWhenOthersIsAbsentEmptyOrContainsUnknownFields() throws Exception {
         SetupDto setup = json.readValue("""
                 {"daySteps":[4],"map":{"width":1,"height":1,"cells":[[0]]},

@@ -23,7 +23,13 @@ public enum PlannerMode {
     ANYTIME_STRATIFIED_SEMI_COMMITMENT_HARVEST_HORIZON_AWARE,
     ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE,
     ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN,
-    ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN;
+    ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN,
+    ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN,
+    ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES,
+    ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID,
+    ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE,
+    JOINT_TEAM_BEAM_V2,
+    JOINT_TEAM_BEAM_V2_R3;
 
     static PlannerMode parse(String value) {
         String normalized = value == null || value.isBlank() ? WAIT.name() : value.trim().toUpperCase();
@@ -43,7 +49,12 @@ public enum PlannerMode {
                             + " ANYTIME_STRATIFIED_SEMI_COMMITMENT_HARVEST_HORIZON_AWARE, or"
                             + " ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE, or"
                             + " ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN, or"
-                            + " ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN: " + value,
+                            + " ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN, or"
+                            + " ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN, or"
+                            + " ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES, or"
+                            + " ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID, or"
+                            + " ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE, or"
+                            + " JOINT_TEAM_BEAM_V2, or JOINT_TEAM_BEAM_V2_R3: " + value,
                     exception);
         }
     }

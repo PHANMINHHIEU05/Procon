@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import vn.ptit.procon.domain.agent.AgentId;
 import vn.ptit.procon.domain.agent.AgentKind;
 import vn.ptit.procon.domain.agent.AgentState;
@@ -24,6 +26,7 @@ import vn.ptit.procon.engine.TeamPlan;
 import vn.ptit.procon.engine.ValidDaySimulationResult;
 import vn.ptit.procon.engine.WireActionDuration;
 import vn.ptit.procon.engine.WireActionReplay;
+import vn.ptit.procon.engine.WireMovementForensics;
 import vn.ptit.procon.planner.BrandAwarePlanner;
 import vn.ptit.procon.planner.DayPlanner;
 import vn.ptit.procon.planner.AnytimeTeamPlanner;
@@ -52,31 +55,40 @@ import vn.ptit.procon.protocol.dto.SubmissionResult;
 /**
  * Fail-closed setup-to-result lifecycle with injected day planning.
  *
- * <p><strong>Action-response day contract.</strong> {@code action_result.day} is NOT assumed to mean
- * "the day whose actions were submitted". Live match {@code m-4277} answered a submission for day 0
- * with HTTP 200 and {@code day=1}, so the field may instead carry the server's current day after it
- * processed the submission and advanced. The compatible window for a submission of day {@code N} is
- * therefore {@code [N, N+1]}, not strict equality:</p>
+ * <p><strong>Action-response day contract.</strong> {@code action_result.valid} is the authority for
+ * acceptance. {@code action_result.day} is observed for diagnostics only; live match {@code m-5042}
+ * accepted day 0 with HTTP 200 and {@code day=2}. Subsequent {@code /state} responses are the sole
+ * authority for match progression:</p>
  *
  * <ul>
- *   <li>no observable day — unobservable, accepted, existing behaviour unchanged;</li>
- *   <li>{@code N} — the day that was played;</li>
- *   <li>{@code N + 1} — a post-action advancement, accepted and logged as
- *       {@code ACTION_RESPONSE_POST_ADVANCE};</li>
- *   <li>anything below {@code N} — stale, rejected;</li>
- *   <li>anything above {@code N + 1} — an unexplained jump, rejected. This is the {@code m-4157}
- *       shape (submitted day 1, response day 3).</li>
+ *   <li>no observable day — unobservable, accepted;</li>
+ *   <li>any observed response day — accepted and logged, with an anomaly marker outside the common
+ *       {@code [N, N+1]} range;</li>
+ *   <li>authoritative state {@code N} — accepted actions have not advanced state yet;</li>
+ *   <li>authoritative state {@code N+1} — normal progression and parity observation;</li>
+ *   <li>authoritative state below {@code N} — stale polling result, retried within the normal bound;</li>
+ *   <li>authoritative state above {@code N+1} — a true progression gap, logged and failed closed.</li>
  * </ul>
  *
- * <p>The window is widened on observed protocol behaviour only; it is not generalised to arbitrary
- * future days. An accepted {@code N + 1} response is never treated as the next authoritative
- * {@link DayState}: {@code /state} polling, parity checking and the no-duplicate-submission gate all
- * continue to run unchanged, and {@code lastSubmittedDay} stays at {@code N}.</p>
+ * <p>An accepted action response is never treated as the next authoritative {@link DayState};
+ * {@code /state} polling, parity checking and the no-duplicate-submission gate continue to run, and
+ * {@code lastSubmittedDay} stays at {@code N}.</p>
  */
 public final class MatchRuntime {
 
     private static final int MAX_CONSECUTIVE_TRANSIENT_FAILURES = 8;
     private static final int MAX_PARITY_RESYNC_ATTEMPTS = 4;
+    private static final int MAX_FORENSIC_AGENTS = 8;
+    private static final int MAX_FORENSIC_ACTIONS_PER_AGENT = 256;
+    private static final int MAX_FORENSIC_TRACE_COMMANDS = 96;
+    private static final Pattern SERVER_AGENT_PATTERN =
+            Pattern.compile("(?:\\b(?:xe|agent)\\s+)(\\d+)", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern SERVER_STEP_PATTERN =
+            Pattern.compile("(?:\\b(?:bước|buoc|step)\\s+)(\\d+)", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern SERVER_REQUIRED_STEPS_PATTERN =
+            Pattern.compile("(?:\\b(?:cần|can|required)\\s+)(\\d+)", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern SERVER_REMAINING_STEPS_PATTERN =
+            Pattern.compile("(?:\\b(?:còn|con|remaining)\\s+)(\\d+)", Pattern.UNICODE_CHARACTER_CLASS);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final String matchId;
@@ -113,7 +125,7 @@ public final class MatchRuntime {
                 new SmokeAssignmentPolicy(),
                 new PlanValidator(),
                 new DaySimulator(),
-                plannerFor(config.plannerMode(), config.contentionDiagnostics()),
+                plannerFor(config.plannerMode(), config.contentionDiagnostics(), config.r3RootFamilyAudit()),
                 new ParityRecorder(),
                 config.othersShapeDiagnostics(),
                 config.othersValueDiagnostics());
@@ -223,6 +235,7 @@ public final class MatchRuntime {
         int lastSubmittedDay = -1;
         int submittedDays = 0;
         int consecutiveStateFailures = 0;
+        int consecutiveStaleStates = 0;
         while (true) {
             DayStateDto stateDto;
             try {
@@ -269,10 +282,29 @@ public final class MatchRuntime {
             consecutiveStateFailures = 0;
 
             int observedDay = requireDay(stateDto);
-            if (observedDay < lastObservedDay) {
+            if (lastSubmittedDay >= 0 && observedDay > lastSubmittedDay + 1) {
+                log("AUTHORITATIVE_DAY_GAP",
+                        "submittedDay", lastSubmittedDay,
+                        "authoritativeDay", observedDay,
+                        "skippedDays", (lastSubmittedDay + 1) + ".." + (observedDay - 1));
                 throw new IllegalStateException(
-                        "Authoritative day moved backwards from " + lastObservedDay + " to " + observedDay);
+                        "Authoritative day gap after submitted day " + lastSubmittedDay
+                                + ": state reports day " + observedDay
+                                + "; refusing to pretend skipped days were submitted");
             }
+            if (observedDay < lastObservedDay) {
+                consecutiveStaleStates++;
+                ensureRetryBudget(consecutiveStaleStates,
+                        new IllegalStateException("Stale authoritative day " + observedDay));
+                log("AUTHORITATIVE_STATE_STALE",
+                        "observedDay", observedDay,
+                        "lastObservedDay", lastObservedDay,
+                        "submittedDay", lastSubmittedDay,
+                        "attempt", consecutiveStaleStates);
+                sleep(pollInterval);
+                continue;
+            }
+            consecutiveStaleStates = 0;
             if (othersShapeDiagnostics && observedDay != lastObservedDay) {
                 logOthersShape(observedDay, stateDto.others());
             }
@@ -338,7 +370,8 @@ public final class MatchRuntime {
                         "serializedLength", serializedJson.length(),
                         "fingerprint", actionFingerprint);
 
-                // Independent pure wire action replay directly from authoritative state and wire values
+                // Pure local wire replay directly from authoritative state and wire values. Movement
+                // duration is shared local-rule provenance, not an independent server oracle.
                 WireActionReplay.TeamReplayResult replayResult = WireActionReplay.replayTeam(state, encodedActions, dayBudget);
 
                 // Compare simulated prediction vs wire replay results
@@ -445,49 +478,43 @@ public final class MatchRuntime {
                 // reason as the primary diagnostic. The day-mismatch guard below only applies to
                 // VALID responses and must never mask a server-side semantic rejection.
                 if (!actionResult.valid()) {
+                    ServerRejectionCorrelation correlation =
+                            ServerRejectionCorrelation.from(actionResult.diagnosticReason());
                     log("SERVER_ACTION_REJECTED",
                             "submittedDay", observedDay,
                             "responseDay", actionResult.diagnosticDay(),
                             "httpStatus", actionResult.httpStatus(),
                             "reason", actionResult.diagnosticReason(),
-                            "fingerprint", actionFingerprint);
+                            "fingerprint", actionFingerprint,
+                            "rejectedAgent", valueOrNA(correlation.agentIndex()),
+                            "serverStep", valueOrNA(correlation.serverStep()),
+                            "serverRequiredSteps", valueOrNA(correlation.requiredSteps()),
+                            "serverRemainingSteps", valueOrNA(correlation.remainingSteps()));
+                    logRejectedActionArrays(observedDay, actionFingerprint, encodedActions,
+                            correlation.agentIndex());
+                    logRejectedMovementForensics(
+                            observedDay, actionFingerprint, replayResult,
+                            correlation.agentIndex());
                     throw new IllegalStateException(
                             "Server rejected day " + observedDay + " actions: "
                                     + submissionDiagnostic(actionResult));
                 }
 
-                // Compatible response-day window for a submission of day N is [N, N+1]. See the
-                // contract note on this class: action_result.day is the server's own current day
-                // after processing, not necessarily the day whose actions were submitted. A missing
-                // day is unobservable, not incompatible, so only an explicit day outside the window
-                // fails: an earlier day is stale and a jump past N+1 is an unexplained desync.
-                // This check only runs for VALID responses (invalid responses exit above).
+                // valid is the acceptance authority. The response day is diagnostic only; the next
+                // authoritative /state response determines whether and how the match progressed.
                 Integer reportedDay = actionResult.day();
-                if (reportedDay != null) {
-                    int responseDay = reportedDay.intValue();
-                    if (responseDay < observedDay || responseDay > observedDay + 1) {
-                        log("ACTION_RESPONSE_DAY_MISMATCH",
-                                "submittedDay", observedDay,
-                                "responseDay", actionResult.diagnosticDay(),
-                                "submissionType", actionResult.diagnosticType(),
-                                "httpStatus", actionResult.httpStatus());
-                        throw new IllegalStateException(
-                                "Action response day " + actionResult.diagnosticDay()
-                                        + " is incompatible with submitted day " + observedDay
-                                        + "; the compatible window is [" + observedDay + ", "
-                                        + (observedDay + 1)
-                                        + "]; refusing to reinterpret a desynchronised response"
-                                        + " as success");
-                    }
-                    if (responseDay == observedDay + 1) {
-                        // Informational, never an error. The response body is deliberately not read
-                        // as the next DayState and no polling is skipped: the loop below still waits
-                        // for /state to report day N+1 and parity-checks it against this
-                        // submission's prediction exactly as it does for an N-day response.
-                        log("ACTION_RESPONSE_POST_ADVANCE",
-                                "submittedDay", observedDay,
-                                "responseDay", actionResult.diagnosticDay());
-                    }
+                log("ACTION_RESPONSE_DAY_OBSERVED",
+                        "submittedDay", observedDay,
+                        "responseDay", actionResult.diagnosticDay(),
+                        "delta", reportedDay == null ? "NA" : reportedDay - observedDay,
+                        "fingerprint", actionFingerprint);
+                if (reportedDay != null
+                        && (reportedDay < observedDay || reportedDay > observedDay + 1)) {
+                    log("ACTION_RESPONSE_DAY_ANOMALY",
+                            "submittedDay", observedDay,
+                            "responseDay", actionResult.diagnosticDay(),
+                            "delta", reportedDay - observedDay,
+                            "fingerprint", actionFingerprint);
                 }
                 // Only N is now submitted. A post-action advance must never mark N+1 as submitted:
                 // that would make the loop skip a real action day. Equally, N is recorded so the
@@ -712,6 +739,10 @@ public final class MatchRuntime {
     }
 
     static DayPlanner plannerFor(PlannerMode mode, boolean contentionDiagnostics) {
+        return plannerFor(mode, contentionDiagnostics, false);
+    }
+
+    static DayPlanner plannerFor(PlannerMode mode, boolean contentionDiagnostics, boolean r3RootFamilyAudit) {
         return switch (mode) {
             case WAIT -> new WaitDayPlanner();
             case BASELINE -> new SafeBaselinePlanner();
@@ -805,6 +836,45 @@ public final class MatchRuntime {
                             vn.ptit.procon.planner.SemiCommitmentAdjustmentWeights.defaults(),
                             vn.ptit.procon.planner.StratifiedSearchConfig.defaults(),
                             contentionDiagnostics);
+            case ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN ->
+                    new vn.ptit.procon.planner.HybridCalibratedMarginPlanner(
+                            vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                            vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                            vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.SemiCommitmentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.StratifiedSearchConfig.defaults(),
+                            contentionDiagnostics);
+            case ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES ->
+                    new vn.ptit.procon.planner.HybridDiverseCandidatePlanner(
+                            vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                            vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                            vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.SemiCommitmentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.StratifiedSearchConfig.defaults(),
+                            contentionDiagnostics);
+            case ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID ->
+                    new vn.ptit.procon.planner.HybridTeamAllocatedPlanner(
+                            vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                            vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                            vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.SemiCommitmentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.StratifiedSearchConfig.defaults(),
+                            contentionDiagnostics);
+            case ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE ->
+                    new vn.ptit.procon.planner.CapacityCompetitivePlanner(
+                            vn.ptit.procon.planner.AnytimePlannerConfig.defaults(),
+                            vn.ptit.procon.planner.OpponentIntentConfig.defaults(),
+                            vn.ptit.procon.planner.IntentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.SemiCommitmentAdjustmentWeights.defaults(),
+                            vn.ptit.procon.planner.StratifiedSearchConfig.defaults(),
+                            contentionDiagnostics);
+            case JOINT_TEAM_BEAM_V2 -> new vn.ptit.procon.planner.v2.JointTeamBeamPlanner(
+                    vn.ptit.procon.planner.v2.JointTeamBeamConfig.defaults());
+            case JOINT_TEAM_BEAM_V2_R3 -> new vn.ptit.procon.planner.v2.JointTeamBeamR3Planner(
+                    vn.ptit.procon.planner.v2.JointTeamBeamR3Config.defaults().withRootFamilyAuditMode(
+                            r3RootFamilyAudit
+                                    ? vn.ptit.procon.planner.v2.R3RootFamilyAuditMode.BEST_STAGE_A_PER_FAMILY
+                                    : vn.ptit.procon.planner.v2.R3RootFamilyAuditMode.OFF));
         };
     }
 
@@ -834,6 +904,123 @@ public final class MatchRuntime {
                 + " httpStatus=" + result.httpStatus()
                 + " day=" + result.diagnosticDay()
                 + " reason=" + result.diagnosticReason();
+    }
+
+    private void logRejectedActionArrays(
+            int submittedDay,
+            String fingerprint,
+            List<List<Integer>> encodedActions,
+            Integer rejectedAgent) {
+        List<Integer> selected = rejectedAgent != null
+                && rejectedAgent >= 0
+                && rejectedAgent < encodedActions.size()
+                ? List.of(rejectedAgent)
+                : java.util.stream.IntStream.range(0, Math.min(encodedActions.size(), MAX_FORENSIC_AGENTS))
+                        .boxed()
+                        .toList();
+        for (Integer agentIndex : selected) {
+            List<Integer> actions = encodedActions.get(agentIndex);
+            boolean truncated = actions.size() > MAX_FORENSIC_ACTIONS_PER_AGENT;
+            List<Integer> bounded = truncated
+                    ? List.copyOf(actions.subList(0, MAX_FORENSIC_ACTIONS_PER_AGENT))
+                    : actions;
+            log("REJECTED_ACTION_ARRAY",
+                    "submittedDay", submittedDay,
+                    "agent", agentIndex,
+                    "fingerprint", fingerprint,
+                    "actions", bounded,
+                    "truncated", truncated);
+        }
+    }
+
+    private void logRejectedMovementForensics(
+            int submittedDay,
+            String fingerprint,
+            WireActionReplay.TeamReplayResult replayResult,
+            Integer rejectedAgent) {
+        List<Integer> selected = rejectedAgent != null
+                && rejectedAgent >= 0
+                && rejectedAgent < replayResult.agentResults().size()
+                ? List.of(rejectedAgent)
+                : java.util.stream.IntStream.range(0, Math.min(
+                                replayResult.agentResults().size(), MAX_FORENSIC_AGENTS))
+                        .boxed()
+                        .toList();
+        for (Integer agentIndex : selected) {
+            WireActionReplay.AgentReplayResult replay = replayResult.agentResults().get(agentIndex);
+            int emitted = 0;
+            for (WireActionReplay.ReplayedCommand command : replay.commands()) {
+                if (emitted++ == MAX_FORENSIC_TRACE_COMMANDS) {
+                    break;
+                }
+                Integer patrolFuelCost = command.wireValue() < 0
+                        ? null
+                        : vn.ptit.procon.rules.MovementRules.costFromSource(
+                                        command.sourceTerrain(), command.sourceTraffic())
+                                .map(vn.ptit.procon.domain.movement.MoveCost::patrolFuelCost)
+                                .orElse(null);
+                log("WIRE_MOVEMENT_DURATION_TRACE",
+                        "day", submittedDay,
+                        "agent", agentIndex,
+                        "fingerprint", fingerprint,
+                        "commandIndex", command.commandIndex(),
+                        "wireValue", command.wireValue(),
+                        "actionType", command.wireValue() < 0 ? "WAIT" : "MOVE",
+                        "sourcePosition", command.sourcePosition().value(),
+                        "destinationPosition", command.destinationPosition() == null
+                                ? "NA" : command.destinationPosition().value(),
+                        "sourceTerrain", command.sourceTerrain(),
+                        "rawTrafficValue", valueOrNA(command.rawTrafficValue()),
+                        "decodedTrafficState", command.decodedTrafficState(),
+                        "localStartStep", command.startStep(),
+                        "localStepCost", command.duration(),
+                        "localEndStep", command.endStep(),
+                        "patrolFuelCost", command.wireValue() < 0 ? "NA" : valueOrNA(patrolFuelCost));
+            }
+            WireMovementForensics.AlternateCostAnalysis analysis =
+                    WireMovementForensics.alternateRoadCosts(replay);
+            for (WireMovementForensics.AlternateCost alternate : analysis.individualRoadAlternates()) {
+                log("WIRE_ROAD_ALTERNATE_COST",
+                        "day", submittedDay,
+                        "agent", agentIndex,
+                        "fingerprint", fingerprint,
+                        "commandIndex", alternate.commandIndex(),
+                        "sourcePosition", alternate.sourcePosition(),
+                        "localTraffic", alternate.localTraffic(),
+                        "alternateTraffic", alternate.alternateTraffic(),
+                        "localCost", alternate.localCost(),
+                        "alternateCost", alternate.alternateCost(),
+                        "alternateRouteDuration", alternate.alternateRouteDuration(),
+                        "cumulativeDelta", alternate.cumulativeDelta());
+            }
+        }
+    }
+
+    private static String valueOrNA(Object value) {
+        return value == null ? "NA" : value.toString();
+    }
+
+    private record ServerRejectionCorrelation(
+            Integer agentIndex,
+            Integer serverStep,
+            Integer requiredSteps,
+            Integer remainingSteps) {
+
+        private static ServerRejectionCorrelation from(String reason) {
+            return new ServerRejectionCorrelation(
+                    firstInteger(SERVER_AGENT_PATTERN, reason),
+                    firstInteger(SERVER_STEP_PATTERN, reason),
+                    firstInteger(SERVER_REQUIRED_STEPS_PATTERN, reason),
+                    firstInteger(SERVER_REMAINING_STEPS_PATTERN, reason));
+        }
+
+        private static Integer firstInteger(Pattern pattern, String text) {
+            if (text == null) {
+                return null;
+            }
+            Matcher matcher = pattern.matcher(text);
+            return matcher.find() ? Integer.valueOf(matcher.group(1)) : null;
+        }
     }
 
     /** Describes the last action in an agent's plan for diagnostic logging. */

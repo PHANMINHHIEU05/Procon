@@ -14,7 +14,8 @@ public record RuntimeConfig(
         PlannerMode plannerMode,
         boolean othersShapeDiagnostics,
         boolean othersValueDiagnostics,
-        boolean contentionDiagnostics) {
+        boolean contentionDiagnostics,
+        boolean r3RootFamilyAudit) {
 
     public static final String DEFAULT_BASE_URL = "https://procon.ptit.edu.vn";
     public static final long DEFAULT_POLL_INTERVAL_MS = 250;
@@ -50,7 +51,7 @@ public record RuntimeConfig(
             Duration pollInterval,
             Duration httpTimeout,
             PlannerMode plannerMode) {
-        this(baseUrl, matchId, token, pollInterval, httpTimeout, plannerMode, false, false, false);
+        this(baseUrl, matchId, token, pollInterval, httpTimeout, plannerMode, false, false, false, false);
     }
 
     public RuntimeConfig(
@@ -62,7 +63,7 @@ public record RuntimeConfig(
             PlannerMode plannerMode,
             boolean othersShapeDiagnostics) {
         this(baseUrl, matchId, token, pollInterval, httpTimeout, plannerMode,
-                othersShapeDiagnostics, false, false);
+                othersShapeDiagnostics, false, false, false);
     }
 
     public RuntimeConfig(
@@ -71,7 +72,7 @@ public record RuntimeConfig(
             String token,
             Duration pollInterval,
             Duration httpTimeout) {
-        this(baseUrl, matchId, token, pollInterval, httpTimeout, PlannerMode.WAIT, false, false, false);
+        this(baseUrl, matchId, token, pollInterval, httpTimeout, PlannerMode.WAIT, false, false, false, false);
     }
 
     public static RuntimeConfig fromEnvironment(Map<String, String> environment) {
@@ -97,7 +98,10 @@ public record RuntimeConfig(
                         "PROCON_OTHERS_VALUE_DIAGNOSTICS"),
                 parseBoolean(
                         environment.get("PROCON_CONTENTION_DIAGNOSTICS"),
-                        "PROCON_CONTENTION_DIAGNOSTICS"));
+                        "PROCON_CONTENTION_DIAGNOSTICS"),
+                parseBoolean(
+                        environment.get("PROCON_R3_ROOT_FAMILY_AUDIT"),
+                        "PROCON_R3_ROOT_FAMILY_AUDIT"));
     }
 
     public Duration connectTimeout() {
@@ -111,7 +115,8 @@ public record RuntimeConfig(
                 + ", httpTimeout=" + httpTimeout + ", plannerMode=" + plannerMode
                 + ", othersShapeDiagnostics=" + othersShapeDiagnostics
                 + ", othersValueDiagnostics=" + othersValueDiagnostics
-                + ", contentionDiagnostics=" + contentionDiagnostics + "]";
+                + ", contentionDiagnostics=" + contentionDiagnostics
+                + ", r3RootFamilyAudit=" + r3RootFamilyAudit + "]";
     }
 
     private static String valueOrDefault(String value, String defaultValue) {

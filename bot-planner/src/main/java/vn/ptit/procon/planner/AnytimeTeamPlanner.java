@@ -544,8 +544,17 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         RelativeMarginEvaluatedPlan relativeMarginIncumbent = null;
         ReplacementAwareEvaluatedPlan replacementAwareIncumbent = null;
         CoupledCompetitiveEvaluatedPlan coupledCompetitiveIncumbent = null;
+        HybridCalibratedMarginEvaluatedPlan hybridCalibratedMarginIncumbent = null;
+        M17CandidateDiversityStats m17Stats = new M17CandidateDiversityStats();
+        M18AllocationStats m18Stats = new M18AllocationStats();
+        Map<String, M18AllocationCandidate> m18Candidates = new LinkedHashMap<>();
+        M19CapacityStats m19Stats = new M19CapacityStats();
+        Map<String, M19CapacityCandidate> m19Candidates = new LinkedHashMap<>();
         EvaluatedPlan incumbent = null;
-        if (isCoupledCompetitivePolicy()) {
+        if (isHybridEvaluatorPolicy()) {
+            hybridCalibratedMarginIncumbent = initialHybridCalibratedMarginIncumbent(state, stats, context);
+            incumbent = hybridCalibratedMarginIncumbent.base();
+        } else if (isCoupledCompetitivePolicy()) {
             coupledCompetitiveIncumbent = initialCoupledCompetitiveIncumbent(state, stats, context);
             incumbent = coupledCompetitiveIncumbent.base();
         } else if (isReplacementAwarePolicy()) {
@@ -602,7 +611,15 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         if (isIntentAwarePolicy() && contentionDiagnostics) {
             logIntentForecast(state, context);
         }
-        if (isCoupledCompetitivePolicy()) {
+        if (isM17DiverseCandidatePolicy()) {
+            logM17Start(state, hybridCalibratedMarginIncumbent.evaluation(), context, stats);
+        } else if (isHybridCalibratedMarginPolicy()) {
+            logHybridCalibratedMarginStart(state, hybridCalibratedMarginIncumbent.evaluation(), context, stats);
+        } else if (isM18TeamAllocatedPolicy()) {
+            logM18Start(state, hybridCalibratedMarginIncumbent.evaluation(), context, stats);
+        } else if (isM19CapacityCompetitivePolicy()) {
+            logM19Start(state, hybridCalibratedMarginIncumbent.evaluation(), context, stats);
+        } else if (isCoupledCompetitivePolicy()) {
             CoupledCompetitiveMarginEvaluation start = coupledCompetitiveIncumbent.evaluation();
             TeamNextDayHarvestCapacity capacity = start.nextDayHarvestCapacity();
             logOpponentCoupledBaseline(state, context.coupledCompetitiveBaseline);
@@ -808,6 +825,27 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                     "budget", config.maxExpandedStates());
         }
 
+        if (isM18TeamAllocatedPolicy()) {
+            M18AllocationSelection selection = evaluateM18Allocations(
+                    state, context, m18Stats, m18Candidates);
+            if (selection != null && selection.evaluation().evaluation().betterThan(
+                    hybridCalibratedMarginIncumbent.evaluation())) {
+                hybridCalibratedMarginIncumbent = selection.evaluation();
+                incumbent = hybridCalibratedMarginIncumbent.base();
+                stats.incumbentImprovements++;
+            }
+        }
+        if (isM19CapacityCompetitivePolicy()) {
+            M19CapacitySelection selection = evaluateM19CapacityAllocations(
+                    state, context, m19Stats, m19Candidates);
+            if (selection != null && selection.evaluation().evaluation().betterThan(
+                    hybridCalibratedMarginIncumbent.evaluation())) {
+                hybridCalibratedMarginIncumbent = selection.evaluation();
+                incumbent = hybridCalibratedMarginIncumbent.base();
+                stats.incumbentImprovements++;
+            }
+        }
+
         DiverseFrontier<SearchState> diverseFrontier = isDiverseIntentPolicy()
                 ? new DiverseFrontier<>(
                         config.maxFrontierSize(),
@@ -836,6 +874,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         }
         boolean strategyAware = diverseFrontier != null || stratifiedFrontier != null;
         DiverseMutableStats diverseStats = new DiverseMutableStats();
+        Map<String, String> m17CandidateOrigins = new LinkedHashMap<>();
         Map<StrategicDiversityKey, IntentAwarePlanEvaluation> bestCompleteByStrategy = new TreeMap<>();
         Map<StrategicDiversityKey, CommitmentAwarePlanEvaluation> bestCommitmentByStrategy =
                 new TreeMap<>();
@@ -843,9 +882,18 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 new TreeMap<>();
         try {
             Set<StateKey> seen = new HashSet<>();
+            M17CandidateSignatureRegistry m17SeenPlanSignatures = new M17CandidateSignatureRegistry();
+            if (isM17DiverseCandidatePolicy()) {
+                m17CandidateOrigins.put(signature(incumbent.plan), "BASELINE");
+            }
             for (SearchState root : roots(context)) {
                 stats.generatedStates++;
                 diverseStats.observeGenerated(root, strategyAware);
+                if (isM17DiverseCandidatePolicy()) {
+                    TeamPlan rootPlan = root.completePlan(context.state);
+                    m17SeenPlanSignatures.accept(signature(rootPlan));
+                    m17CandidateOrigins.putIfAbsent(signature(rootPlan), "BASELINE");
+                }
                 if (seen.add(root.key())) {
                     addBounded(frontier, root, stats, diverseStats);
                 } else {
@@ -859,6 +907,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             while (!frontier.isEmpty() && stats.expandedStates < config.maxExpandedStates()) {
                 SearchState current;
                 StrategicDiversityKey currentStrategy = null;
+                StrategyStageScheduler.Stage currentStage = null;
                 if (scheduler != null) {
                     StrategyStageScheduler.Decision<SearchState> decision =
                             scheduler.next(stratifiedFrontier);
@@ -867,6 +916,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                     }
                     current = decision.state();
                     currentStrategy = decision.strategy();
+                    currentStage = decision.stage();
                 } else {
                     boolean diversityTurn = qualityStreak
                                     >= diverseSearchConfig.qualityExpansionsPerDiversityExpansion()
@@ -885,7 +935,27 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 stats.expandedStates++;
                 TeamPlan complete = current.completePlan(context.state);
                 stats.completedPlans++;
-                if (isCoupledCompetitivePolicy()) {
+                if (isHybridEvaluatorPolicy()) {
+                    Optional<HybridCalibratedMarginEvaluatedPlan> evaluated =
+                            evaluateHybridCalibratedMargin(context.state, complete, context);
+                    if (evaluated.isPresent()
+                            && evaluated.orElseThrow().evaluation().betterThan(
+                                    hybridCalibratedMarginIncumbent.evaluation())) {
+                        HybridCalibratedMarginEvaluation previous =
+                                hybridCalibratedMarginIncumbent.evaluation();
+                        hybridCalibratedMarginIncumbent = evaluated.orElseThrow();
+                        incumbent = hybridCalibratedMarginIncumbent.base();
+                        stats.incumbentImprovements++;
+                        if (isM17DiverseCandidatePolicy()) {
+                            logM17Improvement(state, hybridCalibratedMarginIncumbent.evaluation(), previous,
+                                    stats, stratifiedStats(stratifiedFrontier, scheduler, diverseStats, false));
+                        } else {
+                            logHybridCalibratedMarginImprovement(state,
+                                    hybridCalibratedMarginIncumbent.evaluation(), previous, stats,
+                                    stratifiedStats(stratifiedFrontier, scheduler, diverseStats, false));
+                        }
+                    }
+                } else if (isCoupledCompetitivePolicy()) {
                     Optional<CoupledCompetitiveEvaluatedPlan> evaluated =
                             evaluateCoupledCompetitive(context.state, complete, context);
                     if (evaluated.isPresent()
@@ -1126,6 +1196,16 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 }
 
                 List<TeamTargetCandidate> candidates = candidates(context, current);
+                M17CandidateFamily discoveryFamily = isM17DiverseCandidatePolicy()
+                        && currentStage == StrategyStageScheduler.Stage.DISCOVERY
+                        ? M17CandidateFamily.forDiscoveryExpansion(scheduler.discoveryExpansions())
+                        : null;
+                if (discoveryFamily != null) {
+                    log("M17_DISCOVERY_FAMILY", "day", state.day().value(),
+                            "discoveryExpansion", scheduler.discoveryExpansions(),
+                            "family", discoveryFamily);
+                    candidates = m17DiscoveryCandidates(context, current, candidates, discoveryFamily);
+                }
                 boolean coveragePhase = policy != AnytimeSearchPolicy.ORIGINAL
                         && candidates.stream().anyMatch(TeamTargetCandidate::newBrandForTeamToday);
                 if (policy != AnytimeSearchPolicy.ORIGINAL) {
@@ -1166,7 +1246,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 int topKPruned = candidates.size() - retainedCandidates.size();
                 stats.candidatePrunedByTopK += topKPruned;
                 stats.prunedStates += topKPruned;
-                for (TeamTargetCandidate retainedCandidate : retainedCandidates) {
+                for (int retainedIndex = 0; retainedIndex < retainedCandidates.size(); retainedIndex++) {
+                    TeamTargetCandidate retainedCandidate = retainedCandidates.get(retainedIndex);
                     RouteContentionMetrics contention = context.candidateContention.getOrDefault(
                             retainedCandidate, new RouteContentionMetrics(0, 0, 0, 0, 0));
                     RouteArrivalContentionMetrics arrivalContention = context.candidateArrivalContention.get(retainedCandidate);
@@ -1197,6 +1278,38 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                             commitmentMetrics,
                             semiCommitmentMetrics,
                             context.nextSequence());
+                    if (isM17DiverseCandidatePolicy()) {
+                        M17CandidateFamily originFamily = discoveryFamily;
+                        String origin = originFamily == null
+                                ? (currentStage == StrategyStageScheduler.Stage.QUALIFICATION
+                                        ? "QUALIFICATION" : "EXPLOITATION")
+                                : originFamily.name();
+                        m17Stats.candidateAttempt(originFamily);
+                        TeamPlan childPlan = child.completePlan(context.state);
+                        String childSignature = signature(childPlan);
+                        if (!m17SeenPlanSignatures.accept(childSignature)) {
+                            m17Stats.duplicateCandidatesRejected++;
+                            stats.prunedStates++;
+                            continue;
+                        }
+                        Optional<HybridCalibratedMarginEvaluatedPlan> discoveryEvaluation =
+                                discoveryFamily == null
+                                        ? Optional.empty()
+                                        : evaluateHybridCalibratedMargin(context.state, childPlan, context);
+                        if (discoveryFamily != null && discoveryEvaluation.isEmpty()) {
+                            m17Stats.invalidCandidatesRejected++;
+                            continue;
+                        }
+                        m17Stats.uniqueCandidates++;
+                        m17Stats.recordUnique(originFamily, childSignature,
+                                firstTargetAssignmentSignature(context.state, childPlan),
+                                routePrefixSignature(context.state, childPlan));
+                        m17CandidateOrigins.putIfAbsent(childSignature, origin);
+                        if (discoveryFamily != null) {
+                            logM17DiscoveryCandidate(state, discoveryFamily, retainedIndex + 1,
+                                    childPlan, discoveryEvaluation.orElseThrow().evaluation());
+                        }
+                    }
                     stats.generatedStates++;
                     diverseStats.observeGenerated(child, strategyAware);
                     if (!seen.add(child.key())) {
@@ -1222,7 +1335,22 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                 ? Optional.empty()
                 : Optional.of(stratifiedStats(
                         stratifiedFrontier, scheduler, diverseStats, budgetExhausted));
-        if (isCoupledCompetitivePolicy()) {
+        if (isM17DiverseCandidatePolicy()) {
+            logM17Done(state, hybridCalibratedMarginIncumbent.evaluation(), context,
+                    hybridCalibratedMarginIncumbent.plan(), finalStats,
+                    stratifiedSearchStats.orElseThrow(), m17Stats, m17CandidateOrigins);
+        } else if (isM18TeamAllocatedPolicy()) {
+            logM18Done(state, hybridCalibratedMarginIncumbent.evaluation(), context,
+                    hybridCalibratedMarginIncumbent.plan(), finalStats,
+                    stratifiedSearchStats.orElseThrow(), m18Stats, m18Candidates);
+        } else if (isM19CapacityCompetitivePolicy()) {
+            logM19Done(state, hybridCalibratedMarginIncumbent.evaluation(), context,
+                    hybridCalibratedMarginIncumbent.plan(), finalStats,
+                    stratifiedSearchStats.orElseThrow(), m19Stats, m19Candidates);
+        } else if (isHybridCalibratedMarginPolicy()) {
+            logHybridCalibratedMarginDone(state, hybridCalibratedMarginIncumbent.evaluation(), context,
+                    finalStats, stratifiedSearchStats.orElseThrow());
+        } else if (isCoupledCompetitivePolicy()) {
             CoupledCompetitiveMarginEvaluation evaluation = coupledCompetitiveIncumbent.evaluation();
             TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
             CoupledCompetitiveRolloutResult coupled = evaluation.coupled();
@@ -1692,12 +1820,15 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         Optional<CoupledCompetitiveMarginEvaluation> coupledCompetitiveEvaluation =
                 isCoupledCompetitivePolicy()
                         ? Optional.of(coupledCompetitiveIncumbent.evaluation()) : Optional.empty();
+        Optional<HybridCalibratedMarginEvaluation> hybridCalibratedMarginEvaluation =
+                isHybridEvaluatorPolicy()
+                        ? Optional.of(hybridCalibratedMarginIncumbent.evaluation()) : Optional.empty();
         return new AnytimePlanResult(
                 incumbent.plan, incumbent.evaluation, finalStats,
                 riskAdjustedEvaluation, intentAwareEvaluation, diverseSearchStats,
                 stratifiedSearchStats, commitmentAwareEvaluation, semiCommitmentAwareEvaluation,
                 horizonAwareEvaluation, harvestHorizonAwareEvaluation, relativeMarginEvaluation,
-                replacementAwareEvaluation, coupledCompetitiveEvaluation);
+                replacementAwareEvaluation, coupledCompetitiveEvaluation, hybridCalibratedMarginEvaluation);
     }
 
     /**
@@ -2406,6 +2537,20 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         return Optional.of(new CoupledCompetitiveEvaluatedPlan(plan, evaluation, base));
     }
 
+    private Optional<HybridCalibratedMarginEvaluatedPlan> evaluateHybridCalibratedMargin(
+            DayState state, TeamPlan plan, SearchContext context) {
+        Optional<CoupledCompetitiveEvaluatedPlan> coupled =
+                evaluateCoupledCompetitive(state, plan, context);
+        if (coupled.isEmpty()) {
+            return Optional.empty();
+        }
+        CoupledCompetitiveEvaluatedPlan evaluated = coupled.orElseThrow();
+        CoupledCompetitiveMarginEvaluation oldEvaluation = evaluated.evaluation();
+        HybridCalibratedMarginEvaluation evaluation = new HybridCalibratedMarginEvaluation(
+                oldEvaluation.semiCommitment(), oldEvaluation.coupled(), oldEvaluation.nextDayHarvestCapacity());
+        return Optional.of(new HybridCalibratedMarginEvaluatedPlan(plan, evaluation, evaluated.base()));
+    }
+
     private CoupledCompetitiveEvaluatedPlan initialCoupledCompetitiveIncumbent(
             DayState state, MutableStats stats, SearchContext context) {
         TeamPlan fallback;
@@ -2424,6 +2569,26 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         stats.completedPlans++;
         return evaluateCoupledCompetitive(state, waitAll, context).orElseThrow(() ->
                 new IllegalStateException("Validated all-WAIT incumbent could not be simulated"));
+    }
+
+    private HybridCalibratedMarginEvaluatedPlan initialHybridCalibratedMarginIncumbent(
+            DayState state, MutableStats stats, SearchContext context) {
+        TeamPlan fallback;
+        try {
+            fallback = teamCoordinator.plan(state);
+        } catch (RuntimeException exception) {
+            fallback = SafePlanFactory.waitAll(state);
+        }
+        stats.completedPlans++;
+        Optional<HybridCalibratedMarginEvaluatedPlan> evaluated =
+                evaluateHybridCalibratedMargin(state, fallback, context);
+        if (evaluated.isPresent()) {
+            return evaluated.orElseThrow();
+        }
+        TeamPlan waitAll = SafePlanFactory.waitAll(state);
+        stats.completedPlans++;
+        return evaluateHybridCalibratedMargin(state, waitAll, context).orElseThrow(() ->
+                new IllegalStateException("Validated all-WAIT hybrid incumbent could not be simulated"));
     }
 
     private boolean canReplaceArrivalIncumbent(
@@ -2582,9 +2747,51 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         return isCoupledCompetitivePolicy(policy);
     }
 
+    private static boolean isHybridCalibratedMarginPolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN;
+    }
+
+    private boolean isHybridCalibratedMarginPolicy() {
+        return isHybridCalibratedMarginPolicy(policy);
+    }
+
+    private static boolean isM17DiverseCandidatePolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES;
+    }
+
+    private boolean isM17DiverseCandidatePolicy() {
+        return isM17DiverseCandidatePolicy(policy);
+    }
+
+    private static boolean isM18TeamAllocatedPolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID;
+    }
+
+    private boolean isM18TeamAllocatedPolicy() {
+        return isM18TeamAllocatedPolicy(policy);
+    }
+
+    private static boolean isM19CapacityCompetitivePolicy(AnytimeSearchPolicy policy) {
+        return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE;
+    }
+
+    private boolean isM19CapacityCompetitivePolicy() {
+        return isM19CapacityCompetitivePolicy(policy);
+    }
+
+    private static boolean isHybridEvaluatorPolicy(AnytimeSearchPolicy policy) {
+        return isHybridCalibratedMarginPolicy(policy) || isM17DiverseCandidatePolicy(policy)
+                || isM18TeamAllocatedPolicy(policy) || isM19CapacityCompetitivePolicy(policy);
+    }
+
+    private boolean isHybridEvaluatorPolicy() {
+        return isHybridEvaluatorPolicy(policy);
+    }
+
     private static boolean usesHarvestHorizon(AnytimeSearchPolicy policy) {
         return isHarvestHorizonAwarePolicy(policy) || isRelativeMarginPolicy(policy)
-                || isReplacementAwarePolicy(policy) || isCoupledCompetitivePolicy(policy);
+                || isReplacementAwarePolicy(policy) || isCoupledCompetitivePolicy(policy)
+                || isHybridEvaluatorPolicy(policy);
     }
 
     private boolean isHarvestHorizonAwarePolicy() {
@@ -2594,7 +2801,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
     private static boolean isAnyHorizonAwarePolicy(AnytimeSearchPolicy policy) {
         return isHorizonAwarePolicy(policy) || isHarvestHorizonAwarePolicy(policy)
                 || isRelativeMarginPolicy(policy) || isReplacementAwarePolicy(policy)
-                || isCoupledCompetitivePolicy(policy);
+                || isCoupledCompetitivePolicy(policy) || isHybridEvaluatorPolicy(policy);
     }
 
     /** The M10 opponent intent forecast is the shared input of the M10, M12 and M12.1 semantics. */
@@ -2616,7 +2823,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
     private static boolean isStratifiedPolicy(AnytimeSearchPolicy policy) {
         return policy == AnytimeSearchPolicy.ANYTIME_STRATIFIED_INTENT_AWARE
                 || isCommitmentAwarePolicy(policy) || isSemiCommitmentAwarePolicy(policy)
-                || isAnyHorizonAwarePolicy(policy);
+                || isAnyHorizonAwarePolicy(policy) || isHybridEvaluatorPolicy(policy);
     }
 
     /** True when the M11 candidate portfolio selector replaces plain top-K candidate pruning. */
@@ -2894,7 +3101,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                             context.intentForecast,
                             intentAdjustmentWeights));
                 } else if (isSemiCommitmentAwarePolicy() || isRelativeMarginPolicy()
-                        || isReplacementAwarePolicy() || isCoupledCompetitivePolicy()) {
+                        || isReplacementAwarePolicy() || isCoupledCompetitivePolicy()
+                        || isHybridEvaluatorPolicy()) {
                     int initialArrivalStep = context.state.stepBudget() - patrol.remainingSteps;
                     context.candidateSemiCommitment.put(candidate,
                             context.semiCommitmentEvaluator.evaluateRoute(
@@ -2922,7 +3130,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                                         semiCommitmentAdjustmentWeights, context.spotsByPosition,
                                         route, initialArrivalStep, searchState.stock,
                                         patrol.visitedSpots));
-                    } else if (isCoupledCompetitivePolicy()) {
+                    } else if (isCoupledCompetitivePolicy() || isHybridEvaluatorPolicy()) {
                         // M16 only: the same linear walk, over the fixed no-own-plan coupled
                         // baseline. Guidance only; the coupled rollout stays authoritative and no
                         // pathfinding or rollout runs per candidate.
@@ -2956,6 +3164,102 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             candidates.sort(TeamCoordinatorPlanner.targetPreference());
         }
         return List.copyOf(candidates);
+    }
+
+    /** M17 discovery portfolio: four bounded deterministic views of the same feasible candidates. */
+    private List<TeamTargetCandidate> m17DiscoveryCandidates(
+            SearchContext context,
+            SearchState state,
+            List<TeamTargetCandidate> candidates,
+            M17CandidateFamily family) {
+        List<TeamTargetCandidate> ordered = new ArrayList<>(candidates);
+        Comparator<TeamTargetCandidate> stable = Comparator
+                .comparingInt((TeamTargetCandidate candidate) -> candidate.targetPosition().value())
+                .thenComparingInt(candidate -> candidate.patrolAgentId().value())
+                .thenComparingInt(TeamTargetCandidate::routeSteps)
+                .thenComparingInt(TeamTargetCandidate::routeFuel);
+        switch (family) {
+            case THROUGHPUT -> ordered.sort(Comparator
+                    .comparingInt(TeamTargetCandidate::projectedCollectionGain).reversed()
+                    .thenComparingInt(TeamTargetCandidate::routeSteps)
+                    .thenComparingInt(TeamTargetCandidate::routeFuel)
+                    .thenComparing(stable));
+            case SPATIAL_SEPARATION -> ordered.sort(Comparator
+                    .comparingInt((TeamTargetCandidate candidate) ->
+                            m17RepeatedEarlyTargetCount(state, candidate)).thenComparing(stable));
+            case ROUTE_ORDER -> {
+                ordered.sort(stable);
+                // The first four stable target choices are the bounded local order variants.
+            }
+            case CONTENTION_AVOIDANCE -> ordered.sort(Comparator
+                    .comparingInt((TeamTargetCandidate candidate) ->
+                            context.candidateCoupledContest.getOrDefault(
+                                    candidate, CoupledCompetitiveRollout.CoupledRouteContest.empty())
+                                    .contestedCollections())
+                    .thenComparingInt(candidate -> context.candidateCoupledContest.getOrDefault(
+                            candidate, CoupledCompetitiveRollout.CoupledRouteContest.empty())
+                            .strongContestedCollections())
+                    .thenComparing(stable));
+        }
+        return ordered.stream().limit(Math.min(config.topCandidatesPerState(), 4)).toList();
+    }
+
+    private int m17RepeatedEarlyTargetCount(SearchState state, TeamTargetCandidate candidate) {
+        return (int) state.patrols.values().stream()
+                .filter(patrol -> !patrol.id.equals(candidate.patrolAgentId()))
+                .filter(patrol -> candidate.targetPosition().equals(patrol.firstCommittedTarget))
+                .count();
+    }
+
+    private String firstTargetAssignmentSignature(DayState state, TeamPlan plan) {
+        return state.agents().stream()
+                .filter(agent -> agent.kind() == AgentKind.PATROL)
+                .sorted(Comparator.comparingInt(agent -> agent.id().value()))
+                .map(agent -> agent.id().value() + ":" + firstRouteTarget(state, agent, plan.actionsFor(agent.id())))
+                .collect(java.util.stream.Collectors.joining("|"));
+    }
+
+    private String routePrefixSignature(DayState state, TeamPlan plan) {
+        return state.agents().stream()
+                .filter(agent -> agent.kind() == AgentKind.PATROL)
+                .sorted(Comparator.comparingInt(agent -> agent.id().value()))
+                .map(agent -> agent.id().value() + ":" + routeTargets(state, agent, plan.actionsFor(agent.id()), 3))
+                .collect(java.util.stream.Collectors.joining("|"));
+    }
+
+    private String firstRouteTarget(DayState state, AgentState agent, List<AgentAction> actions) {
+        List<Integer> targets = routeTargetValues(state, agent, actions, 1);
+        return targets.isEmpty() ? "-" : Integer.toString(targets.get(0));
+    }
+
+    private String routeTargets(DayState state, AgentState agent, List<AgentAction> actions, int limit) {
+        return routeTargetValues(state, agent, actions, limit).toString();
+    }
+
+    private List<Integer> routeTargetValues(
+            DayState state, AgentState agent, List<AgentAction> actions, int limit) {
+        if (actions == null) {
+            return List.of();
+        }
+        Set<Position> stocked = state.spotStock().entrySet().stream()
+                .filter(entry -> entry.getValue() > 0)
+                .map(Map.Entry::getKey)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        Position cursor = agent.position();
+        Set<Position> seen = new LinkedHashSet<>();
+        for (AgentAction action : actions) {
+            if (!(action instanceof MoveAction move)) {
+                continue;
+            }
+            cursor = state.matchData().map().neighbor(cursor, move.direction()).orElse(cursor);
+            if (stocked.contains(cursor)) {
+                seen.add(cursor);
+            }
+            if (seen.size() >= limit) {
+                break;
+            }
+        }
+        return seen.stream().map(Position::value).toList();
     }
 
     private List<TeamTargetCandidate> retainCandidates(
@@ -2995,7 +3299,7 @@ public final class AnytimeTeamPlanner implements DayPlanner {
 
     private Comparator<TeamTargetCandidate> candidatePreference(
             SearchContext context, boolean coveragePhase) {
-        if (isCoupledCompetitivePolicy()) {
+        if (isCoupledCompetitivePolicy() || isHybridEvaluatorPolicy()) {
             Comparator<CoupledCompetitiveCandidateMetrics> preference = coveragePhase
                     ? CoupledCompetitiveCandidateMetrics.coveragePreference()
                     : CoupledCompetitiveCandidateMetrics.harvestPreference();
@@ -3428,6 +3732,10 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             // M16 adds no new search stage and no new partial-state data either: the same M14 frontier
             // tuple orders partial states, and only the complete-plan objective changes.
             case ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN -> RELATIVE_MARGIN_STATE_PREFERENCE;
+            case ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN -> RELATIVE_MARGIN_STATE_PREFERENCE;
+            case ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES -> RELATIVE_MARGIN_STATE_PREFERENCE;
+            case ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID -> RELATIVE_MARGIN_STATE_PREFERENCE;
+            case ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE -> RELATIVE_MARGIN_STATE_PREFERENCE;
         };
     }
 
@@ -3456,6 +3764,14 @@ public final class AnytimeTeamPlanner implements DayPlanner {
                     "ANYTIME_STRATIFIED_REPLACEMENT_MARGIN_" + suffix;
             case ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN ->
                     "ANYTIME_STRATIFIED_COUPLED_MARGIN_" + suffix;
+            case ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN ->
+                    "ANYTIME_STRATIFIED_HYBRID_MARGIN_" + suffix;
+            case ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES ->
+                    "ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES_" + suffix;
+            case ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID ->
+                    "ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID_" + suffix;
+            case ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE ->
+                    "ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE_" + suffix;
         };
     }
 
@@ -3565,12 +3881,781 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         }
     }
 
+    private M18AllocationSelection evaluateM18Allocations(
+            DayState state, SearchContext context, M18AllocationStats allocationStats,
+            Map<String, M18AllocationCandidate> candidatesByPlan) {
+        List<AgentState> patrols = state.agents().stream()
+                .filter(agent -> agent.kind() == AgentKind.PATROL)
+                .sorted(Comparator.comparingInt(agent -> agent.id().value()))
+                .toList();
+        List<TeamOpportunityAllocator.Opportunity> pool = state.matchData().udonSpots().stream()
+                .filter(spot -> state.spotStock().getOrDefault(spot.position(), 0) > 0)
+                .sorted(Comparator.comparingInt(spot -> spot.position().value()))
+                .map(spot -> TeamOpportunityAllocator.Opportunity.from(
+                        spot, state.spotStock().getOrDefault(spot.position(), 0)))
+                .filter(opportunity -> patrols.stream().anyMatch(patrol ->
+                        m18Route(state, context, patrol, opportunity.position()).isPresent()))
+                .limit(12)
+                .toList();
+        List<TeamOpportunityAllocator.Candidate> allocations = TeamOpportunityAllocator.generate(
+                patrols, pool,
+                (agent, target) -> m18Route(state, context, agent, target)
+                        .map(route -> new TeamOpportunityAllocator.RouteCost(
+                                route.stepsUsed(), route.fuelUsed()))
+                        .orElse(null),
+                ignored -> 0);
+        M18AllocationSelection best = null;
+        Set<String> seenPlans = new LinkedHashSet<>();
+        for (TeamOpportunityAllocator.Candidate candidate : allocations) {
+            allocationStats.allocationAttempts++;
+            TeamPlan plan = buildM18Plan(state, context, candidate.allocation());
+            if (plan == null) {
+                allocationStats.invalidAllocations++;
+                continue;
+            }
+            String planSignature = signature(plan);
+            if (!seenPlans.add(planSignature)) {
+                allocationStats.duplicatePlanAllocations++;
+                continue;
+            }
+            Optional<HybridCalibratedMarginEvaluatedPlan> evaluated =
+                    evaluateHybridCalibratedMargin(state, plan, context);
+            if (evaluated.isEmpty()) {
+                allocationStats.invalidAllocations++;
+                continue;
+            }
+            HybridCalibratedMarginEvaluatedPlan value = evaluated.orElseThrow();
+            M18AllocationCandidate logged = new M18AllocationCandidate(
+                    candidate.allocation(), candidate.estimatedLoads(), plan, value);
+            candidatesByPlan.put(planSignature, logged);
+            allocationStats.validAllocations++;
+            allocationStats.maxDistinctAssignedOpportunities = Math.max(
+                    allocationStats.maxDistinctAssignedOpportunities,
+                    candidate.allocation().distinctAssignedOpportunities());
+            allocationStats.minDuplicateOwnedOpportunityCount = Math.min(
+                    allocationStats.minDuplicateOwnedOpportunityCount,
+                    candidate.allocation().duplicateOwnedOpportunityCount());
+            allocationStats.maxDistinctFirstAssignments = Math.max(
+                    allocationStats.maxDistinctFirstAssignments,
+                    distinctFirstAssignments(candidate.allocation()));
+            logM18Candidate(state, pool.size(), logged);
+            if (best == null || value.evaluation().betterThan(best.evaluation().evaluation())) {
+                best = new M18AllocationSelection(candidate.allocation(), candidate.estimatedLoads(), value);
+            }
+        }
+        allocationStats.relevantPoolSize = pool.size();
+        allocationStats.unassignedReachableOpportunities = Math.max(0,
+                pool.size() - allocationStats.maxDistinctAssignedOpportunities);
+        return best;
+    }
+
+    private M19CapacitySelection evaluateM19CapacityAllocations(
+            DayState state, SearchContext context, M19CapacityStats allocationStats,
+            Map<String, M19CapacityCandidate> candidatesByPlan) {
+        List<AgentState> patrols = state.agents().stream()
+                .filter(agent -> agent.kind() == AgentKind.PATROL)
+                .sorted(Comparator.comparingInt(agent -> agent.id().value()))
+                .toList();
+        List<CollectionOpportunityCapacity> seedCapacities = state.matchData().udonSpots().stream()
+                .map(spot -> new CollectionOpportunityCapacity(
+                        spot.position(), spot.brand(),
+                        state.spotStock().getOrDefault(spot.position(), 0),
+                        patrols.stream().map(AgentState::id).toList()))
+                .filter(capacity -> capacity.availableStock() > 0)
+                .limit(12)
+                .toList();
+        prepareM19RouteCatalog(state, context, patrols, seedCapacities);
+        List<CollectionOpportunityCapacity> capacities = m19Capacities(state, context, patrols);
+        Map<Position, List<Integer>> opponentArrivals = new LinkedHashMap<>();
+        context.coupledCompetitiveBaseline.claims().forEach(claim -> opponentArrivals
+                .computeIfAbsent(claim.spot(), ignored -> new ArrayList<>())
+                .add(claim.arrivalStep()));
+        allocationStats.initialPathfindingExecutions = context.m19PathfindingExecutions;
+        List<CapacityAwareTeamAllocator.Candidate> allocations = CapacityAwareTeamAllocator.generate(
+                patrols, capacities,
+                (agent, target) -> m19Route(state, context, agent, target)
+                        .map(route -> new CapacityAwareTeamAllocator.RouteCost(
+                                route.stepsUsed(), route.fuelUsed()))
+                        .orElse(null),
+                opponentArrivals, state.stepBudget());
+        allocationStats.candidateGenerationPathfindingExecutions =
+                context.m19PathfindingExecutions - allocationStats.initialPathfindingExecutions;
+        M19CapacitySelection best = null;
+        for (CapacityAwareTeamAllocator.Candidate candidate : allocations) {
+            allocationStats.claimCandidateAttempts++;
+            TeamPlan plan = buildM19Plan(state, context, candidate.allocation());
+            if (plan == null) {
+                allocationStats.invalidPhysicalPlans++;
+                continue;
+            }
+            String planSignature = signature(plan);
+            if (candidatesByPlan.containsKey(planSignature)) {
+                allocationStats.duplicatePhysicalPlansRejected++;
+                continue;
+            }
+            allocationStats.uniquePhysicalPlans++;
+            Optional<HybridCalibratedMarginEvaluatedPlan> evaluated =
+                    evaluateHybridCalibratedMargin(state, plan, context);
+            if (evaluated.isEmpty()) {
+                allocationStats.invalidPhysicalPlans++;
+                continue;
+            }
+            HybridCalibratedMarginEvaluatedPlan value = evaluated.orElseThrow();
+            M19CapacityCandidate logged = new M19CapacityCandidate(
+                    candidate.allocation(), candidate.timeline(), plan, value);
+            candidatesByPlan.put(planSignature, logged);
+            allocationStats.observe(candidate.allocation());
+            logM19Candidate(state, logged);
+            if (best == null || value.evaluation().betterThan(best.evaluation().evaluation())) {
+                best = new M19CapacitySelection(candidate.allocation(), candidate.timeline(), value);
+            }
+        }
+        allocationStats.finalPathfindingExecutions = context.m19PathfindingExecutions;
+        allocationStats.relevantCapacitySpots = capacities.size();
+        return best;
+    }
+
+    private List<CollectionOpportunityCapacity> m19Capacities(
+            DayState state, SearchContext context, List<AgentState> patrols) {
+        return state.matchData().udonSpots().stream()
+                .sorted(Comparator.comparingInt(spot -> spot.position().value()))
+                .map(spot -> new CollectionOpportunityCapacity(
+                        spot.position(), spot.brand(),
+                        state.spotStock().getOrDefault(spot.position(), 0),
+                        patrols.stream()
+                                .filter(patrol -> m19Route(state, context, patrol, spot.position()).isPresent())
+                                .map(AgentState::id)
+                                .toList()))
+                .filter(capacity -> capacity.boundedClaimCapacity() > 0)
+                .limit(12)
+                .toList();
+    }
+
+    private void prepareM19RouteCatalog(
+            DayState state, SearchContext context, List<AgentState> patrols,
+            List<CollectionOpportunityCapacity> capacities) {
+        if (!context.m19RouteCatalog.isEmpty() || patrols.isEmpty()) return;
+        Set<Position> starts = new LinkedHashSet<>(patrols.stream()
+                .map(AgentState::position).toList());
+        starts.addAll(capacities.stream().map(CollectionOpportunityCapacity::spot).toList());
+        AgentState representative = patrols.getFirst();
+        int fullFuel = state.matchData().patrolFuelCapacity().value();
+        for (Position start : starts) {
+            for (CollectionOpportunityCapacity capacity : capacities) {
+                Position target = capacity.spot();
+                M19RouteKey key = new M19RouteKey(start, target);
+                context.m19RouteCatalog.computeIfAbsent(key, ignored -> {
+                    context.m19PathfindingExecutions++;
+                    if (start.equals(target)) {
+                        return Optional.of(new Route(start, target, List.of(), 0, 0));
+                    }
+                    return patrolRouteFinder.find(state,
+                            AgentState.patrol(representative.id(), start, fullFuel), target);
+                });
+            }
+        }
+    }
+
+    private Optional<Route> m19Route(
+            DayState state, SearchContext context, AgentState agent, Position target) {
+        Optional<Route> route = Optional.ofNullable(context.m19RouteCatalog.get(
+                new M19RouteKey(agent.position(), target))).orElse(Optional.empty());
+        if (route.isEmpty() || route.orElseThrow().fuelUsed()
+                > ((FiniteFuel) agent.fuel()).amount()) {
+            return Optional.empty();
+        }
+        return route;
+    }
+
+    private TeamPlan buildM19Plan(
+            DayState state, SearchContext context, CapacityAwareTeamAllocation allocation) {
+        Map<AgentId, List<AgentAction>> actions = new LinkedHashMap<>();
+        for (AgentState agent : state.agents()) {
+            if (agent.kind() != AgentKind.PATROL) {
+                actions.put(agent.id(), List.of(new WaitAction(state.stepBudget())));
+                continue;
+            }
+            List<Position> remaining = allocation.claimsFor(agent.id()).stream()
+                    .map(CollectionClaim::spot).distinct().toList();
+            List<AgentAction> routeActions = new ArrayList<>();
+            Position position = agent.position();
+            int fuel = ((FiniteFuel) agent.fuel()).amount();
+            int usedSteps = 0;
+            for (Position target : remaining) {
+                AgentState current = AgentState.patrol(agent.id(), position, fuel);
+                Optional<Route> possible = m19Route(state, context, current, target);
+                if (possible.isPresent()
+                        && usedSteps + possible.orElseThrow().stepsUsed() > state.stepBudget()) {
+                    possible = Optional.empty();
+                }
+                if (possible.isEmpty()) break;
+                Route route = possible.orElseThrow();
+                routeActions.addAll(route.toMoveActions());
+                usedSteps += route.stepsUsed();
+                fuel -= route.fuelUsed();
+                position = target;
+            }
+            actions.put(agent.id(), ActionPlanCompleter.complete(
+                    routeActions, usedSteps, state.stepBudget()));
+        }
+        TeamPlan plan = new TeamPlan(actions);
+        return validator.validate(state, plan).valid() ? plan : null;
+    }
+
+    private Optional<Route> m18Route(
+            DayState state, SearchContext context, AgentState agent, Position target) {
+        int fuel = agent.fuel() instanceof FiniteFuel finite ? finite.amount() : 0;
+        PatrolRouteKey key = new PatrolRouteKey(agent.id(), agent.position(), fuel, target);
+        return context.routeCache.computeIfAbsent(
+                key, ignored -> patrolRouteFinder.find(state, agent, target));
+    }
+
+    private TeamPlan buildM18Plan(
+            DayState state, SearchContext context, TeamOpportunityAllocation allocation) {
+        Map<AgentId, List<AgentAction>> actions = new LinkedHashMap<>();
+        for (AgentState agent : state.agents()) {
+            if (agent.kind() != AgentKind.PATROL) {
+                actions.put(agent.id(), List.of(new WaitAction(state.stepBudget())));
+                continue;
+            }
+            List<Position> remaining = new ArrayList<>(allocation.assignedTo(agent.id()));
+            List<AgentAction> routeActions = new ArrayList<>();
+            Position position = agent.position();
+            int fuel = ((FiniteFuel) agent.fuel()).amount();
+            int usedSteps = 0;
+            while (!remaining.isEmpty()) {
+                AgentState current = AgentState.patrol(agent.id(), position, fuel);
+                int currentUsedSteps = usedSteps;
+                int currentFuel = fuel;
+                M18NextTarget next = remaining.stream()
+                        .map(target -> m18Route(state, context, current, target)
+                                .filter(route -> currentUsedSteps + route.stepsUsed() <= state.stepBudget())
+                                .filter(route -> route.fuelUsed() <= currentFuel)
+                                .map(route -> new M18NextTarget(target, route))
+                                .orElse(null))
+                        .filter(Objects::nonNull)
+                        .min(Comparator.comparingInt((M18NextTarget value) -> value.route().stepsUsed())
+                                .thenComparingInt(value -> value.route().fuelUsed())
+                                .thenComparingInt(value -> value.target().value()))
+                        .orElse(null);
+                if (next == null) {
+                    break;
+                }
+                Route route = next.route();
+                routeActions.addAll(route.toMoveActions());
+                usedSteps += route.stepsUsed();
+                fuel -= route.fuelUsed();
+                position = next.target();
+                remaining.remove(next.target());
+            }
+            actions.put(agent.id(), ActionPlanCompleter.complete(
+                    routeActions, usedSteps, state.stepBudget()));
+        }
+        TeamPlan plan = new TeamPlan(actions);
+        return validator.validate(state, plan).valid() ? plan : null;
+    }
+
+    private int distinctFirstAssignments(TeamOpportunityAllocation allocation) {
+        return (int) allocation.assigned().values().stream()
+                .filter(values -> !values.isEmpty())
+                .map(values -> values.get(0)).distinct().count();
+    }
+
+    private String allocationCounts(TeamOpportunityAllocation allocation) {
+        return allocation.assigned().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparingInt(AgentId::value)))
+                .map(entry -> entry.getKey().value() + "=" + entry.getValue().size())
+                .collect(java.util.stream.Collectors.joining(","));
+    }
+
+    private String firstAssignedPerAgent(TeamOpportunityAllocation allocation) {
+        return allocation.assigned().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparingInt(AgentId::value)))
+                .map(entry -> entry.getKey().value() + "="
+                        + (entry.getValue().isEmpty() ? "NONE" : entry.getValue().get(0).value()))
+                .collect(java.util.stream.Collectors.joining(","));
+    }
+
+    private String allocationLoads(Map<AgentId, Integer> loads) {
+        return loads.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparingInt(AgentId::value)))
+                .map(entry -> entry.getKey().value() + "=" + entry.getValue())
+                .collect(java.util.stream.Collectors.joining(","));
+    }
+
+    private void logM18Start(
+            DayState state, HybridCalibratedMarginEvaluation evaluation,
+            SearchContext context, MutableStats stats) {
+        log(event("START"), "day", state.day().value(),
+                "hybridBaseWeight", HybridCalibratedMarginEvaluation.HYBRID_BASE_WEIGHT,
+                "hybridCoupledWeight", HybridCalibratedMarginEvaluation.HYBRID_COUPLED_WEIGHT,
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "expanded", stats.expandedStates, "completedPlans", stats.completedPlans,
+                "routeCostCacheEntries", context.coupledCompetitiveBaseline.routeCostCacheEntries(),
+                "pathfindingExecutions", context.coupledCompetitiveBaseline.pathfindingExecutions(),
+                "budget", config.maxExpandedStates(),
+                "discoveryBudget", stratifiedSearchConfig.discoveryBudget(),
+                "qualificationBudget", stratifiedSearchConfig.qualificationBudget(),
+                "exploitationBudget", stratifiedSearchConfig.exploitationBudget());
+    }
+
+    private void logM18Candidate(
+            DayState state, int poolSize, M18AllocationCandidate candidate) {
+        TeamOpportunityAllocation allocation = candidate.allocation();
+        HybridCalibratedMarginEvaluation evaluation = candidate.evaluation().evaluation();
+        log("M18_ALLOCATION_CANDIDATE", "day", state.day().value(),
+                "seed", allocation.seed(), "refinement", allocation.refinement(),
+                "allocationSignature", allocation.signature(),
+                "agentAssignedCounts", allocationCounts(allocation),
+                "agentEstimatedStepLoads", allocationLoads(candidate.estimatedLoads()),
+                "firstAssignedPerAgent", firstAssignedPerAgent(allocation),
+                "distinctAssignedOpportunities", allocation.distinctAssignedOpportunities(),
+                "duplicateOwnedOpportunityCount", allocation.duplicateOwnedOpportunityCount(),
+                "unassignedReachableOpportunities", Math.max(0,
+                        poolSize - allocation.distinctAssignedOpportunities()),
+                "distinctFirstAssignments", distinctFirstAssignments(allocation),
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "planSignature", signature(candidate.plan()));
+    }
+
+    private void logM18Done(
+            DayState state, HybridCalibratedMarginEvaluation evaluation, SearchContext context,
+            TeamPlan selectedPlan, AnytimeSearchStats stats, StratifiedSearchStats depth,
+            M18AllocationStats allocationStats, Map<String, M18AllocationCandidate> candidates) {
+        M18AllocationCandidate selected = candidates.get(signature(selectedPlan));
+        String selectedOrigin = selected == null ? "BASELINE_OR_SEARCH"
+                : selected.allocation().seed() + "_R" + selected.allocation().refinement();
+        String selectedAllocation = selected == null ? "NONE" : selected.allocation().signature();
+        String selectedCounts = selected == null ? "NONE" : allocationCounts(selected.allocation());
+        String selectedLoads = selected == null ? "NONE" : allocationLoads(selected.estimatedLoads());
+        log(event("DONE"), "day", state.day().value(),
+                "selectedAllocationOrigin", selectedOrigin,
+                "selectedAllocationSignature", selectedAllocation,
+                "selectedAgentAssignedCounts", selectedCounts,
+                "selectedAgentEstimatedStepLoads", selectedLoads,
+                "selectedOwnSemiBrands", evaluation.ownSemiBrands(),
+                "selectedOwnSemiCollections", evaluation.ownSemiCollections(),
+                "selectedHybridMarginScore4", evaluation.hybridMarginScore4(),
+                "allocationAttempts", allocationStats.allocationAttempts,
+                "validAllocations", allocationStats.validAllocations,
+                "invalidAllocations", allocationStats.invalidAllocations,
+                "duplicatePlanAllocations", allocationStats.duplicatePlanAllocations,
+                "expanded", stats.expandedStates(), "completedPlans", stats.completedPlans(),
+                "frontierPeak", depth.frontierPeak(), "routeCostCacheEntries", context.routeCache.size(),
+                "pathfindingExecutions", context.routeCache.size());
+        log("M18_TEAM_ALLOCATION_SUMMARY", "day", state.day().value(),
+                "allocationAttempts", allocationStats.allocationAttempts,
+                "validAllocations", allocationStats.validAllocations,
+                "invalidAllocations", allocationStats.invalidAllocations,
+                "duplicatePlanAllocations", allocationStats.duplicatePlanAllocations,
+                "minCostUnique", allocationStats.uniqueFor(TeamOpportunityAllocation.Seed.MIN_COST_OWNERSHIP, candidates),
+                "balancedUnique", allocationStats.uniqueFor(TeamOpportunityAllocation.Seed.BALANCED_LOAD, candidates),
+                "distinctEarlyUnique", allocationStats.uniqueFor(TeamOpportunityAllocation.Seed.DISTINCT_EARLY, candidates),
+                "brandCoverageUnique", allocationStats.uniqueFor(TeamOpportunityAllocation.Seed.BRAND_COVERAGE, candidates),
+                "maxDistinctAssignedOpportunities", allocationStats.maxDistinctAssignedOpportunities,
+                "minDuplicateOwnedOpportunityCount", allocationStats.minDuplicateOwnedOpportunityCount,
+                "unassignedReachableOpportunities", allocationStats.unassignedReachableOpportunities,
+                "maxDistinctFirstAssignments", allocationStats.maxDistinctFirstAssignments,
+                "selectedAllocationOrigin", selectedOrigin,
+                "selectedAllocationSignature", selectedAllocation,
+                "selectedAgentAssignedCounts", selectedCounts,
+                "selectedAgentEstimatedStepLoads", selectedLoads,
+                "selectedOwnSemiBrands", evaluation.ownSemiBrands(),
+                "selectedOwnSemiCollections", evaluation.ownSemiCollections(),
+                "selectedHybridMarginScore4", evaluation.hybridMarginScore4(),
+                "expanded", stats.expandedStates(), "completedPlans", stats.completedPlans(),
+                "frontierPeak", depth.frontierPeak(), "routeCostCacheEntries", context.routeCache.size(),
+                "pathfindingExecutions", context.routeCache.size());
+    }
+
+    private void logM19Start(
+            DayState state, HybridCalibratedMarginEvaluation evaluation,
+            SearchContext context, MutableStats stats) {
+        log(event("START"), "day", state.day().value(),
+                "hybridBaseWeight", HybridCalibratedMarginEvaluation.HYBRID_BASE_WEIGHT,
+                "hybridCoupledWeight", HybridCalibratedMarginEvaluation.HYBRID_COUPLED_WEIGHT,
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "opponentBaselineCollections", evaluation.opponentBaselineCollections(),
+                "coupledOpponentCollections", evaluation.coupledOpponentCollections(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "budget", config.maxExpandedStates(),
+                "discoveryBudget", stratifiedSearchConfig.discoveryBudget(),
+                "qualificationBudget", stratifiedSearchConfig.qualificationBudget(),
+                "exploitationBudget", stratifiedSearchConfig.exploitationBudget(),
+                "initialPathfindingExecutions", context.m19PathfindingExecutions,
+                "searchPathfindingExecutions", stats.expandedStates);
+    }
+
+    private void logM19Candidate(DayState state, M19CapacityCandidate candidate) {
+        CapacityAwareTeamAllocation allocation = candidate.allocation();
+        HybridCalibratedMarginEvaluation evaluation = candidate.evaluation().evaluation();
+        CapacityAwareTeamAllocator.Timeline timeline = candidate.timeline();
+        log("M19_CAPACITY_CANDIDATE", "day", state.day().value(),
+                "seed", allocation.seed(), "variant", allocation.variant(),
+                "physicalPlanSignature", signature(candidate.plan()),
+                "totalLogicalClaims", allocation.totalLogicalClaims(),
+                "distinctClaimedSpots", allocation.distinctClaimedSpots(),
+                "multiClaimSpotCount", allocation.multiClaimSpotCount(),
+                "perAgentClaimCounts", capacityClaimCounts(allocation),
+                "expectedOwnSuccessfulClaims", timeline.expectedOwnSuccessfulClaims(),
+                "expectedOpponentClaimsBeforeOwn", timeline.expectedOpponentClaimsBeforeOwn(),
+                "expectedResidualCapacitySum", timeline.expectedResidualCapacitySum(),
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "opponentBaselineCollections", evaluation.opponentBaselineCollections(),
+                "coupledOpponentCollections", evaluation.coupledOpponentCollections(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4());
+    }
+
+    private void logM19Done(
+            DayState state, HybridCalibratedMarginEvaluation evaluation, SearchContext context,
+            TeamPlan selectedPlan, AnytimeSearchStats stats, StratifiedSearchStats depth,
+            M19CapacityStats allocationStats, Map<String, M19CapacityCandidate> candidates) {
+        M19CapacityCandidate selected = candidates.get(signature(selectedPlan));
+        String selectedOrigin = selected == null ? "BASELINE_OR_SEARCH"
+                : selected.allocation().seed() + "_V" + selected.allocation().variant();
+        String selectedClaims = selected == null ? "NONE"
+                : Integer.toString(selected.allocation().totalLogicalClaims());
+        String selectedSpots = selected == null ? "NONE"
+                : Integer.toString(selected.allocation().distinctClaimedSpots());
+        String selectedMulti = selected == null ? "NONE"
+                : Integer.toString(selected.allocation().multiClaimSpotCount());
+        String selectedCounts = selected == null ? "NONE" : capacityClaimCounts(selected.allocation());
+        CapacityAwareTeamAllocator.Timeline timeline = selected == null ?
+                new CapacityAwareTeamAllocator.Timeline(0, 0, 0) : selected.timeline();
+        log(event("DONE"), "day", state.day().value(),
+                "selectedCandidateOrigin", selectedOrigin,
+                "selectedTotalLogicalClaims", selectedClaims,
+                "selectedDistinctClaimedSpots", selectedSpots,
+                "selectedMultiClaimSpotCount", selectedMulti,
+                "selectedPerAgentClaimCounts", selectedCounts,
+                "selectedExpectedOwnSuccessfulClaims", timeline.expectedOwnSuccessfulClaims(),
+                "selectedExpectedOpponentClaimsBeforeOwn", timeline.expectedOpponentClaimsBeforeOwn(),
+                "selectedExpectedResidualCapacitySum", timeline.expectedResidualCapacitySum(),
+                "selectedOwnSemiBrands", evaluation.ownSemiBrands(),
+                "selectedOwnSemiCollections", evaluation.ownSemiCollections(),
+                "selectedHybridMarginScore4", evaluation.hybridMarginScore4(),
+                "claimCandidateAttempts", allocationStats.claimCandidateAttempts,
+                "uniquePhysicalPlans", allocationStats.uniquePhysicalPlans,
+                "duplicatePhysicalPlansRejected", allocationStats.duplicatePhysicalPlansRejected,
+                "invalidPhysicalPlans", allocationStats.invalidPhysicalPlans,
+                "capacityThroughputUnique", allocationStats.uniqueFor(CapacityAwareTeamAllocation.Seed.CAPACITY_THROUGHPUT),
+                "capacityBalancedUnique", allocationStats.uniqueFor(CapacityAwareTeamAllocation.Seed.CAPACITY_BALANCED),
+                "capacityBrandUnique", allocationStats.uniqueFor(CapacityAwareTeamAllocation.Seed.CAPACITY_BRAND),
+                "competitiveResidualUnique", allocationStats.uniqueFor(CapacityAwareTeamAllocation.Seed.COMPETITIVE_RESIDUAL),
+                "relevantCapacitySpots", allocationStats.relevantCapacitySpots,
+                "initialPathfindingExecutions", allocationStats.initialPathfindingExecutions,
+                "candidateGenerationPathfindingExecutions", allocationStats.candidateGenerationPathfindingExecutions,
+                "finalPathfindingExecutions", allocationStats.finalPathfindingExecutions,
+                "expanded", stats.expandedStates(), "completedPlans", stats.completedPlans(),
+                "frontierPeak", depth.frontierPeak());
+        log("M19_CAPACITY_SUMMARY", "day", state.day().value(),
+                "claimCandidateAttempts", allocationStats.claimCandidateAttempts,
+                "uniquePhysicalPlans", allocationStats.uniquePhysicalPlans,
+                "duplicatePhysicalPlansRejected", allocationStats.duplicatePhysicalPlansRejected,
+                "invalidPhysicalPlans", allocationStats.invalidPhysicalPlans,
+                "capacityThroughputUnique", allocationStats.uniqueFor(CapacityAwareTeamAllocation.Seed.CAPACITY_THROUGHPUT),
+                "capacityBalancedUnique", allocationStats.uniqueFor(CapacityAwareTeamAllocation.Seed.CAPACITY_BALANCED),
+                "capacityBrandUnique", allocationStats.uniqueFor(CapacityAwareTeamAllocation.Seed.CAPACITY_BRAND),
+                "competitiveResidualUnique", allocationStats.uniqueFor(CapacityAwareTeamAllocation.Seed.COMPETITIVE_RESIDUAL),
+                "selectedCandidateOrigin", selectedOrigin,
+                "selectedTotalLogicalClaims", selectedClaims,
+                "selectedDistinctClaimedSpots", selectedSpots,
+                "selectedMultiClaimSpotCount", selectedMulti,
+                "selectedPerAgentClaimCounts", selectedCounts,
+                "selectedExpectedOwnSuccessfulClaims", timeline.expectedOwnSuccessfulClaims(),
+                "selectedExpectedOpponentClaimsBeforeOwn", timeline.expectedOpponentClaimsBeforeOwn(),
+                "selectedExpectedResidualCapacitySum", timeline.expectedResidualCapacitySum(),
+                "selectedOwnSemiBrands", evaluation.ownSemiBrands(),
+                "selectedOwnSemiCollections", evaluation.ownSemiCollections(),
+                "selectedHybridMarginScore4", evaluation.hybridMarginScore4(),
+                "initialPathfindingExecutions", allocationStats.initialPathfindingExecutions,
+                "candidateGenerationPathfindingExecutions", allocationStats.candidateGenerationPathfindingExecutions,
+                "finalPathfindingExecutions", allocationStats.finalPathfindingExecutions,
+                "expanded", stats.expandedStates(), "completedPlans", stats.completedPlans(),
+                "frontierPeak", depth.frontierPeak());
+    }
+
+    private String capacityClaimCounts(CapacityAwareTeamAllocation allocation) {
+        return allocation.claimCounts().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(Comparator.comparingInt(AgentId::value)))
+                .map(entry -> entry.getKey().value() + "=" + entry.getValue())
+                .collect(java.util.stream.Collectors.joining(","));
+    }
+
     private void log(String event, Object... fields) {
         StringBuilder message = new StringBuilder(event);
         for (int index = 0; index + 1 < fields.length; index += 2) {
             message.append(' ').append(fields[index]).append('=').append(fields[index + 1]);
         }
         System.out.println(message);
+    }
+
+    private void logM17Start(
+            DayState state,
+            HybridCalibratedMarginEvaluation evaluation,
+            SearchContext context,
+            MutableStats stats) {
+        TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+        log(event("START"),
+                "day", state.day().value(),
+                "hybridBaseWeight", HybridCalibratedMarginEvaluation.HYBRID_BASE_WEIGHT,
+                "hybridCoupledWeight", HybridCalibratedMarginEvaluation.HYBRID_COUPLED_WEIGHT,
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnBrands", evaluation.coupledOwnBrands(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                "expanded", stats.expandedStates,
+                "completedPlans", stats.completedPlans,
+                "routeCostCacheEntries", context.coupledCompetitiveBaseline.routeCostCacheEntries(),
+                "pathfindingExecutions", context.coupledCompetitiveBaseline.pathfindingExecutions());
+    }
+
+    private void logM17DiscoveryCandidate(
+            DayState state,
+            M17CandidateFamily family,
+            int variantOrdinal,
+            TeamPlan plan,
+            HybridCalibratedMarginEvaluation evaluation) {
+        log("M17_DISCOVERY_CANDIDATE",
+                "day", state.day().value(),
+                "family", family,
+                "variantOrdinal", variantOrdinal,
+                "planSignature", signature(plan),
+                "firstTargetAssignmentSignature", firstTargetAssignmentSignature(state, plan),
+                "routePrefixSignature", routePrefixSignature(state, plan),
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnBrands", evaluation.coupledOwnBrands(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "plannedOwnOpportunityEvents", evaluation.plannedOwnOpportunityEvents());
+    }
+
+    private void logM17Improvement(
+            DayState state,
+            HybridCalibratedMarginEvaluation evaluation,
+            HybridCalibratedMarginEvaluation previous,
+            MutableStats stats,
+            StratifiedSearchStats depth) {
+        logHybridCalibratedMarginImprovement(state, evaluation, previous, stats, depth);
+    }
+
+    private void logM17Done(
+            DayState state,
+            HybridCalibratedMarginEvaluation evaluation,
+            SearchContext context,
+            TeamPlan selectedPlan,
+            AnytimeSearchStats stats,
+            StratifiedSearchStats depth,
+            M17CandidateDiversityStats diversity,
+            Map<String, String> origins) {
+        TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+        CoupledCompetitiveRolloutResult coupled = evaluation.coupled();
+        CoupledCompetitiveBaseline baseline = context.coupledCompetitiveBaseline;
+        String planSignature = signature(selectedPlan);
+        String selectedOrigin = origins.getOrDefault(planSignature, "BASELINE");
+        log(event("DONE"),
+                "day", state.day().value(),
+                "selectedCandidateOrigin", selectedOrigin,
+                "selectedPlanSignature", planSignature,
+                "selectedFirstTargetAssignmentSignature", firstTargetAssignmentSignature(state, selectedPlan),
+                "selectedRoutePrefixSignature", routePrefixSignature(state, selectedPlan),
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnBrands", evaluation.coupledOwnBrands(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "opponentBaselineCollections", evaluation.opponentBaselineCollections(),
+                "coupledOpponentCollections", evaluation.coupledOpponentCollections(),
+                "hybridOwnScore4", evaluation.hybridOwnScore4(),
+                "hybridOpponentScore4", evaluation.hybridOpponentScore4(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "opponentCollectionsRemovedVsBaseline", evaluation.opponentCollectionsRemovedVsBaseline(),
+                "ownPlannedEventsInvalidatedByOpponent", evaluation.ownPlannedEventsInvalidatedByOpponent(),
+                "ownPlannedEventsExhaustedByOwnTeam", evaluation.ownPlannedEventsExhaustedByOwnTeam(),
+                "opponentReplacementCollections", evaluation.opponentReplacementCollections(),
+                "equalStepContests", evaluation.equalStepContests(),
+                "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                "routeCostCacheEntries", baseline.routeCostCacheEntries(),
+                "pathfindingExecutions", baseline.pathfindingExecutions(),
+                "candidateAttempts", diversity.candidateAttempts,
+                "uniqueCandidates", diversity.uniqueCandidates,
+                "duplicateCandidatesRejected", diversity.duplicateCandidatesRejected,
+                "invalidCandidatesRejected", diversity.invalidCandidatesRejected,
+                "throughputGenerated", diversity.throughputGenerated,
+                "spatialSeparationGenerated", diversity.spatialSeparationGenerated,
+                "routeOrderGenerated", diversity.routeOrderGenerated,
+                "contentionAvoidanceGenerated", diversity.contentionAvoidanceGenerated,
+                "throughputUnique", diversity.throughputUnique,
+                "spatialSeparationUnique", diversity.spatialSeparationUnique,
+                "routeOrderUnique", diversity.routeOrderUnique,
+                "contentionAvoidanceUnique", diversity.contentionAvoidanceUnique,
+                "distinctPlanSignatures", diversity.planSignatures.size(),
+                "distinctFirstTargetAssignmentSignatures", diversity.firstTargetAssignmentSignatures.size(),
+                "distinctRoutePrefixSignatures", diversity.routePrefixSignatures.size(),
+                "expanded", stats.expandedStates(),
+                "completedPlans", stats.completedPlans(),
+                "frontierPeak", depth.frontierPeak());
+        log("M17_CANDIDATE_DIVERSITY_SUMMARY",
+                "day", state.day().value(),
+                "candidateAttempts", diversity.candidateAttempts,
+                "uniqueCandidates", diversity.uniqueCandidates,
+                "duplicateCandidatesRejected", diversity.duplicateCandidatesRejected,
+                "invalidCandidatesRejected", diversity.invalidCandidatesRejected,
+                "throughputGenerated", diversity.throughputGenerated,
+                "spatialSeparationGenerated", diversity.spatialSeparationGenerated,
+                "routeOrderGenerated", diversity.routeOrderGenerated,
+                "contentionAvoidanceGenerated", diversity.contentionAvoidanceGenerated,
+                "throughputUnique", diversity.throughputUnique,
+                "spatialSeparationUnique", diversity.spatialSeparationUnique,
+                "routeOrderUnique", diversity.routeOrderUnique,
+                "contentionAvoidanceUnique", diversity.contentionAvoidanceUnique,
+                "distinctPlanSignatures", diversity.planSignatures.size(),
+                "distinctFirstTargetAssignmentSignatures", diversity.firstTargetAssignmentSignatures.size(),
+                "distinctRoutePrefixSignatures", diversity.routePrefixSignatures.size(),
+                "expanded", stats.expandedStates(),
+                "completedPlans", stats.completedPlans(),
+                "frontierPeak", depth.frontierPeak());
+    }
+
+    private void logHybridCalibratedMarginStart(DayState state,
+            HybridCalibratedMarginEvaluation evaluation, SearchContext context, MutableStats stats) {
+        TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+        logOpponentCoupledBaseline(state, context.coupledCompetitiveBaseline);
+        if (contentionDiagnostics) {
+            logCoupledCompetitiveEvents(state, evaluation.coupled());
+        }
+        log(event("START"), "day", state.day().value(),
+                "remainingFutureDays", capacity.remainingFutureDays(),
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnBrands", evaluation.coupledOwnBrands(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "opponentBaselineCollections", evaluation.opponentBaselineCollections(),
+                "coupledOpponentCollections", evaluation.coupledOpponentCollections(),
+                "hybridOwnScore4", evaluation.hybridOwnScore4(),
+                "hybridOpponentScore4", evaluation.hybridOpponentScore4(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "hybridBaseWeight", HybridCalibratedMarginEvaluation.HYBRID_BASE_WEIGHT,
+                "hybridCoupledWeight", HybridCalibratedMarginEvaluation.HYBRID_COUPLED_WEIGHT,
+                "plannedOwnOpportunityEvents", evaluation.plannedOwnOpportunityEvents(),
+                "ownPlannedEventsInvalidatedByOpponent", evaluation.ownPlannedEventsInvalidatedByOpponent(),
+                "ownPlannedEventsExhaustedByOwnTeam", evaluation.ownPlannedEventsExhaustedByOwnTeam(),
+                "opponentCollectionsRemovedVsBaseline", evaluation.opponentCollectionsRemovedVsBaseline(),
+                "opponentReplacementCollections", evaluation.opponentReplacementCollections(),
+                "equalStepContests", evaluation.equalStepContests(),
+                "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                "expanded", stats.expandedStates, "completedPlans", stats.completedPlans,
+                "improvements", stats.incumbentImprovements,
+                "budget", config.maxExpandedStates(),
+                "discoveryBudget", stratifiedSearchConfig.discoveryBudget(),
+                "qualificationBudget", stratifiedSearchConfig.qualificationBudget(),
+                "exploitationBudget", stratifiedSearchConfig.exploitationBudget());
+    }
+
+    private void logHybridCalibratedMarginImprovement(DayState state,
+            HybridCalibratedMarginEvaluation evaluation,
+            HybridCalibratedMarginEvaluation previous, MutableStats stats,
+            StratifiedSearchStats depth) {
+        TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+        log(event("IMPROVEMENT"), "day", state.day().value(),
+                "improvementCriterion", evaluation.improvementCriterion(previous),
+                "remainingFutureDays", capacity.remainingFutureDays(),
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnBrands", evaluation.coupledOwnBrands(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "opponentBaselineCollections", evaluation.opponentBaselineCollections(),
+                "coupledOpponentCollections", evaluation.coupledOpponentCollections(),
+                "hybridOwnScore4", evaluation.hybridOwnScore4(),
+                "hybridOpponentScore4", evaluation.hybridOpponentScore4(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "hybridBaseWeight", HybridCalibratedMarginEvaluation.HYBRID_BASE_WEIGHT,
+                "hybridCoupledWeight", HybridCalibratedMarginEvaluation.HYBRID_COUPLED_WEIGHT,
+                "plannedOwnOpportunityEvents", evaluation.plannedOwnOpportunityEvents(),
+                "ownPlannedEventsInvalidatedByOpponent", evaluation.ownPlannedEventsInvalidatedByOpponent(),
+                "ownPlannedEventsExhaustedByOwnTeam", evaluation.ownPlannedEventsExhaustedByOwnTeam(),
+                "opponentCollectionsRemovedVsBaseline", evaluation.opponentCollectionsRemovedVsBaseline(),
+                "opponentReplacementCollections", evaluation.opponentReplacementCollections(),
+                "equalStepContests", evaluation.equalStepContests(),
+                "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                "expanded", stats.expandedStates, "completedPlans", stats.completedPlans,
+                "improvements", stats.incumbentImprovements,
+                "strategiesDiscovered", depth.strategiesDiscovered(),
+                "strategiesQualified", depth.strategiesQualified(),
+                "discoveryExpansions", depth.discoveryExpansions(),
+                "qualificationExpansions", depth.qualificationExpansions(),
+                "exploitationExpansions", depth.exploitationExpansions(),
+                "frontierPeak", depth.frontierPeak(), "budgetExhausted", false);
+    }
+
+    private void logHybridCalibratedMarginDone(DayState state,
+            HybridCalibratedMarginEvaluation evaluation, SearchContext context,
+            AnytimeSearchStats stats, StratifiedSearchStats depth) {
+        TeamNextDayHarvestCapacity capacity = evaluation.nextDayHarvestCapacity();
+        CoupledCompetitiveRolloutResult coupled = evaluation.coupled();
+        CoupledCompetitiveBaseline baseline = context.coupledCompetitiveBaseline;
+        log(event("DONE"), "day", state.day().value(),
+                "remainingFutureDays", capacity.remainingFutureDays(),
+                "ownSemiBrands", evaluation.ownSemiBrands(),
+                "ownSemiCollections", evaluation.ownSemiCollections(),
+                "coupledOwnBrands", evaluation.coupledOwnBrands(),
+                "coupledOwnCollections", evaluation.coupledOwnCollections(),
+                "opponentBaselineCollections", evaluation.opponentBaselineCollections(),
+                "coupledOpponentCollections", evaluation.coupledOpponentCollections(),
+                "hybridOwnScore4", evaluation.hybridOwnScore4(),
+                "hybridOpponentScore4", evaluation.hybridOpponentScore4(),
+                "hybridMarginScore4", evaluation.hybridMarginScore4(),
+                "hybridBaseWeight", HybridCalibratedMarginEvaluation.HYBRID_BASE_WEIGHT,
+                "hybridCoupledWeight", HybridCalibratedMarginEvaluation.HYBRID_COUPLED_WEIGHT,
+                "plannedOwnOpportunityEvents", evaluation.plannedOwnOpportunityEvents(),
+                "ownPlannedEventsInvalidatedByOpponent", evaluation.ownPlannedEventsInvalidatedByOpponent(),
+                "ownPlannedEventsExhaustedByOwnTeam", evaluation.ownPlannedEventsExhaustedByOwnTeam(),
+                "opponentCollectionsRemovedVsBaseline", evaluation.opponentCollectionsRemovedVsBaseline(),
+                "opponentReplacementCollections", evaluation.opponentReplacementCollections(),
+                "equalStepContests", evaluation.equalStepContests(),
+                "rawUdon", evaluation.semiCommitment().base().udonTotal(),
+                "finalPatrolFuel", evaluation.semiCommitment().base().remainingFuelTotal(),
+                "minimumPatrolDistinctSpots", capacity.minimumPatrolDistinctSpots(),
+                "minimumPatrolDistinctBrands", capacity.minimumPatrolDistinctBrands(),
+                "totalPatrolDistinctSpotCapacity", capacity.totalPatrolDistinctSpotCapacity(),
+                "totalPatrolDistinctBrandCapacity", capacity.totalPatrolDistinctBrandCapacity(),
+                "baselineRolloutEvents", baseline.rolloutEvents(),
+                "coupledRolloutEvents", coupled.rolloutEvents(),
+                "expanded", stats.expandedStates(), "completedPlans", stats.completedPlans(),
+                "improvements", stats.incumbentImprovements(),
+                "strategiesDiscovered", depth.strategiesDiscovered(),
+                "strategiesQualified", depth.strategiesQualified(),
+                "discoveryExpansions", depth.discoveryExpansions(),
+                "qualificationExpansions", depth.qualificationExpansions(),
+                "exploitationExpansions", depth.exploitationExpansions(),
+                "frontierPeak", depth.frontierPeak(), "budgetExhausted", stats.budgetExhausted());
+        if (contentionDiagnostics) {
+            logCoupledCompetitiveEvents(state, coupled);
+            logHarvestCapacity(state, capacity);
+        }
     }
 
     private void logHorizonReadiness(DayState state, TeamFutureReadiness readiness) {
@@ -3604,6 +4689,9 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         private final List<UdonSpot> orderedSpots;
         private final Map<Position, UdonSpot> spotsByPosition = new LinkedHashMap<>();
         private final Map<PatrolRouteKey, Optional<Route>> routeCache = new LinkedHashMap<>();
+        /** M19 route catalog keyed only by physical positions; candidate generation only reads it. */
+        private final Map<M19RouteKey, Optional<Route>> m19RouteCatalog = new LinkedHashMap<>();
+        private int m19PathfindingExecutions;
         private final ContentionAnalyzer contentionAnalyzer = new ContentionAnalyzer();
         private final Map<Position, ContentionMetrics> contentionCache = new LinkedHashMap<>();
         private final Map<Position, OptionalInt> opponentHexLowerBounds;
@@ -3702,7 +4790,8 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             // no terminal plan, no opponent reroute and no timeline event ever runs a Dijkstra. The
             // baseline is produced by the SAME adversarial selection rule the coupled rollout uses,
             // so opponentCollectionsRemovedVsBaseline measures our plan rather than a model change.
-            this.coupledCompetitiveRollout = isCoupledCompetitivePolicy(policy)
+            this.coupledCompetitiveRollout = (isCoupledCompetitivePolicy(policy)
+                    || isHybridEvaluatorPolicy(policy))
                     ? CoupledCompetitiveRollout.forState(state, opponentIntentConfig)
                     : null;
             this.coupledCompetitiveBaseline = coupledCompetitiveRollout == null
@@ -4395,6 +5484,114 @@ public final class AnytimeTeamPlanner implements DayPlanner {
         }
     }
 
+    private enum M17CandidateFamily {
+        THROUGHPUT,
+        SPATIAL_SEPARATION,
+        ROUTE_ORDER,
+        CONTENTION_AVOIDANCE;
+
+        private static M17CandidateFamily forDiscoveryExpansion(int oneBasedExpansion) {
+            int ordinal = Math.max(0, oneBasedExpansion - 1) / 4;
+            return values()[Math.min(values().length - 1, ordinal)];
+        }
+    }
+
+    /** Bounded M17 candidate-generation diagnostics; it never affects evaluation or ordering. */
+    private static final class M17CandidateDiversityStats {
+
+        private int candidateAttempts;
+        private int uniqueCandidates;
+        private int duplicateCandidatesRejected;
+        private int invalidCandidatesRejected;
+        private int throughputGenerated;
+        private int spatialSeparationGenerated;
+        private int routeOrderGenerated;
+        private int contentionAvoidanceGenerated;
+        private int throughputUnique;
+        private int spatialSeparationUnique;
+        private int routeOrderUnique;
+        private int contentionAvoidanceUnique;
+        private final Set<String> planSignatures = new LinkedHashSet<>();
+        private final Set<String> firstTargetAssignmentSignatures = new LinkedHashSet<>();
+        private final Set<String> routePrefixSignatures = new LinkedHashSet<>();
+
+        private void candidateAttempt(M17CandidateFamily family) {
+            candidateAttempts++;
+            if (family == null) {
+                return;
+            }
+            switch (family) {
+                case THROUGHPUT -> throughputGenerated++;
+                case SPATIAL_SEPARATION -> spatialSeparationGenerated++;
+                case ROUTE_ORDER -> routeOrderGenerated++;
+                case CONTENTION_AVOIDANCE -> contentionAvoidanceGenerated++;
+            }
+        }
+
+        private void recordUnique(
+                M17CandidateFamily family,
+                String planSignature,
+                String firstTargetAssignmentSignature,
+                String routePrefixSignature) {
+            planSignatures.add(planSignature);
+            firstTargetAssignmentSignatures.add(firstTargetAssignmentSignature);
+            routePrefixSignatures.add(routePrefixSignature);
+            if (family == null) {
+                return;
+            }
+            switch (family) {
+                case THROUGHPUT -> throughputUnique++;
+                case SPATIAL_SEPARATION -> spatialSeparationUnique++;
+                case ROUTE_ORDER -> routeOrderUnique++;
+                case CONTENTION_AVOIDANCE -> contentionAvoidanceUnique++;
+            }
+        }
+    }
+
+    private static final class M18AllocationStats {
+
+        private int allocationAttempts;
+        private int validAllocations;
+        private int invalidAllocations;
+        private int duplicatePlanAllocations;
+        private int relevantPoolSize;
+        private int unassignedReachableOpportunities;
+        private int maxDistinctAssignedOpportunities;
+        private int minDuplicateOwnedOpportunityCount;
+        private int maxDistinctFirstAssignments;
+
+        private int uniqueFor(
+                TeamOpportunityAllocation.Seed seed,
+                Map<String, M18AllocationCandidate> candidates) {
+            return (int) candidates.values().stream()
+                    .map(M18AllocationCandidate::allocation)
+                    .filter(value -> value.seed() == seed)
+                    .map(TeamOpportunityAllocation::signature)
+                    .distinct()
+                    .count();
+        }
+    }
+
+    private static final class M19CapacityStats {
+        private int claimCandidateAttempts;
+        private int uniquePhysicalPlans;
+        private int duplicatePhysicalPlansRejected;
+        private int invalidPhysicalPlans;
+        private int relevantCapacitySpots;
+        private int initialPathfindingExecutions;
+        private int candidateGenerationPathfindingExecutions;
+        private int finalPathfindingExecutions;
+        private final Map<CapacityAwareTeamAllocation.Seed, Integer> uniqueBySeed = new LinkedHashMap<>();
+
+        private void observe(CapacityAwareTeamAllocation allocation) {
+            uniqueBySeed.merge(allocation.seed(), 1, Integer::sum);
+        }
+
+        private int uniqueFor(CapacityAwareTeamAllocation.Seed seed) {
+            return uniqueBySeed.getOrDefault(seed, 0);
+        }
+    }
+
     private record EvaluatedPlan(TeamPlan plan, PlanEvaluation evaluation) {
     }
     private record ArrivalEvaluatedPlan(
@@ -4457,6 +5654,12 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             EvaluatedPlan base) {
     }
 
+    private record HybridCalibratedMarginEvaluatedPlan(
+            TeamPlan plan,
+            HybridCalibratedMarginEvaluation evaluation,
+            EvaluatedPlan base) {
+    }
+
     private record IntentDiagnostic(
             int groupRawId,
             OpponentAgentIntentForecast agent,
@@ -4481,6 +5684,38 @@ public final class AnytimeTeamPlanner implements DayPlanner {
             Position start,
             int fuel,
             Position target) {
+    }
+
+    private record M19RouteKey(Position start, Position target) {
+    }
+
+    private record M18NextTarget(Position target, Route route) {
+    }
+
+    private record M18AllocationSelection(
+            TeamOpportunityAllocation allocation,
+            Map<AgentId, Integer> estimatedLoads,
+            HybridCalibratedMarginEvaluatedPlan evaluation) {
+    }
+
+    private record M18AllocationCandidate(
+            TeamOpportunityAllocation allocation,
+            Map<AgentId, Integer> estimatedLoads,
+            TeamPlan plan,
+            HybridCalibratedMarginEvaluatedPlan evaluation) {
+    }
+
+    private record M19CapacitySelection(
+            CapacityAwareTeamAllocation allocation,
+            CapacityAwareTeamAllocator.Timeline timeline,
+            HybridCalibratedMarginEvaluatedPlan evaluation) {
+    }
+
+    private record M19CapacityCandidate(
+            CapacityAwareTeamAllocation allocation,
+            CapacityAwareTeamAllocator.Timeline timeline,
+            TeamPlan plan,
+            HybridCalibratedMarginEvaluatedPlan evaluation) {
     }
 
     private record RouteProjection(

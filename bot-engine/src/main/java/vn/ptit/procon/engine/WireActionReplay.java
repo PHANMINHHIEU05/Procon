@@ -23,14 +23,17 @@ import vn.ptit.procon.rules.FuelRules;
 import vn.ptit.procon.rules.MovementRules;
 
 /**
- * Pure, independent wire-action replayer.
+ * Pure wire-action replayer.
  *
  * <p>Starting strictly from the authoritative {@link DayState}, map, and current traffic, this
  * component decodes and steps through the exact integer arrays produced by the encoder without
- * reading simulation results or planner metadata.</p>
+ * reading simulation results or planner metadata. Movement duration is intentionally local
+ * provenance: this replay uses the shared {@link MovementRules} implementation and is not an
+ * independent server oracle.</p>
  */
 public final class WireActionReplay {
 
+    /** Returns the raw protocol status code represented by the mapped traffic value, when present. */
     public record ReplayedCommand(
             int commandIndex,
             int wireValue,
@@ -40,7 +43,16 @@ public final class WireActionReplay {
             TrafficStatus sourceTraffic,
             int startStep,
             int duration,
-            int endStep) {}
+            int endStep) {
+
+        public Integer rawTrafficValue() {
+            return sourceTraffic == null ? null : sourceTraffic.code();
+        }
+
+        public String decodedTrafficState() {
+            return sourceTraffic == null ? "NA" : sourceTraffic.name();
+        }
+    }
 
     public record AgentReplayResult(
             AgentId agentId,

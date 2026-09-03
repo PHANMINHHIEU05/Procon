@@ -228,7 +228,7 @@ class M15ReplacementAwareRelativeMarginTest {
     void thePolicyKeepsItsOwnEnumConstantAndLeavesEveryOlderModeInPlace() {
         List<AnytimeSearchPolicy> policies = List.of(AnytimeSearchPolicy.values());
 
-        assertEquals(16, policies.size());
+        assertEquals(20, policies.size());
         assertEquals(14, policies.indexOf(
                 AnytimeSearchPolicy.ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN));
         assertTrue(policies.contains(AnytimeSearchPolicy.ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE));

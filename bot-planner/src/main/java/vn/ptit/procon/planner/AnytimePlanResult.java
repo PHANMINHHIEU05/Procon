@@ -19,7 +19,8 @@ public record AnytimePlanResult(
         Optional<HarvestHorizonAwarePlanEvaluation> harvestHorizonAwareEvaluation,
         Optional<RelativeMarginPlanEvaluation> relativeMarginEvaluation,
         Optional<ReplacementAwareRelativeMarginEvaluation> replacementAwareEvaluation,
-        Optional<CoupledCompetitiveMarginEvaluation> coupledCompetitiveEvaluation) {
+        Optional<CoupledCompetitiveMarginEvaluation> coupledCompetitiveEvaluation,
+        Optional<HybridCalibratedMarginEvaluation> hybridCalibratedMarginEvaluation) {
 
     public AnytimePlanResult {
         Objects.requireNonNull(plan, "Plan must not be null");
@@ -40,12 +41,14 @@ public record AnytimePlanResult(
                 "Replacement-aware relative-margin evaluation must not be null");
         Objects.requireNonNull(coupledCompetitiveEvaluation,
                 "Coupled competitive margin evaluation must not be null");
+        Objects.requireNonNull(hybridCalibratedMarginEvaluation,
+                "Hybrid calibrated margin evaluation must not be null");
     }
 
     public AnytimePlanResult(TeamPlan plan, PlanEvaluation evaluation, AnytimeSearchStats stats) {
         this(plan, evaluation, stats, Optional.empty(), Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.empty(), Optional.empty(), Optional.empty());
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public AnytimePlanResult(
@@ -53,7 +56,7 @@ public record AnytimePlanResult(
             Optional<RiskAdjustedPlanEvaluation> riskAdjustedEvaluation) {
         this(plan, evaluation, stats, riskAdjustedEvaluation, Optional.empty(), Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.empty(), Optional.empty(), Optional.empty());
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public AnytimePlanResult(
@@ -62,7 +65,7 @@ public record AnytimePlanResult(
             Optional<IntentAwarePlanEvaluation> intentAwareEvaluation) {
         this(plan, evaluation, stats, riskAdjustedEvaluation, intentAwareEvaluation, Optional.empty(),
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.empty(), Optional.empty(), Optional.empty());
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public AnytimePlanResult(
@@ -72,7 +75,7 @@ public record AnytimePlanResult(
             Optional<DiverseSearchStats> diverseSearchStats) {
         this(plan, evaluation, stats, riskAdjustedEvaluation, intentAwareEvaluation, diverseSearchStats,
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.empty(), Optional.empty(), Optional.empty());
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public AnytimePlanResult(
@@ -83,7 +86,7 @@ public record AnytimePlanResult(
             Optional<StratifiedSearchStats> stratifiedSearchStats) {
         this(plan, evaluation, stats, riskAdjustedEvaluation, intentAwareEvaluation, diverseSearchStats,
                 stratifiedSearchStats, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.empty(), Optional.empty(), Optional.empty());
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public AnytimePlanResult(
@@ -95,7 +98,7 @@ public record AnytimePlanResult(
             Optional<CommitmentAwarePlanEvaluation> commitmentAwareEvaluation) {
         this(plan, evaluation, stats, riskAdjustedEvaluation, intentAwareEvaluation, diverseSearchStats,
                 stratifiedSearchStats, commitmentAwareEvaluation, Optional.empty(), Optional.empty(),
-                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+                Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public AnytimePlanResult(
@@ -109,6 +112,6 @@ public record AnytimePlanResult(
         this(plan, evaluation, stats, riskAdjustedEvaluation, intentAwareEvaluation, diverseSearchStats,
                 stratifiedSearchStats, commitmentAwareEvaluation, semiCommitmentAwareEvaluation,
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                Optional.empty());
+                Optional.empty(), Optional.empty());
     }
 }

@@ -26,7 +26,7 @@ public enum OpponentCollectionEligibility {
      */
     RAW_KIND_ZERO_COLLECTS;
 
-    boolean collectsUdon(ObservedOtherAgent agent) {
+    public boolean collectsUdon(ObservedOtherAgent agent) {
         return this == ALL_OBSERVED_COLLECT || agent.rawKind() == 0;
     }
 }

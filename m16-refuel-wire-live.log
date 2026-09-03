@@ -1,113 +1,120 @@
-CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-4992 plannerMode=ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN PROCON_TOKEN=<set>
-SETUP_WAITING matchId=m-4992
-SETUP_RECEIVED matchId=m-4992 agents=6 days=4
-ASSIGNMENT_SUBMITTED matchId=m-4992 agents=6
-ASSIGNMENT_ACCEPTED matchId=m-4992 agents=6
-MATCH_STARTED matchId=m-4992
-DAY_STATE_RECEIVED matchId=m-4992 day=0 agents=6
-NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=0 remainingFutureDays=3 patrolAgents=5 nextDayStepBudget=60 minimumPatrolDistinctSpots=8 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=40 totalPatrolDistinctBrandCapacity=20 routeCostCacheEntries=1144 pathfindingExecutions=8
+CONFIG_LOADED baseUrl=https://procon.ptit.edu.vn matchId=m-5042 plannerMode=ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN PROCON_TOKEN=<set>
+SETUP_WAITING matchId=m-5042
+SETUP_RECEIVED matchId=m-5042 agents=6 days=4
+ASSIGNMENT_SUBMITTED matchId=m-5042 agents=6
+ASSIGNMENT_ACCEPTED matchId=m-5042 agents=6
+MATCH_STARTED matchId=m-5042
+DAY_STATE_RECEIVED matchId=m-5042 day=0 agents=6
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=0 remainingFutureDays=3 patrolAgents=5 nextDayStepBudget=60 minimumPatrolDistinctSpots=8 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=40 totalPatrolDistinctBrandCapacity=20 routeCostCacheEntries=1128 pathfindingExecutions=8
 TEAM_REFUEL_HARVEST_HORIZON_NO_ASSIGN day=0 reason=NO_HARVEST_CAPACITY_GAIN currentSemiBrandDelta=0 currentSemiCollectionDelta=0 weakestCapacityDelta=0 totalSpotCapacityDelta=0 totalBrandCapacityDelta=0 fuelRestored=0 arrivalStep=0
 TEAM_REFUEL_NO_ASSIGN day=0 reason=NO_POSITIVE_TEAM_VALUE
-TEAM_TARGET_SELECT day=0 iteration=1 agent=0 target=25 brand=numeric:2 teamNewBrand=true steps=18 fuel=12
-TEAM_TARGET_SELECT day=0 iteration=2 agent=2 target=120 brand=numeric:3 teamNewBrand=true steps=14 fuel=9
-TEAM_TARGET_SELECT day=0 iteration=3 agent=2 target=8 brand=numeric:0 teamNewBrand=false steps=21 fuel=21
-TEAM_TARGET_SELECT day=0 iteration=4 agent=0 target=120 brand=numeric:3 teamNewBrand=false steps=14 fuel=10
-TEAM_TARGET_SELECT day=0 iteration=5 agent=1 target=125 brand=numeric:1 teamNewBrand=false steps=17 fuel=10
-TEAM_TARGET_SELECT day=0 iteration=6 agent=3 target=106 brand=numeric:3 teamNewBrand=false steps=2 fuel=1
-TEAM_TARGET_SELECT day=0 iteration=7 agent=4 target=5 brand=numeric:1 teamNewBrand=false steps=4 fuel=2
-TEAM_TARGET_SELECT day=0 iteration=8 agent=4 target=120 brand=numeric:3 teamNewBrand=false steps=15 fuel=18
-TEAM_TARGET_SELECT day=0 iteration=9 agent=2 target=54 brand=numeric:2 teamNewBrand=false steps=8 fuel=4
-TEAM_TARGET_SELECT day=0 iteration=10 agent=1 target=86 brand=numeric:0 teamNewBrand=false steps=9 fuel=8
-TEAM_TARGET_SELECT day=0 iteration=11 agent=1 target=120 brand=numeric:3 teamNewBrand=false steps=6 fuel=3
-TEAM_TARGET_SELECT day=0 iteration=12 agent=3 target=54 brand=numeric:2 teamNewBrand=false steps=9 fuel=9
-TEAM_TARGET_SELECT day=0 iteration=13 agent=3 target=5 brand=numeric:1 teamNewBrand=false steps=8 fuel=4
-TEAM_TARGET_SELECT day=0 iteration=14 agent=3 target=8 brand=numeric:0 teamNewBrand=false steps=6 fuel=3
-TEAM_TARGET_SELECT day=0 iteration=15 agent=4 target=25 brand=numeric:2 teamNewBrand=false steps=14 fuel=10
-TEAM_TARGET_SELECT day=0 iteration=16 agent=3 target=120 brand=numeric:3 teamNewBrand=false steps=21 fuel=21
-TEAM_TARGET_SELECT day=0 iteration=17 agent=1 target=8 brand=numeric:0 teamNewBrand=false steps=21 fuel=21
-TEAM_TARGET_SELECT day=0 iteration=18 agent=2 target=106 brand=numeric:3 teamNewBrand=false steps=9 fuel=9
-TEAM_TARGET_SELECT day=0 iteration=19 agent=0 target=125 brand=numeric:1 teamNewBrand=false steps=10 fuel=7
-TEAM_TARGET_SELECT day=0 iteration=20 agent=0 target=106 brand=numeric:3 teamNewBrand=false steps=10 fuel=11
-TEAM_TARGET_SELECT day=0 iteration=21 agent=3 target=25 brand=numeric:2 teamNewBrand=false steps=14 fuel=10
-TEAM_TARGET_SELECT day=0 iteration=22 agent=4 target=106 brand=numeric:3 teamNewBrand=false steps=15 fuel=21
+TEAM_TARGET_SELECT day=0 iteration=1 agent=4 target=129 brand=numeric:1 teamNewBrand=true steps=7 fuel=5
+TEAM_TARGET_SELECT day=0 iteration=2 agent=1 target=102 brand=numeric:0 teamNewBrand=true steps=11 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=3 agent=2 target=129 brand=numeric:1 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=0 iteration=4 agent=3 target=129 brand=numeric:1 teamNewBrand=false steps=2 fuel=1
+TEAM_TARGET_SELECT day=0 iteration=5 agent=0 target=92 brand=numeric:3 teamNewBrand=false steps=3 fuel=3
+TEAM_TARGET_SELECT day=0 iteration=6 agent=0 target=49 brand=numeric:2 teamNewBrand=false steps=14 fuel=10
+TEAM_TARGET_SELECT day=0 iteration=7 agent=1 target=92 brand=numeric:3 teamNewBrand=false steps=3 fuel=3
+TEAM_TARGET_SELECT day=0 iteration=8 agent=2 target=92 brand=numeric:3 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=9 agent=2 target=49 brand=numeric:2 teamNewBrand=false steps=14 fuel=10
+TEAM_TARGET_SELECT day=0 iteration=10 agent=3 target=92 brand=numeric:3 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=11 agent=3 target=49 brand=numeric:2 teamNewBrand=false steps=14 fuel=10
+TEAM_TARGET_SELECT day=0 iteration=12 agent=1 target=129 brand=numeric:1 teamNewBrand=false steps=5 fuel=4
+TEAM_TARGET_SELECT day=0 iteration=13 agent=4 target=102 brand=numeric:0 teamNewBrand=false steps=6 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=14 agent=0 target=111 brand=numeric:0 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=15 agent=2 target=111 brand=numeric:0 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=16 agent=3 target=111 brand=numeric:0 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=17 agent=0 target=129 brand=numeric:1 teamNewBrand=false steps=9 fuel=12
+TEAM_TARGET_SELECT day=0 iteration=18 agent=4 target=49 brand=numeric:2 teamNewBrand=false steps=12 fuel=12
+TEAM_TARGET_SELECT day=0 iteration=19 agent=2 target=102 brand=numeric:0 teamNewBrand=false steps=5 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=20 agent=3 target=102 brand=numeric:0 teamNewBrand=false steps=5 fuel=7
+TEAM_TARGET_SELECT day=0 iteration=21 agent=0 target=102 brand=numeric:0 teamNewBrand=false steps=6 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=22 agent=2 target=30 brand=numeric:1 teamNewBrand=false steps=7 fuel=11
+TEAM_TARGET_SELECT day=0 iteration=23 agent=3 target=30 brand=numeric:1 teamNewBrand=false steps=7 fuel=11
+TEAM_TARGET_SELECT day=0 iteration=24 agent=0 target=30 brand=numeric:1 teamNewBrand=false steps=7 fuel=11
+TEAM_TARGET_SELECT day=0 iteration=25 agent=4 target=111 brand=numeric:0 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=26 agent=2 target=47 brand=numeric:3 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=27 agent=3 target=47 brand=numeric:3 teamNewBrand=false steps=9 fuel=6
+TEAM_TARGET_SELECT day=0 iteration=28 agent=1 target=49 brand=numeric:2 teamNewBrand=false steps=16 fuel=17
 TEAM_PLAN_VALID day=0
-OPPONENT_COUPLED_BASELINE day=0 stepBudget=60 collectors=5 stockedSpots=8 opponentBaselineCollections=34 observedNow=0 directIntent=5 followOnIntent=29 strongCollections=5 maxCollectorCollections=7 rolloutEvents=34 routeCostCacheEntries=1144 pathfindingExecutions=8
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=106 arrivalStep=2 stableOrdinal=0 brand=numeric:3 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=8 arrivalStep=4 stableOrdinal=1 brand=numeric:0 outcome=COLLECTED equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=125 arrivalStep=4 stableOrdinal=2 brand=numeric:1 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=5 arrivalStep=4 stableOrdinal=3 brand=numeric:1 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=54 arrivalStep=6 stableOrdinal=4 brand=numeric:2 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=5 arrivalStep=10 stableOrdinal=5 brand=numeric:1 outcome=COLLECTED equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=54 arrivalStep=11 stableOrdinal=6 brand=numeric:2 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=86 arrivalStep=13 stableOrdinal=7 brand=numeric:0 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=120 arrivalStep=14 stableOrdinal=8 brand=numeric:3 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=125 arrivalStep=17 stableOrdinal=9 brand=numeric:1 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=25 arrivalStep=18 stableOrdinal=10 brand=numeric:2 outcome=COLLECTED equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=5 arrivalStep=19 stableOrdinal=11 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=120 arrivalStep=19 stableOrdinal=12 brand=numeric:3 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=86 arrivalStep=20 stableOrdinal=13 brand=numeric:0 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=8 arrivalStep=25 stableOrdinal=14 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=86 arrivalStep=26 stableOrdinal=15 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=86 arrivalStep=26 stableOrdinal=16 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=5 arrivalStep=29 stableOrdinal=17 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=120 arrivalStep=32 stableOrdinal=18 brand=numeric:3 outcome=INVALIDATED_BY_OPPONENT equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=120 arrivalStep=32 stableOrdinal=19 brand=numeric:3 outcome=INVALIDATED_BY_OPPONENT equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=25 arrivalStep=33 stableOrdinal=20 brand=numeric:2 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=8 arrivalStep=35 stableOrdinal=21 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=86 arrivalStep=40 stableOrdinal=22 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=125 arrivalStep=42 stableOrdinal=23 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-ANYTIME_STRATIFIED_COUPLED_MARGIN_START day=0 remainingFutureDays=3 plannedOwnOpportunityEvents=32 coupledOwnBrands=4 coupledOwnCollections=14 opponentBaselineCollections=34 coupledOpponentCollections=21 opponentCollectionsRemovedVsBaseline=13 ownPlannedEventsInvalidatedByOpponent=18 opponentReplacementCollections=0 projectedCoupledMargin=-7 ownSemiBrands=4 ownSemiCollections=29 semiScore=87 minimumPatrolDistinctSpots=8 totalPatrolDistinctSpotCapacity=40 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
-ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=15 coupledOpponentCollections=20 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=12 opponentReplacementCollections=1 projectedCoupledMargin=-5 expanded=33
-ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=15 coupledOpponentCollections=20 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=13 opponentReplacementCollections=1 projectedCoupledMargin=-5 expanded=34
-ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=15 coupledOpponentCollections=20 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=14 opponentReplacementCollections=1 projectedCoupledMargin=-5 expanded=35
-ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=15 coupledOpponentCollections=20 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=16 opponentReplacementCollections=1 projectedCoupledMargin=-5 expanded=41
-ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=16 coupledOpponentCollections=19 opponentCollectionsRemovedVsBaseline=15 ownPlannedEventsInvalidatedByOpponent=16 opponentReplacementCollections=2 projectedCoupledMargin=-3 expanded=42
-ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=16 coupledOpponentCollections=19 opponentCollectionsRemovedVsBaseline=15 ownPlannedEventsInvalidatedByOpponent=16 opponentReplacementCollections=2 projectedCoupledMargin=-3 expanded=43
-ANYTIME_STRATIFIED_COUPLED_MARGIN_DONE day=0 remainingFutureDays=3 plannedOwnOpportunityEvents=32 coupledOwnBrands=4 coupledOwnCollections=16 rawUdon=32 opponentBaselineCollections=34 coupledOpponentCollections=19 opponentCollectionsRemovedVsBaseline=15 ownPlannedEventsInvalidatedByOpponent=16 ownPlannedEventsExhaustedByOwnTeam=0 opponentReplacementCollections=2 coupledObservedNow=0 coupledDirect=5 coupledFollowOn=14 equalStepContests=4 projectedCoupledMargin=-3 ownSemiBrands=4 ownSemiCollections=29 semiScore=89 baselineRolloutEvents=34 coupledRolloutEvents=51 maxBaselineCollectorCollections=7 maxCoupledCollectorCollections=5 routeCostCacheEntries=1144 pathfindingExecutions=8 minimumPatrolDistinctSpots=8 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=40 totalPatrolDistinctBrandCapacity=20 expanded=64 completedPlans=65 improvements=6 strategiesDiscovered=21 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=6 maxStrategyExpansionCount=35 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=106 arrivalStep=2 stableOrdinal=0 brand=numeric:3 outcome=COLLECTED equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=8 arrivalStep=4 stableOrdinal=1 brand=numeric:0 outcome=COLLECTED equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=125 arrivalStep=4 stableOrdinal=2 brand=numeric:1 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=5 arrivalStep=4 stableOrdinal=3 brand=numeric:1 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=54 arrivalStep=6 stableOrdinal=4 brand=numeric:2 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=5 arrivalStep=10 stableOrdinal=5 brand=numeric:1 outcome=COLLECTED equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=54 arrivalStep=11 stableOrdinal=6 brand=numeric:2 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=86 arrivalStep=13 stableOrdinal=7 brand=numeric:0 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=120 arrivalStep=14 stableOrdinal=8 brand=numeric:3 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=125 arrivalStep=17 stableOrdinal=9 brand=numeric:1 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=25 arrivalStep=18 stableOrdinal=10 brand=numeric:2 outcome=COLLECTED equalStepContest=true
-COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=120 arrivalStep=19 stableOrdinal=11 brand=numeric:3 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=86 arrivalStep=20 stableOrdinal=12 brand=numeric:0 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=86 arrivalStep=20 stableOrdinal=13 brand=numeric:0 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=86 arrivalStep=26 stableOrdinal=14 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=120 arrivalStep=26 stableOrdinal=15 brand=numeric:3 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=120 arrivalStep=27 stableOrdinal=16 brand=numeric:3 outcome=COLLECTED equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=5 arrivalStep=29 stableOrdinal=17 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=120 arrivalStep=32 stableOrdinal=18 brand=numeric:3 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=86 arrivalStep=33 stableOrdinal=19 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=25 arrivalStep=33 stableOrdinal=20 brand=numeric:2 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=8 arrivalStep=35 stableOrdinal=21 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=25 arrivalStep=40 stableOrdinal=22 brand=numeric:2 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=5 arrivalStep=42 stableOrdinal=23 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
-NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=0 remainingFutureDays=3 patrolAgents=5 nextDayStepBudget=60 minimumPatrolDistinctSpots=8 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=40 totalPatrolDistinctBrandCapacity=20 routeCostCacheEntries=1144 pathfindingExecutions=8
-PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=0 endPosition=106 endFuel=77 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=42
-PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=1 endPosition=8 endFuel=91 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=53
-PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=2 endPosition=106 endFuel=77 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=42
-PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=3 endPosition=8 endFuel=78 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=40
-PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=4 endPosition=125 endFuel=119 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=84
-LOCAL_PLAN_VALID matchId=m-4992 day=0 mode=CoupledCompetitiveMarginPlanner
-ACTION_REQUEST_FINGERPRINT matchId=m-4992 day=0 agentCount=6 serializedLength=356 fingerprint=b64fa271
-ACTION_DURATION_AUDIT matchId=m-4992 day=0 agent=0 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=31 finalAction=WAIT(13) paddingApplied=false
-ACTION_WIRE_REPLAY_AUDIT matchId=m-4992 day=0 agent=0 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=106 wireReplayEndPosition=106 simulatedPatrolFuel=77 wireReplayPatrolFuel=77 actionCount=31 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
-ACTION_DURATION_AUDIT matchId=m-4992 day=0 agent=1 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=29 finalAction=WAIT(12) paddingApplied=false
-ACTION_WIRE_REPLAY_AUDIT matchId=m-4992 day=0 agent=1 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=8 wireReplayEndPosition=8 simulatedPatrolFuel=91 wireReplayPatrolFuel=91 actionCount=29 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
-ACTION_DURATION_AUDIT matchId=m-4992 day=0 agent=2 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=32 finalAction=WAIT(8) paddingApplied=false
-ACTION_WIRE_REPLAY_AUDIT matchId=m-4992 day=0 agent=2 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=106 wireReplayEndPosition=106 simulatedPatrolFuel=77 wireReplayPatrolFuel=77 actionCount=32 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
-ACTION_DURATION_AUDIT matchId=m-4992 day=0 agent=3 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=33 finalAction=WAIT(6) paddingApplied=false
-ACTION_WIRE_REPLAY_AUDIT matchId=m-4992 day=0 agent=3 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=8 wireReplayEndPosition=8 simulatedPatrolFuel=78 wireReplayPatrolFuel=78 actionCount=33 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
-ACTION_DURATION_AUDIT matchId=m-4992 day=0 agent=4 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=41 finalAction=WAIT(2) paddingApplied=false
-ACTION_WIRE_REPLAY_AUDIT matchId=m-4992 day=0 agent=4 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=125 wireReplayEndPosition=125 simulatedPatrolFuel=119 wireReplayPatrolFuel=119 actionCount=41 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
-ACTION_DURATION_AUDIT matchId=m-4992 day=0 agent=5 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=1 finalAction=WAIT(60) paddingApplied=false
-ACTION_WIRE_REPLAY_AUDIT matchId=m-4992 day=0 agent=5 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=114 wireReplayEndPosition=114 simulatedPatrolFuel=UNAVAILABLE wireReplayPatrolFuel=UNAVAILABLE actionCount=1 durationMatch=true positionMatch=true fuelMatch=NA fuelCheckReason=nonPatrolOrUnavailableFuel
-ACTIONS_SUBMITTED matchId=m-4992 day=0 fingerprint=b64fa271
-SERVER_ACTION_REJECTED matchId=m-4992 submittedDay=0 responseDay=3 httpStatus=200 reason=E_STEP_OVERFLOW (xe 3, bước 59): không đủ bước để hoàn thành di chuyển trong ngày (cần 2 bước, ngày còn 1) fingerprint=b64fa271
-RUNTIME_FAILED type=IllegalStateException message=Server rejected day 0 actions: type=action_result httpStatus=200 day=3 reason=E_STEP_OVERFLOW (xe 3, bước 59): không đủ bước để hoàn thành di chuyển trong ngày (cần 2 bước, ngày còn 1)
+OPPONENT_COUPLED_BASELINE day=0 stepBudget=60 collectors=5 stockedSpots=8 opponentBaselineCollections=33 observedNow=0 directIntent=5 followOnIntent=28 strongCollections=5 maxCollectorCollections=7 rolloutEvents=33 routeCostCacheEntries=1128 pathfindingExecutions=8
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=129 arrivalStep=2 stableOrdinal=0 brand=numeric:1 outcome=COLLECTED equalStepContest=true
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=129 arrivalStep=2 stableOrdinal=1 brand=numeric:1 outcome=COLLECTED equalStepContest=true
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=92 arrivalStep=2 stableOrdinal=2 brand=numeric:3 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=92 arrivalStep=3 stableOrdinal=3 brand=numeric:3 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=52 arrivalStep=4 stableOrdinal=4 brand=numeric:2 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=92 arrivalStep=7 stableOrdinal=5 brand=numeric:3 outcome=INVALIDATED_BY_OPPONENT equalStepContest=true
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=92 arrivalStep=7 stableOrdinal=6 brand=numeric:3 outcome=INVALIDATED_BY_OPPONENT equalStepContest=true
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=129 arrivalStep=7 stableOrdinal=7 brand=numeric:1 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=52 arrivalStep=11 stableOrdinal=8 brand=numeric:2 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=102 arrivalStep=11 stableOrdinal=9 brand=numeric:0 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=102 arrivalStep=13 stableOrdinal=10 brand=numeric:0 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=92 arrivalStep=14 stableOrdinal=11 brand=numeric:3 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=52 arrivalStep=15 stableOrdinal=12 brand=numeric:2 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=52 arrivalStep=15 stableOrdinal=13 brand=numeric:2 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=49 arrivalStep=17 stableOrdinal=14 brand=numeric:2 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=129 arrivalStep=19 stableOrdinal=15 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=49 arrivalStep=21 stableOrdinal=16 brand=numeric:2 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=49 arrivalStep=21 stableOrdinal=17 brand=numeric:2 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=49 arrivalStep=25 stableOrdinal=18 brand=numeric:2 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=111 arrivalStep=26 stableOrdinal=19 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=111 arrivalStep=30 stableOrdinal=20 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=111 arrivalStep=30 stableOrdinal=21 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=111 arrivalStep=34 stableOrdinal=22 brand=numeric:0 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=129 arrivalStep=35 stableOrdinal=23 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+ANYTIME_STRATIFIED_COUPLED_MARGIN_START day=0 remainingFutureDays=3 plannedOwnOpportunityEvents=33 coupledOwnBrands=4 coupledOwnCollections=14 opponentBaselineCollections=33 coupledOpponentCollections=23 opponentCollectionsRemovedVsBaseline=10 ownPlannedEventsInvalidatedByOpponent=19 opponentReplacementCollections=4 projectedCoupledMargin=-9 ownSemiBrands=4 ownSemiCollections=33 semiScore=90 minimumPatrolDistinctSpots=8 totalPatrolDistinctSpotCapacity=40 budget=64 discoveryBudget=16 qualificationBudget=24 exploitationBudget=24
+ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=15 coupledOpponentCollections=22 opponentCollectionsRemovedVsBaseline=11 ownPlannedEventsInvalidatedByOpponent=7 opponentReplacementCollections=1 projectedCoupledMargin=-7 expanded=36
+ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=15 coupledOpponentCollections=22 opponentCollectionsRemovedVsBaseline=11 ownPlannedEventsInvalidatedByOpponent=9 opponentReplacementCollections=1 projectedCoupledMargin=-7 expanded=38
+ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=16 coupledOpponentCollections=21 opponentCollectionsRemovedVsBaseline=12 ownPlannedEventsInvalidatedByOpponent=9 opponentReplacementCollections=1 projectedCoupledMargin=-5 expanded=39
+ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=18 coupledOpponentCollections=19 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=8 opponentReplacementCollections=0 projectedCoupledMargin=-1 expanded=40
+ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=18 coupledOpponentCollections=19 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=12 opponentReplacementCollections=2 projectedCoupledMargin=-1 expanded=52
+ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=18 coupledOpponentCollections=19 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=13 opponentReplacementCollections=2 projectedCoupledMargin=-1 expanded=53
+ANYTIME_STRATIFIED_COUPLED_MARGIN_IMPROVEMENT day=0 coupledOwnBrands=4 coupledOwnCollections=18 coupledOpponentCollections=19 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=14 opponentReplacementCollections=2 projectedCoupledMargin=-1 expanded=54
+ANYTIME_STRATIFIED_COUPLED_MARGIN_DONE day=0 remainingFutureDays=3 plannedOwnOpportunityEvents=33 coupledOwnBrands=4 coupledOwnCollections=18 rawUdon=32 opponentBaselineCollections=33 coupledOpponentCollections=19 opponentCollectionsRemovedVsBaseline=14 ownPlannedEventsInvalidatedByOpponent=14 ownPlannedEventsExhaustedByOwnTeam=1 opponentReplacementCollections=2 coupledObservedNow=0 coupledDirect=5 coupledFollowOn=14 equalStepContests=3 projectedCoupledMargin=-1 ownSemiBrands=4 ownSemiCollections=32 semiScore=90 baselineRolloutEvents=33 coupledRolloutEvents=54 maxBaselineCollectorCollections=7 maxCoupledCollectorCollections=5 routeCostCacheEntries=1128 pathfindingExecutions=8 minimumPatrolDistinctSpots=8 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=40 totalPatrolDistinctBrandCapacity=20 expanded=64 completedPlans=65 improvements=7 strategiesDiscovered=20 strategiesQualified=8 strategiesWithAtLeast2Expansions=8 strategiesWithAtLeast3Expansions=6 maxStrategyExpansionCount=41 discoveryExpansions=16 qualificationExpansions=24 exploitationExpansions=24 frontierPeak=48 budgetExhausted=true
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=129 arrivalStep=2 stableOrdinal=0 brand=numeric:1 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=129 arrivalStep=2 stableOrdinal=1 brand=numeric:1 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=92 arrivalStep=2 stableOrdinal=2 brand=numeric:3 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=102 arrivalStep=3 stableOrdinal=3 brand=numeric:0 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=52 arrivalStep=4 stableOrdinal=4 brand=numeric:2 outcome=COLLECTED equalStepContest=true
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=92 arrivalStep=6 stableOrdinal=5 brand=numeric:3 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=129 arrivalStep=7 stableOrdinal=6 brand=numeric:1 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=102 arrivalStep=8 stableOrdinal=7 brand=numeric:0 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=102 arrivalStep=8 stableOrdinal=8 brand=numeric:0 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=102 arrivalStep=11 stableOrdinal=9 brand=numeric:0 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=111 arrivalStep=13 stableOrdinal=10 brand=numeric:0 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=102 arrivalStep=13 stableOrdinal=11 brand=numeric:0 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=52 arrivalStep=14 stableOrdinal=12 brand=numeric:2 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=92 arrivalStep=14 stableOrdinal=13 brand=numeric:3 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=52 arrivalStep=15 stableOrdinal=14 brand=numeric:2 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=0 spot=49 arrivalStep=20 stableOrdinal=15 brand=numeric:2 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=92 arrivalStep=20 stableOrdinal=16 brand=numeric:3 outcome=COLLECTED equalStepContest=true
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=52 arrivalStep=20 stableOrdinal=17 brand=numeric:2 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=111 arrivalStep=21 stableOrdinal=18 brand=numeric:0 outcome=COLLECTED equalStepContest=true
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=30 arrivalStep=21 stableOrdinal=19 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=4 spot=30 arrivalStep=26 stableOrdinal=20 brand=numeric:1 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=3 spot=52 arrivalStep=28 stableOrdinal=21 brand=numeric:2 outcome=EXHAUSTED_BY_OWN_TEAM equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=1 spot=129 arrivalStep=30 stableOrdinal=22 brand=numeric:1 outcome=COLLECTED equalStepContest=false
+COUPLED_COMPETITIVE_EVENT day=0 agent=2 spot=47 arrivalStep=30 stableOrdinal=23 brand=numeric:3 outcome=INVALIDATED_BY_OPPONENT equalStepContest=false
+NEXT_DAY_HARVEST_CAPACITY_SUMMARY day=0 remainingFutureDays=3 patrolAgents=5 nextDayStepBudget=60 minimumPatrolDistinctSpots=8 minimumPatrolDistinctBrands=4 totalPatrolDistinctSpotCapacity=40 totalPatrolDistinctBrandCapacity=20 routeCostCacheEntries=1128 pathfindingExecutions=8
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=0 endPosition=129 endFuel=70 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=41
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=1 endPosition=49 endFuel=70 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=39
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=2 endPosition=49 endFuel=86 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=55
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=3 endPosition=49 endFuel=85 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=54
+PATROL_NEXT_DAY_HARVEST_CAPACITY day=0 agent=4 endPosition=49 endFuel=72 stationaryOpportunity=true maxDistinctSpots=8 maxDistinctBrands=4 bestRemainingFuel=41
+LOCAL_PLAN_VALID matchId=m-5042 day=0 mode=CoupledCompetitiveMarginPlanner
+ACTION_REQUEST_FINGERPRINT matchId=m-5042 day=0 agentCount=6 serializedLength=336 fingerprint=7c196101
+ACTION_DURATION_AUDIT matchId=m-5042 day=0 agent=0 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=35 finalAction=WAIT(8) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5042 day=0 agent=0 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=129 wireReplayEndPosition=129 simulatedPatrolFuel=70 wireReplayPatrolFuel=70 actionCount=35 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5042 day=0 agent=1 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=33 finalAction=WAIT(14) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5042 day=0 agent=1 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=49 wireReplayEndPosition=49 simulatedPatrolFuel=70 wireReplayPatrolFuel=70 actionCount=33 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5042 day=0 agent=2 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=28 finalAction=WAIT(11) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5042 day=0 agent=2 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=49 wireReplayEndPosition=49 simulatedPatrolFuel=86 wireReplayPatrolFuel=86 actionCount=28 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5042 day=0 agent=3 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=24 finalAction=WAIT(26) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5042 day=0 agent=3 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=49 wireReplayEndPosition=49 simulatedPatrolFuel=85 wireReplayPatrolFuel=85 actionCount=24 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5042 day=0 agent=4 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=36 finalAction=MOVE(UP_RIGHT) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5042 day=0 agent=4 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=49 wireReplayEndPosition=49 simulatedPatrolFuel=72 wireReplayPatrolFuel=72 actionCount=36 durationMatch=true positionMatch=true fuelMatch=true fuelCheckReason=finiteFuelCompared
+ACTION_DURATION_AUDIT matchId=m-5042 day=0 agent=5 dayBudget=60 plannerDuration=60 validatedDuration=60 encodedDuration=60 actionCount=1 finalAction=WAIT(60) paddingApplied=false
+ACTION_WIRE_REPLAY_AUDIT matchId=m-5042 day=0 agent=5 dayBudget=60 simulatedDuration=60 wireReplayDuration=60 simulatedEndPosition=59 wireReplayEndPosition=59 simulatedPatrolFuel=UNAVAILABLE wireReplayPatrolFuel=UNAVAILABLE actionCount=1 durationMatch=true positionMatch=true fuelMatch=NA fuelCheckReason=nonPatrolOrUnavailableFuel
+ACTIONS_SUBMITTED matchId=m-5042 day=0 fingerprint=7c196101
+ACTION_RESPONSE_DAY_MISMATCH matchId=m-5042 submittedDay=0 responseDay=2 submissionType=action_result httpStatus=200
+RUNTIME_FAILED type=IllegalStateException message=Action response day 2 is incompatible with submitted day 0; the compatible window is [0, 1]; refusing to reinterpret a desynchronised response as success

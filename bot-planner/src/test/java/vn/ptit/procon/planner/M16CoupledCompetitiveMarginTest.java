@@ -307,12 +307,18 @@ class M16CoupledCompetitiveMarginTest {
     }
 
     @Test
-    void theNewPolicyIsTheLastEnumConstantAndLeavesEveryOlderModeInPlace() {
+    void theM19PolicyIsTheLastEnumConstantAndLeavesEveryOlderModeInPlace() {
         List<AnytimeSearchPolicy> policies = List.of(AnytimeSearchPolicy.values());
 
-        assertEquals(16, policies.size());
-        assertEquals(AnytimeSearchPolicy.ANYTIME_STRATIFIED_COUPLED_COMPETITIVE_MARGIN,
+        assertEquals(20, policies.size());
+        assertEquals(AnytimeSearchPolicy.ANYTIME_STRATIFIED_CAPACITY_COMPETITIVE,
                 policies.getLast());
+        assertEquals(AnytimeSearchPolicy.ANYTIME_STRATIFIED_TEAM_ALLOCATED_HYBRID,
+                policies.get(policies.size() - 2));
+        assertEquals(AnytimeSearchPolicy.ANYTIME_STRATIFIED_HYBRID_DIVERSE_CANDIDATES,
+                policies.get(policies.size() - 3));
+        assertEquals(AnytimeSearchPolicy.ANYTIME_STRATIFIED_HYBRID_CALIBRATED_MARGIN,
+                policies.get(policies.size() - 4));
         assertTrue(policies.contains(
                 AnytimeSearchPolicy.ANYTIME_STRATIFIED_REPLACEMENT_AWARE_RELATIVE_MARGIN));
         assertTrue(policies.contains(AnytimeSearchPolicy.ANYTIME_STRATIFIED_RELATIVE_MARGIN_AWARE));
