@@ -41,6 +41,8 @@ public final class V3Phase24Analysis {
                 .replay(state, witness, strategic, V3ForcedWitnessReplayResult.Mode.STRICT);
         V3ForcedWitnessReplayResult granted = new V3ForcedWitnessReplayRunner()
                 .replay(state, witness, strategic, V3ForcedWitnessReplayResult.Mode.SUPPORT_GRANTED);
+        V3RepresentationConfig oracleConfig = V3RepresentationConfig.defaults();
+        V3RepresentationResult oracle = new V3RepresentationOracle().solve(state, oracleConfig);
         return new V3Phase24FixtureReport(fixture, witness.ownSemiCollections(),
                 witness.hybridMarginScore4(), result.rawWinner().ownSemiCollections(),
                 result.rawWinner().hybridMarginScore4(), result.winner().ownSemiCollections(),
@@ -49,7 +51,9 @@ public final class V3Phase24Analysis {
                 result.diagnostics().graphEdgeExpansions() + result.diagnostics().crossRegionExpansions(),
                 result.diagnostics().trajectoryCacheEntries(), result.diagnostics().searchMillis(),
                 V3TerminalParityAudit.audit(state, result).exact(),
-                result.diagnostics().searchPathfindingExecutions(), witness, strategic, representability,
+                result.diagnostics().searchPathfindingExecutions(), result.fallbackUsed(),
+                oracleConfig.toString(), oracle.winner().ownSemiCollections(),
+                oracle.winner().hybridMarginScore4(), witness, strategic, representability,
                 allocation, prefix, coverage, strict, granted);
     }
 

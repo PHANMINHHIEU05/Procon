@@ -37,7 +37,9 @@ public final class V3Phase24ReportPrinter {
         reports.values().forEach(report -> line("  " + report.fixture() + " rawDelta=" + report.rawDelta()
                 + " selectedDelta=" + report.selectedDelta() + " raw=" + report.rawOutcome()
                 + " selected=" + report.selectedOutcome() + " pathfinding="
-                + report.searchPathfindingExecutions()));
+                + report.searchPathfindingExecutions() + " fallbackUsed=" + report.fallbackUsed()
+                + " oracleOwn=" + report.oracleOwn() + " oracleHybrid4=" + report.oracleHybrid4()
+                + " oracleCap=" + report.oracleCap()));
     }
 
     private void deepTrace(V3Phase24FixtureReport report) {

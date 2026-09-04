@@ -62,14 +62,25 @@ public final class StrategicOpportunityGraphBuilder {
             routes.put(from.position(), byGoal);
         }
         Map<AgentId, Map<Position, Route>> agentRoutes = new LinkedHashMap<>();
+        Map<AgentId, Map<Position, Route>> supportAwareAgentRoutes = new LinkedHashMap<>();
         for (AgentState agent : state.agents()) if (agent.kind() == AgentKind.PATROL) {
             Map<Position, Route> byGoal = new LinkedHashMap<>();
+            Map<Position, Route> liftedByGoal = new LinkedHashMap<>();
+            // PART 10: the lifted probe keeps the real kind, the real cell, the real map and the real
+            // traffic. Only the tank is raised, and only to the capacity the rules already allow.
+            AgentState lifted = routeAgentAt(agent, agent.position(),
+                    state.matchData().patrolFuelCapacity().value());
             for (StrategicOpportunity opportunity : opportunities) {
                 var found = routeFinder.find(state, agent, opportunity.position());
                 pathfinding++;
                 found.ifPresent(route -> byGoal.put(opportunity.position(), route));
+                // PART 9: geometry only. A route appearing here is NOT declared legal by appearing here.
+                var liftedFound = routeFinder.find(state, lifted, opportunity.position());
+                pathfinding++;
+                liftedFound.ifPresent(route -> liftedByGoal.put(opportunity.position(), route));
             }
             agentRoutes.put(agent.id(), byGoal);
+            supportAwareAgentRoutes.put(agent.id(), liftedByGoal);
         }
         Map<Position, List<StrategicOpportunityGraph.OpportunityEdge>> completeEdges = new LinkedHashMap<>();
         for (StrategicOpportunity from : opportunities) {
@@ -102,7 +113,7 @@ public final class StrategicOpportunityGraphBuilder {
             categorized.put(from.position(), values);
         }
         return new StrategicOpportunityGraph(enriched, categorized, regions, agentRoutes, routes, pathfinding,
-                completeEdges.values().stream().mapToInt(List::size).sum(), policy);
+                completeEdges.values().stream().mapToInt(List::size).sum(), policy, supportAwareAgentRoutes);
     }
 
     private static Map<Position, List<StrategicOpportunityGraph.OpportunityEdge>> retainEdges(
@@ -165,6 +176,11 @@ public final class StrategicOpportunityGraphBuilder {
 
     private static AgentState routeAgentAt(AgentState base, Position position) {
         return AgentState.patrol(base.id(), position, ((FiniteFuel) base.fuel()).amount());
+    }
+
+    /** PART 10: same kind, same cell, lifted tank. Nothing else about the probe changes. */
+    private static AgentState routeAgentAt(AgentState base, Position position, int fuel) {
+        return AgentState.patrol(base.id(), position, fuel);
     }
 
     private static int opponentPressure(DayState state, Position position) {

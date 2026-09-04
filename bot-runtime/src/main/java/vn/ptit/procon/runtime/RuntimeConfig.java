@@ -15,12 +15,21 @@ public record RuntimeConfig(
         boolean othersShapeDiagnostics,
         boolean othersValueDiagnostics,
         boolean contentionDiagnostics,
-        boolean r3RootFamilyAudit) {
+        boolean r3RootFamilyAudit,
+        boolean v3Shadow,
+        long v3ShadowMaxMillis,
+        boolean v3ShadowVerbose) {
 
     public static final String DEFAULT_BASE_URL = "https://procon.ptit.edu.vn";
     public static final long DEFAULT_POLL_INTERVAL_MS = 250;
     public static final long MINIMUM_POLL_INTERVAL_MS = 200;
     public static final long DEFAULT_HTTP_TIMEOUT_SECONDS = 15;
+
+    /**
+     * The observation budget for one shadow V3 evaluation. It is generous enough to cover the slowest
+     * offline fixture (~1.8 s) and is NEVER a production planning deadline: V2/R3 never reads it.
+     */
+    public static final long DEFAULT_V3_SHADOW_MAX_MILLIS = 4000;
 
     public RuntimeConfig {
         if (baseUrl == null || baseUrl.isBlank()) {
@@ -42,6 +51,26 @@ public record RuntimeConfig(
         if (httpTimeout.isZero() || httpTimeout.isNegative()) {
             throw new IllegalArgumentException("PROCON_HTTP_TIMEOUT_SECONDS must be positive");
         }
+        if (v3ShadowMaxMillis <= 0) {
+            throw new IllegalArgumentException("PROCON_V3_SHADOW_MAX_MILLIS must be positive");
+        }
+    }
+
+    /** Every historical caller keeps its exact meaning: shadow is OFF unless it is asked for. */
+    public RuntimeConfig(
+            String baseUrl,
+            String matchId,
+            String token,
+            Duration pollInterval,
+            Duration httpTimeout,
+            PlannerMode plannerMode,
+            boolean othersShapeDiagnostics,
+            boolean othersValueDiagnostics,
+            boolean contentionDiagnostics,
+            boolean r3RootFamilyAudit) {
+        this(baseUrl, matchId, token, pollInterval, httpTimeout, plannerMode, othersShapeDiagnostics,
+                othersValueDiagnostics, contentionDiagnostics, r3RootFamilyAudit, false,
+                DEFAULT_V3_SHADOW_MAX_MILLIS, false);
     }
 
     public RuntimeConfig(
@@ -101,7 +130,17 @@ public record RuntimeConfig(
                         "PROCON_CONTENTION_DIAGNOSTICS"),
                 parseBoolean(
                         environment.get("PROCON_R3_ROOT_FAMILY_AUDIT"),
-                        "PROCON_R3_ROOT_FAMILY_AUDIT"));
+                        "PROCON_R3_ROOT_FAMILY_AUDIT"),
+                parseBoolean(
+                        environment.get("PROCON_V3_SHADOW"),
+                        "PROCON_V3_SHADOW"),
+                parsePositiveLong(
+                        environment.get("PROCON_V3_SHADOW_MAX_MILLIS"),
+                        DEFAULT_V3_SHADOW_MAX_MILLIS,
+                        "PROCON_V3_SHADOW_MAX_MILLIS"),
+                parseBoolean(
+                        environment.get("PROCON_V3_SHADOW_VERBOSE"),
+                        "PROCON_V3_SHADOW_VERBOSE"));
     }
 
     public Duration connectTimeout() {
@@ -116,7 +155,10 @@ public record RuntimeConfig(
                 + ", othersShapeDiagnostics=" + othersShapeDiagnostics
                 + ", othersValueDiagnostics=" + othersValueDiagnostics
                 + ", contentionDiagnostics=" + contentionDiagnostics
-                + ", r3RootFamilyAudit=" + r3RootFamilyAudit + "]";
+                + ", r3RootFamilyAudit=" + r3RootFamilyAudit
+                + ", v3Shadow=" + v3Shadow
+                + ", v3ShadowMaxMillis=" + v3ShadowMaxMillis
+                + ", v3ShadowVerbose=" + v3ShadowVerbose + "]";
     }
 
     private static String valueOrDefault(String value, String defaultValue) {

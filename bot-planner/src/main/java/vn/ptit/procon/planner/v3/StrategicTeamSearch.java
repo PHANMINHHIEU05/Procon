@@ -53,6 +53,29 @@ public final class StrategicTeamSearch {
      */
     public StrategicSearchResult solve(DayState state, StrategicSearchConfig config, List<TeamPlan> seedPlans,
             int representationOracleOwn, int representationOracleHybrid4, StrategicSearchObserver observer) {
+        return solve(state, config, seedPlans, representationOracleOwn, representationOracleHybrid4, observer,
+                V3SupportRootUniverse.noRefuelOnly(state));
+    }
+
+    /**
+     * The same bounded search, now also handed the EXISTING R3 mobile support-root universe.
+     *
+     * <p>PART 2/16: V3 generates nothing here. Every mobile root in {@code universe} was already retained by
+     * the frozen R3 planner; this method only decides which of them to search under, and the support axis of
+     * a search state is the exact root identity rather than a vague class.
+     *
+     * <p>PART 8: with {@link V3SupportRootUniverse#noRefuelOnly(DayState)} — which every historical overload
+     * above passes — the code below takes exactly the branches it took before Phase 2.5: the historical
+     * fuel-filtered entry cache, the historical fuel gate, the historical chronology and the historical
+     * materialisation.
+     */
+    public StrategicSearchResult solve(DayState state, StrategicSearchConfig config, List<TeamPlan> seedPlans,
+            int representationOracleOwn, int representationOracleHybrid4, StrategicSearchObserver observer,
+            V3SupportRootUniverse universe) {
+        if (config.compositionSearch()) {
+            return new StrategicTeamComposition().solve(state, config, seedPlans, representationOracleOwn,
+                    representationOracleHybrid4, observer, universe);
+        }
         long started = config.nanoClock().getAsLong();
         long deadline = config.maxPlanningMillis() == 0 ? Long.MAX_VALUE
                 : started + config.maxPlanningMillis() * 1_000_000L;
@@ -66,11 +89,16 @@ public final class StrategicTeamSearch {
         StrategicOracleEvaluation seed = evaluateBest(evaluator, seedPlans, SafePlanFactory.waitAll(state));
         StrategicOracleEvaluation rawWinner = fallbackEvaluation;
         StrategicOracleEvaluation winner = better(rawWinner, seed) ? rawWinner : seed;
+        Map<String, SupportAwareTrajectoryScheduler> schedulers = new LinkedHashMap<>();
+        for (V3SupportRootContext root : universe.roots()) {
+            schedulers.put(root.supportRootId(), SupportAwareTrajectoryScheduler.of(state, root.trajectory()));
+        }
         StrategicSearchNode winnerNode = initialNode(patrols, state,
-                new StrategicAllocation(List.of(), List.of(), "NO_REFUEL", "EMPTY"), chronology,
-                config.trajectoryState());
+                new StrategicAllocation(List.of(), List.of(), "NO_REFUEL", "EMPTY"), universe.noRefuel(),
+                schedulers.get(universe.noRefuel().supportRootId()), chronology, config.trajectoryState());
         StrategicSearchNode rawWinnerNode = winnerNode;
         List<StrategicAllocation> allocations = new StrategicAllocationGenerator().generate(state, graph, config);
+        List<SupportSeed> seeds = admit(allocations, universe.roots(), config.maxAllocationCandidates());
         int generated = allocations.size();
         int expanded = 0, generatedStates = 0, unique = 0, deduped = 0, dominated = 0;
         int edgeExpansions = 0, chainExpansions = 0, crossExpansions = 0, stopExpansions = 0;
@@ -85,14 +113,19 @@ public final class StrategicTeamSearch {
         List<StrategicSearchNode> terminalCandidates = new ArrayList<>();
         List<StrategicTerminalSnapshot> terminalSnapshots = new ArrayList<>();
         List<StrategicSearchNode> frontier = new ArrayList<>();
-        for (StrategicAllocation allocation : allocations) {
+        Map<String, Integer> allocationsPerSupportRoot = new LinkedHashMap<>();
+        Map<String, Integer> expandedPerSupportRoot = new LinkedHashMap<>();
+        for (SupportSeed seedPair : seeds) {
             if (expired(config.nanoClock(), deadline)) { deadlineExceeded = true; break; }
-            StrategicSearchNode node = initialNode(patrols, state, allocation, chronology, config.trajectoryState());
+            StrategicSearchNode node = initialNode(patrols, state, seedPair.allocation(), seedPair.root(),
+                    schedulers.get(seedPair.root().supportRootId()), chronology, config.trajectoryState());
             boolean uniqueRoot = seen.putIfAbsent(node.state().exactKey(), node.state()) == null;
             if (uniqueRoot) { frontier.add(node); unique++; }
             else deduped++;
-            observer.onRoot(allocation, node, uniqueRoot);
-            uniqueAllocations.add(allocation.signature());
+            observer.onRoot(seedPair.allocation(), node, uniqueRoot);
+            uniqueAllocations.add(seedPair.allocation().signature());
+            support.add(seedPair.root().signature());
+            allocationsPerSupportRoot.merge(seedPair.root().supportRootId(), 1, Integer::sum);
         }
         int iteration = 0;
         while (!frontier.isEmpty() && expanded < config.maxStrategicExpandedStates() && !expired(config.nanoClock(), deadline)) {
@@ -105,6 +138,10 @@ public final class StrategicTeamSearch {
                 expanded++;
                 terminalCandidates.add(node);
                 observer.onExpanded(node);
+                V3SupportRootContext root = node.supportRoot();
+                SupportAwareTrajectoryScheduler scheduler = schedulers.get(root.supportRootId());
+                boolean supportAware = root.present();
+                expandedPerSupportRoot.merge(root.supportRootId(), 1, Integer::sum);
                 int childrenFromState = 0;
                 if (node.depth() >= config.maxRouteDepth()) {
                     childrenPerState.add(0);
@@ -122,7 +159,7 @@ public final class StrategicTeamSearch {
                         break;
                     }
                     StrategicSearchState.PatrolState patrol = states.get(index);
-                    List<StrategicOpportunityGraph.OpportunityEdge> candidates = new StrategicRouteSkeletonSearch().candidates(graph, patrol, node.state().allocation());
+                    List<StrategicOpportunityGraph.OpportunityEdge> candidates = new StrategicRouteSkeletonSearch().candidates(graph, patrol, node.state().allocation(), supportAware);
                     int attempts = 0;
                     for (StrategicOpportunityGraph.OpportunityEdge edge : candidates) {
                         if (attempts++ >= config.maxStrategicChildrenPerState()
@@ -143,8 +180,14 @@ public final class StrategicTeamSearch {
                                     edge.to().position(), "TIME");
                             continue;
                         }
-                        if ((!config.trajectoryState() && patrol.fuel() < edge.route().fuelUsed())
-                                || (config.trajectoryState() && !routeFuelFeasible(state, patrol, edge.route()))) {
+                        // PART 9: geometry existed before this line. Whether it is currently fuel/time
+                        // feasible is decided here, and under a mobile root it is decided by the scheduler
+                        // against the actual tanker trajectory rather than by a static refuel-cell set.
+                        if (supportAware
+                                ? !scheduler.feasible(patrol.position(), patrol.elapsed(), patrol.fuel(),
+                                        trajectoryCache.effect(patrol.patrolId(), edge.route()))
+                                : (!config.trajectoryState() && patrol.fuel() < edge.route().fuelUsed())
+                                        || (config.trajectoryState() && !routeFuelFeasible(state, patrol, edge.route()))) {
                             observer.onChildRejected(node.depth(), patrol.patrolId(), patrol.position(),
                                     edge.to().position(), "FUEL");
                             continue;
@@ -153,7 +196,7 @@ public final class StrategicTeamSearch {
                         globalChildrenFromFrontier++;
                         childrenGenerated++;
                         StrategicSearchState child = advance(node.state(), index, edge.to(), graph, state,
-                                patrols, trajectoryCache, chronology, config.trajectoryState());
+                                patrols, trajectoryCache, chronology, config.trajectoryState(), root, scheduler);
                         if (child == null) {
                             observer.onChildRejected(node.depth(), patrol.patrolId(), patrol.position(),
                                     edge.to().position(), "TRAJECTORY_UNAVAILABLE");
@@ -168,7 +211,7 @@ public final class StrategicTeamSearch {
                                     edge.to().position(), "DEDUP");
                             continue;
                         }
-                        StrategicSearchNode childNode = new StrategicSearchNode(child, append(node.transitions(), StrategicTransition.edge(patrol.position(), edge.to().position())), node.depth() + 1, node.firstTargetVector().isEmpty() ? Integer.toString(edge.to().position().value()) : node.firstTargetVector());
+                        StrategicSearchNode childNode = new StrategicSearchNode(child, append(node.transitions(), StrategicTransition.edge(patrol.position(), edge.to().position())), node.depth() + 1, node.firstTargetVector().isEmpty() ? Integer.toString(edge.to().position().value()) : node.firstTargetVector(), root);
                         next.add(childNode); unique++;
                         observer.onChildAccepted(node.depth(), patrol.patrolId(), patrol.position(),
                                 edge.to().position(), child);
@@ -181,7 +224,7 @@ public final class StrategicTeamSearch {
                         childrenGenerated++;
                         boolean uniqueStop = seen.putIfAbsent(stopped.exactKey(), stopped) == null;
                         if (uniqueStop) {
-                            next.add(new StrategicSearchNode(stopped, append(node.transitions(), StrategicTransition.stop(patrol.position())), node.depth() + 1, node.firstTargetVector()));
+                            next.add(new StrategicSearchNode(stopped, append(node.transitions(), StrategicTransition.stop(patrol.position())), node.depth() + 1, node.firstTargetVector(), root));
                             unique++; stopExpansions++;
                         } else deduped++;
                         observer.onStopChild(node.depth(), patrol.patrolId(), uniqueStop);
@@ -201,7 +244,8 @@ public final class StrategicTeamSearch {
         for (StrategicSearchNode node : terminalCandidates.stream().limit(terminalLimit).toList()) {
             if (expired(config.nanoClock(), deadline)) { deadlineExceeded = true; break; }
             long materialStarted = config.nanoClock().getAsLong();
-            Optional<TeamPlan> plan = materialize(state, graph, patrols, node.state());
+            Optional<TeamPlan> plan = materialize(state, graph, patrols, node.state(), node.supportRoot(),
+                    schedulers.get(node.supportRoot().supportRootId()));
             materialNanos += Math.max(0, config.nanoClock().getAsLong() - materialStarted);
             if (plan.isEmpty()) {
                 observer.onTerminal(node, false, false, null);
@@ -234,7 +278,7 @@ public final class StrategicTeamSearch {
         double recovery = representationOracleOwn <= 0 ? 1.0 : Math.min(1.0,
                 (double) Math.max(0, winner.ownSemiCollections() - seed.ownSemiCollections())
                         / Math.max(1, representationOracleOwn - seed.ownSemiCollections()));
-        StrategicSearchDiagnostics diagnostics = new StrategicSearchDiagnostics(generated, allocations.size(), generatedStates,
+        StrategicSearchDiagnostics diagnostics = new StrategicSearchDiagnostics(generated, seeds.size(), generatedStates,
                 unique, expanded, deduped, dominated, edgeExpansions, chainExpansions, crossExpansions, stopExpansions,
                 unique, materialized, valid, coupled, seed.ownSemiCollections(), seed.hybridMarginScore4(), winner.ownSemiCollections(),
                 winner.hybridMarginScore4(), representationOracleOwn, representationOracleHybrid4, recovery,
@@ -244,25 +288,66 @@ public final class StrategicTeamSearch {
                 max(childrenPerState), globalCapAffectedStates, childrenGenerated, childrenGenerated, maxFrontierSize,
                 trajectoryCache.size(), trajectoryCache.requests(), trajectoryCache.hits(), trajectoryCache.misses(),
                 chronology.replays(), chronology.eventsProcessed(), 0, config.trajectoryState(), config.perStateChildQuota());
+        V3SupportSearchDiagnostics supportDiagnostics = V3SupportSearchDiagnostics.of(universe, schedulers,
+                allocationsPerSupportRoot, expandedPerSupportRoot, chronology.supportEventsProcessed(),
+                winnerNode.supportRoot(), rawWinnerNode.supportRoot(),
+                graph.entryPointsByPatrol(false), graph.entryPointsByPatrol(true));
         return new StrategicSearchResult(graph, winner, seed, diagnostics, winnerNode, rawWinner,
-                valid == 0 || !winner.physicalSignature().equals(rawWinner.physicalSignature()), terminalSnapshots);
+                valid == 0 || !winner.physicalSignature().equals(rawWinner.physicalSignature()), terminalSnapshots,
+                supportDiagnostics);
     }
 
+    /**
+     * PART 17/18: bounded, deterministic, fair admission of (allocation, support root) seeds.
+     *
+     * <p>The total number of root seeds is unchanged — it is still {@code maxAllocationCandidates}. What
+     * changes is how the slots are spent: every distinct support-root signature in the universe gets ONE
+     * viable seed first, and only the slots left over are filled from the existing allocation order. That
+     * keeps NO_REFUEL represented (it is the first root in the universe, PART 37) without ever adding a
+     * numeric bonus or an extra candidate.
+     */
+    static List<SupportSeed> admit(List<StrategicAllocation> allocations, List<V3SupportRootContext> roots,
+            int cap) {
+        if (allocations.isEmpty() || roots.isEmpty()) return List.of();
+        List<SupportSeed> seeds = new ArrayList<>();
+        Set<String> admitted = new LinkedHashSet<>();
+        for (V3SupportRootContext root : roots) {
+            if (seeds.size() >= cap) break;
+            if (!admitted.add(root.signature())) continue;
+            seeds.add(new SupportSeed(allocations.getFirst(), root));
+        }
+        V3SupportRootContext noRefuel = roots.stream().filter(root -> !root.present()).findFirst()
+                .orElse(roots.getFirst());
+        for (int index = 1; index < allocations.size() && seeds.size() < cap; index++) {
+            seeds.add(new SupportSeed(allocations.get(index), noRefuel));
+        }
+        return List.copyOf(seeds);
+    }
+
+    /** One root of the bounded search: a responsibility proposal plus the FIXED tanker trajectory. */
+    record SupportSeed(StrategicAllocation allocation, V3SupportRootContext root) { }
+
     private static StrategicSearchNode initialNode(List<AgentState> patrols, DayState state,
-            StrategicAllocation allocation, StrategicChronologyReplay chronology, boolean trajectoryState) {
+            StrategicAllocation allocation, V3SupportRootContext root,
+            SupportAwareTrajectoryScheduler scheduler, StrategicChronologyReplay chronology,
+            boolean trajectoryState) {
         List<StrategicSearchState.PatrolState> values = patrols.stream().map(a -> new StrategicSearchState.PatrolState(a.id(), a.position(), 0,
                 ((FiniteFuel) a.fuel()).amount(), List.of(), List.of(), List.of(), false)).toList();
-        StrategicChronologyReplay.ChronologyResult replay = trajectoryState
-                ? chronology.replay(state, Map.of())
-                : endpointInitialResult(state, patrols);
+        StrategicChronologyReplay.ChronologyResult replay = !trajectoryState
+                ? endpointInitialResult(state, patrols)
+                : root.present()
+                        ? chronology.replaySupported(state, Map.of(), root.trajectory())
+                        : chronology.replay(state, Map.of());
         return new StrategicSearchNode(new StrategicSearchState(values, replay.remainingStock(),
                 replay.claims().stream().map(StrategicChronologyReplay.Claim::position).collect(java.util.stream.Collectors.toSet()),
-                replay.collections(), replay.brands(), allocation, "NO_REFUEL", replay.visited(), replay.fingerprint()), List.of(), 0, "");
+                replay.collections(), replay.brands(), allocation, root.supportStateKey(0), replay.visited(),
+                replay.fingerprint()), List.of(), 0, "", root);
     }
 
     private static StrategicSearchState advance(StrategicSearchState state, int index, StrategicOpportunity target,
             StrategicOpportunityGraph graph, DayState dayState, List<AgentState> patrols,
-            StrategicTrajectoryCache cache, StrategicChronologyReplay chronology, boolean trajectoryState) {
+            StrategicTrajectoryCache cache, StrategicChronologyReplay chronology, boolean trajectoryState,
+            V3SupportRootContext root, SupportAwareTrajectoryScheduler scheduler) {
         if (!trajectoryState) return advanceEndpoint(state, index, target, graph, dayState);
         List<StrategicSearchState.PatrolState> nextPatrols = new ArrayList<>(state.patrols());
         StrategicSearchState.PatrolState old = nextPatrols.get(index);
@@ -273,14 +358,40 @@ public final class StrategicTeamSearch {
                 new StrategicSearchState(nextPatrols, state.remainingStock(), state.claimedOpportunities(),
                         state.collectionEstimate(), state.brands(), state.allocation(), state.supportState(),
                         state.visitedByAgent(), state.chronologyFingerprint()),
-                graph, dayState, patrols, cache);
+                graph, dayState, patrols, cache, root.present());
         if (effects == null) return null;
-        StrategicChronologyReplay.ChronologyResult replay = chronology.replay(dayState, effects);
+        StrategicChronologyReplay.ChronologyResult replay = root.present()
+                ? supportedReplay(dayState, patrols, effects, chronology, root, scheduler)
+                : chronology.replay(dayState, effects);
+        // PART 15: an optimistic schedule is rejected here, never silently clamped to zero fuel.
+        if (replay == null || !replay.fuelFeasible()) return null;
         List<StrategicSearchState.PatrolState> normalized = normalizedPatrols(nextPatrols, replay);
         Set<Position> claimed = replay.claims().stream().map(StrategicChronologyReplay.Claim::position)
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        // PART 19: the remaining tanker future is part of the identity, so it is recomputed from the
+        // earliest committed prefix any PATROL has reached.
+        String supportState = root.supportStateKey(normalized.stream()
+                .mapToInt(StrategicSearchState.PatrolState::elapsed).min().orElse(0));
         return new StrategicSearchState(normalized, replay.remainingStock(), claimed, replay.collections(),
-                replay.brands(), state.allocation(), state.supportState(), replay.visited(), replay.fingerprint());
+                replay.brands(), state.allocation(), supportState, replay.visited(), replay.fingerprint());
+    }
+
+    /**
+     * PART 21: normalisation under a mobile root is always base state + ALL committed PATROL trajectories +
+     * the one fixed R3 support trajectory. The inserted waiting is re-derived per PATROL and never searched.
+     */
+    static StrategicChronologyReplay.ChronologyResult supportedReplay(DayState dayState,
+            List<AgentState> patrols, Map<AgentId, List<CachedTrajectoryEffect>> effects,
+            StrategicChronologyReplay chronology, V3SupportRootContext root,
+            SupportAwareTrajectoryScheduler scheduler) {
+        Map<AgentId, List<StrategicChronologyReplay.ScheduledLeg>> schedules = new LinkedHashMap<>();
+        for (AgentState patrol : patrols) {
+            List<StrategicChronologyReplay.ScheduledLeg> scheduled = scheduler.scheduleAll(patrol.position(),
+                    ((FiniteFuel) patrol.fuel()).amount(), effects.getOrDefault(patrol.id(), List.of()));
+            if (scheduled == null) return null;
+            schedules.put(patrol.id(), scheduled);
+        }
+        return chronology.replaySupported(dayState, schedules, root.trajectory());
     }
 
     private static StrategicChronologyReplay.ChronologyResult endpointInitialResult(DayState state,
@@ -368,27 +479,33 @@ public final class StrategicTeamSearch {
         return result;
     }
 
+    /**
+     * PART 21: a partial plan is the state at the END of its committed prefix, so the tank the next leg may
+     * spend is the tank at that instant — never the tank the trailing all-day WAIT would eventually reach.
+     */
     private static List<StrategicSearchState.PatrolState> normalizedPatrols(
             List<StrategicSearchState.PatrolState> patrols, StrategicChronologyReplay.ChronologyResult replay) {
         List<StrategicSearchState.PatrolState> result = new ArrayList<>();
         for (StrategicSearchState.PatrolState intent : patrols) result.add(new StrategicSearchState.PatrolState(intent.patrolId(),
                 replay.finalPositions().get(intent.patrolId()), replay.finalElapsed().get(intent.patrolId()),
-                replay.finalFuel().get(intent.patrolId()), intent.route(), intent.primaryRegions(),
+                replay.fuelAtElapsed().get(intent.patrolId()), intent.route(), intent.primaryRegions(),
                 intent.secondaryRegions(), intent.stopped()));
         return List.copyOf(result);
     }
 
     private static Map<AgentId, List<CachedTrajectoryEffect>> committedEffects(StrategicSearchState state,
             StrategicOpportunityGraph graph, DayState dayState, List<AgentState> patrols,
-            StrategicTrajectoryCache cache) {
+            StrategicTrajectoryCache cache, boolean supportAware) {
         Map<AgentId, List<CachedTrajectoryEffect>> effects = new LinkedHashMap<>();
         for (int i = 0; i < state.patrols().size(); i++) {
             StrategicSearchState.PatrolState intent = state.patrols().get(i);
             Position cursor = patrols.get(i).position();
             List<CachedTrajectoryEffect> committed = new ArrayList<>();
             for (Position goal : intent.route()) {
+                // PART 9: the first hop reads the entry cache the subtree was searched under. Under a mobile
+                // root that is the capacity-lifted geometry; the legality of using it was decided already.
                 Route movement = committed.isEmpty()
-                        ? graph.agentRoutes().getOrDefault(intent.patrolId(), Map.of()).get(goal)
+                        ? graph.entryRoutes(supportAware).getOrDefault(intent.patrolId(), Map.of()).get(goal)
                         : graph.opportunityRoutes().getOrDefault(cursor, Map.of()).get(goal);
                 if (movement == null) return null;
                 committed.add(cache.effect(intent.patrolId(), movement)); cursor = goal;
@@ -420,6 +537,57 @@ public final class StrategicTeamSearch {
         return java.util.stream.IntStream.range(0, patrols.size()).filter(i -> !patrols.get(i).stopped()).boxed()
                 .min(Comparator.<Integer>comparingInt(i -> patrols.get(i).elapsed())
                         .thenComparingInt(i -> patrols.get(i).patrolId().value())).orElse(-1);
+    }
+
+    /**
+     * PART 7/47: ONE combined TeamPlan. The PATROL sequences come from V3, the REFUEL sequence comes
+     * verbatim from the selected EXISTING R3 root, every agent consumes exactly the day budget, and
+     * {@code PlanValidator} plus {@code DaySimulator} stay the only authority on legality.
+     *
+     * <p>PART 8: with the tanker-free root this delegates to the historical materialisation below, byte for
+     * byte, so a NO_REFUEL run produces the plan it always produced.
+     */
+    static Optional<TeamPlan> materialize(DayState state, StrategicOpportunityGraph graph,
+            List<AgentState> patrols, StrategicSearchState value, V3SupportRootContext root,
+            SupportAwareTrajectoryScheduler scheduler) {
+        return root.present() ? materializeSupported(state, graph, patrols, value, root, scheduler)
+                : materialize(state, graph, patrols, value);
+    }
+
+    /**
+     * Materialises a plan under one FIXED existing R3 support trajectory.
+     *
+     * <p>No fuel is granted anywhere here. The PATROL sequences carry the deterministic lead-in waiting the
+     * scheduler derived (PART 12), so the fuel a PATROL spends later genuinely arrives from the tanker
+     * standing on its cell at that step, and the simulator is what proves it.
+     */
+    private static Optional<TeamPlan> materializeSupported(DayState state, StrategicOpportunityGraph graph,
+            List<AgentState> patrols, StrategicSearchState value, V3SupportRootContext root,
+            SupportAwareTrajectoryScheduler scheduler) {
+        Map<AgentId, List<Route>> routesByPatrol = new LinkedHashMap<>();
+        for (int index = 0; index < patrols.size(); index++) {
+            AgentState patrol = patrols.get(index);
+            List<Route> routes = committedRoutes(graph, patrol, value.patrols().get(index));
+            if (routes == null) return Optional.empty();
+            routesByPatrol.put(patrol.id(), routes);
+        }
+        return V3SupportPlanMaterializer.materialize(state, root, scheduler, routesByPatrol);
+    }
+
+    /** The exact routes a committed prefix names, read from the caches its subtree searched. */
+    private static List<Route> committedRoutes(StrategicOpportunityGraph graph, AgentState agent,
+            StrategicSearchState.PatrolState intent) {
+        List<Route> routes = new ArrayList<>();
+        Position cursor = agent.position();
+        for (Position goal : intent.route()) {
+            Route route = routes.isEmpty()
+                    ? graph.entryRoutes(true).getOrDefault(agent.id(), Map.of()).get(goal)
+                    : graph.opportunityRoutes().getOrDefault(cursor, Map.of()).get(goal);
+            if (route == null) return null;
+            routes.add(route);
+            cursor = goal;
+        }
+        return List.copyOf(routes);
     }
 
     private static Optional<TeamPlan> materialize(DayState state, StrategicOpportunityGraph graph, List<AgentState> patrols, StrategicSearchState value) {
@@ -468,7 +636,7 @@ public final class StrategicTeamSearch {
         return best;
     }
 
-    private static boolean better(StrategicOracleEvaluation left, StrategicOracleEvaluation right) { return HybridCalibratedMarginEvaluation.compare(left.objective(), right.objective()) < 0; }
-    private static boolean expired(LongSupplier clock, long deadline) { return clock.getAsLong() >= deadline; }
+    static boolean better(StrategicOracleEvaluation left, StrategicOracleEvaluation right) { return HybridCalibratedMarginEvaluation.compare(left.objective(), right.objective()) < 0; }
+    static boolean expired(LongSupplier clock, long deadline) { return clock.getAsLong() >= deadline; }
     private static List<StrategicTransition> append(List<StrategicTransition> values, StrategicTransition value) { List<StrategicTransition> result = new ArrayList<>(values); result.add(value); return result; }
 }

@@ -54,6 +54,8 @@ import vn.ptit.procon.planner.v3.StrategicSearchConfig;
 import vn.ptit.procon.planner.v3.StrategicSearchResult;
 import vn.ptit.procon.planner.v3.StrategicTeamSearch;
 import vn.ptit.procon.planner.v3.V3TerminalParityAudit;
+import vn.ptit.procon.planner.v3.V3Phase24Analysis;
+import vn.ptit.procon.planner.v3.V3Phase24ReportPrinter;
 import vn.ptit.procon.planner.oracle.ExactOracleConfig;
 import vn.ptit.procon.planner.oracle.ExactOracleResult;
 import vn.ptit.procon.planner.oracle.ExactRepresentabilityAuditor;
@@ -129,6 +131,12 @@ public final class JointTeamBeamBenchmark {
         runExactStrategicOracle(scenarios);
         runCompetitiveTargetAblation(scenarios);
         if (Arrays.asList(args).contains("--collection-audit")) runCollectionSearchOracle(scenarios);
+        if (Arrays.asList(args).contains("--phase24-audit")) runV3Phase24RawSearchRobustness();
+    }
+
+    /** Phase 2.4 baseline-replayability audit.  Opt-in so the default sweep output is unchanged. */
+    private static void runV3Phase24RawSearchRobustness() {
+        System.out.print(V3Phase24ReportPrinter.render(new V3Phase24Analysis().table()));
     }
 
     private static Observation observe(DayState state, JointTeamBeamConfig config) {

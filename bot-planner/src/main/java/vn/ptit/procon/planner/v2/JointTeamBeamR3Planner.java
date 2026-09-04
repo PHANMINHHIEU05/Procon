@@ -119,6 +119,44 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
         return new JointTeamBeamR3Result(beam.plan(), beam, stats.freeze(), audit);
     }
 
+    /**
+     * Exports exactly the support roots this planner already retains, without planning and without
+     * logging.
+     *
+     * <p>The root universe is produced by the unchanged {@link #buildSupportCandidates} pipeline, so no
+     * generation, validation, retention or scoring rule is duplicated or altered here. Nothing outside
+     * the throwaway accounting object is mutated, and no search is run.
+     */
+    public R3SupportRootExportSet exportRetainedSupportRoots(DayState state) {
+        java.util.Objects.requireNonNull(state, "Day state must not be null");
+        Mutable stats = new Mutable();
+        RefuelTourCatalog catalog = RefuelTourCatalog.forState(state, refuelRouteFinder);
+        stats.tourCatalogPathfindingExecutions = catalog.pathfindingExecutions();
+        long deadline = clock.getAsLong() + config.usablePlanningMillis() * 1_000_000L;
+        List<SupportCandidate> retained = buildSupportCandidates(state, catalog, deadline, stats);
+        Map<AgentId, Position> starts = new LinkedHashMap<>();
+        state.agents().forEach(agent -> starts.put(agent.id(), agent.position()));
+        List<R3SupportRootExport> roots = new ArrayList<>();
+        for (int index = 0; index < retained.size(); index++) {
+            SupportCandidate candidate = retained.get(index);
+            JointTeamSearchState.RefuelRootSchedule schedule = candidate.schedule();
+            List<R3SupportRootExport.PlannedService> services = new ArrayList<>();
+            schedule.patrolSupports().forEach((patrolId, support) -> services.add(
+                    new R3SupportRootExport.PlannedService(patrolId.value(), support.position(),
+                            support.elapsedSteps(), support.remainingFuel(), support.actions())));
+            services.sort(Comparator.comparingInt(R3SupportRootExport.PlannedService::serviceStep)
+                    .thenComparingInt(R3SupportRootExport.PlannedService::patrolId));
+            roots.add(new R3SupportRootExport(index, schedule.signature(), schedule.refuelId(),
+                    starts.getOrDefault(schedule.refuelId(), new Position(0)), schedule.refuelActions(),
+                    schedule.refuelElapsedSteps(), candidate.services(), candidate.patrolIds(),
+                    List.copyOf(services), R3SupportRootExport.EXISTING_R3_ROOT,
+                    candidate.provenance().toString()));
+        }
+        return new R3SupportRootExportSet(List.copyOf(roots), stats.tourCatalogPathfindingExecutions,
+                stats.partialToursGenerated, stats.skeletonsConsidered, stats.skeletonsValidated,
+                stats.skeletonsValid, stats.skeletonsRetained);
+    }
+
     private List<SupportCandidate> buildSupportCandidates(DayState state, RefuelTourCatalog catalog, long deadline,
             Mutable stats) {
         List<PartialTour> retained = new ArrayList<>();

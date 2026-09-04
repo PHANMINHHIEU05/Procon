@@ -106,6 +106,12 @@ public final class MatchRuntime {
     private final boolean othersShapeDiagnostics;
     private final OthersValueObserver othersValueObserver;
 
+    /**
+     * The observation-only V3 boundary. It is consulted after acceptance and never before submission;
+     * when shadow is OFF this is the no-op runner, which builds no planner and starts no thread.
+     */
+    private final V3ShadowRunner shadow;
+
     private int rateLimitOccurrences;
     private ParityObservation retainedObservation;
 
@@ -128,7 +134,23 @@ public final class MatchRuntime {
                 plannerFor(config.plannerMode(), config.contentionDiagnostics(), config.r3RootFamilyAudit()),
                 new ParityRecorder(),
                 config.othersShapeDiagnostics(),
-                config.othersValueDiagnostics());
+                config.othersValueDiagnostics(),
+                shadowRunnerFor(config));
+    }
+
+    /**
+     * The OFF path constructs nothing: no V3 planner, no evaluator, no executor and no thread. Only an
+     * explicit {@code PROCON_V3_SHADOW=true} builds the real observer, and even then the observer has no
+     * way to reach the wire — {@code bot-planner} does not depend on {@code bot-protocol}.
+     */
+    private static V3ShadowRunner shadowRunnerFor(RuntimeConfig config) {
+        if (!config.v3Shadow()) {
+            return V3ShadowRunner.disabled();
+        }
+        return V3ShadowRunner.enabled(
+                config.v3ShadowMaxMillis(),
+                config.v3ShadowVerbose(),
+                new V3ShadowPlannerEvaluator(config.v3ShadowMaxMillis()));
     }
 
     MatchRuntime(
@@ -178,6 +200,27 @@ public final class MatchRuntime {
             ParityRecorder parityRecorder,
             boolean othersShapeDiagnostics,
             boolean othersValueDiagnostics) {
+        this(matchId, http, pollInterval, sleeper, setupMapper, stateMapper, assignmentPolicy,
+                validator, simulator, planner, parityRecorder, othersShapeDiagnostics,
+                othersValueDiagnostics, V3ShadowRunner.disabled());
+    }
+
+    /** The shadow injection seam. Every historical constructor reaches this one with the OFF runner. */
+    MatchRuntime(
+            String matchId,
+            ProconHttpClient http,
+            Duration pollInterval,
+            Sleeper sleeper,
+            SetupMapper setupMapper,
+            DayStateMapper stateMapper,
+            SmokeAssignmentPolicy assignmentPolicy,
+            PlanValidator validator,
+            DaySimulator simulator,
+            DayPlanner planner,
+            ParityRecorder parityRecorder,
+            boolean othersShapeDiagnostics,
+            boolean othersValueDiagnostics,
+            V3ShadowRunner shadow) {
         this.matchId = Objects.requireNonNull(matchId, "Match ID must not be null");
         this.http = Objects.requireNonNull(http, "HTTP client must not be null");
         this.pollInterval = Objects.requireNonNull(pollInterval, "Poll interval must not be null");
@@ -195,6 +238,7 @@ public final class MatchRuntime {
         this.parityRecorder = Objects.requireNonNull(parityRecorder, "Parity recorder must not be null");
         this.othersShapeDiagnostics = othersShapeDiagnostics;
         this.othersValueObserver = new OthersValueObserver(othersValueDiagnostics, matchId);
+        this.shadow = Objects.requireNonNull(shadow, "Shadow runner must not be null");
     }
 
     MatchRuntime(
@@ -212,7 +256,20 @@ public final class MatchRuntime {
                 validator, simulator, new WaitDayPlanner(), parityRecorder);
     }
 
+    /**
+     * The match lifecycle, plus the bounded shadow shutdown. {@link V3ShadowRunner#finish} runs in the
+     * {@code finally} block, i.e. strictly after the result has already been read, and waits at most
+     * {@value V3ShadowRunner#SHUTDOWN_GRACE_MILLIS} ms — never a search budget.
+     */
     public MatchRuntimeResult run() throws IOException, InterruptedException {
+        try {
+            return runMatch();
+        } finally {
+            shadow.finish(this::log);
+        }
+    }
+
+    private MatchRuntimeResult runMatch() throws IOException, InterruptedException {
         log("SETUP_WAITING");
         SetupDto setupDto = pollGet("SETUP_WAITING", http::getSetup);
         StaticMatchData matchData = setupMapper.toDomain(setupDto);
@@ -337,6 +394,10 @@ public final class MatchRuntime {
             }
 
             if (observedDay != lastSubmittedDay) {
+                // Read on the action thread before planning, so the audit can prove the shadow thread
+                // later observed the very same immutable state. Empty when shadow is OFF: no work.
+                String v2StateFingerprint =
+                        shadow.enabled() ? V3ShadowStateSnapshotAudit.fingerprint(state) : "";
                 TeamPlan plan = planner.plan(state);
                 PlanValidation validation = validator.validate(state, plan);
                 if (!validation.valid()) {
@@ -525,6 +586,17 @@ public final class MatchRuntime {
                 parityRecorder.record(retainedObservation);
                 logUdonObservability(observedDay, validPrediction);
                 log("ACTIONS_ACCEPTED", "day", observedDay);
+
+                // The one and only shadow hook. It sits after the POST, after action_result.valid, and
+                // after lastSubmittedDay has already been advanced by the V2/R3 submission — so nothing
+                // it observes, times out on, or throws can reach the wire. It never blocks.
+                if (shadow.enabled()) {
+                    shadow.schedule(observedDay, state, plan, v2StateFingerprint, matchId,
+                            V3ShadowSubmissionAuthority.of(observedDay, plannerAuthorityLabel(), plan,
+                                    state.agents().size(), encodedActions,
+                                    shadow.lastV3PhysicalSignature()),
+                            this::log);
+                }
             }
 
             if (submittedDays >= matchData.dayStepBudgets().dayCount()) {
@@ -1069,6 +1141,22 @@ public final class MatchRuntime {
 
     private Object fuelValue(Integer fuel) {
         return fuel == null ? "N/A_OR_MISSING" : fuel;
+    }
+
+    /**
+     * The label recorded as the submission authority. It is derived from the planner that actually
+     * produced the plan, never from a shadow observation, so the audit cannot claim V2/R3 authority for
+     * a plan some other planner built.
+     */
+    private String plannerAuthorityLabel() {
+        return planner instanceof vn.ptit.procon.planner.v2.JointTeamBeamR3Planner
+                ? V3ShadowSubmissionAuthority.V2_R3
+                : planner.getClass().getSimpleName();
+    }
+
+    /** Test-only view of the shadow runner. Nothing on the action path reads this. */
+    V3ShadowRunner shadowRunner() {
+        return shadow;
     }
 
     private void log(String event, Object... fields) {

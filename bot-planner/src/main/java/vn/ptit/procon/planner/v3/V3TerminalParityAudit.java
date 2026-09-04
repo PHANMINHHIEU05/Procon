@@ -3,11 +3,11 @@ package vn.ptit.procon.planner.v3;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import vn.ptit.procon.domain.agent.AgentKind;
 import vn.ptit.procon.domain.agent.AgentId;
 import vn.ptit.procon.domain.agent.FiniteFuel;
 import vn.ptit.procon.engine.DaySimulator;
 import vn.ptit.procon.engine.DayState;
+import vn.ptit.procon.engine.RefueledEvent;
 import vn.ptit.procon.engine.UdonCollectedEvent;
 import vn.ptit.procon.engine.ValidDaySimulationResult;
 
@@ -48,11 +48,34 @@ public final class V3TerminalParityAudit {
             var finalAgent = valid.finalAgents().stream().filter(a -> a.id().equals(patrol.patrolId())).findFirst();
             if (finalAgent.isEmpty()) return "position:" + patrol.patrolId().value();
             if (!finalAgent.get().position().equals(patrol.position())) return "position:" + patrol.patrolId().value();
-            if (!(finalAgent.get().fuel() instanceof FiniteFuel fuel) || fuel.amount() != patrol.fuel()) {
+            if (!(finalAgent.get().fuel() instanceof FiniteFuel fuel)) return "fuel:" + patrol.patrolId().value();
+            if (fuelAtPrefixEnd(valid, patrol.patrolId(), patrol.elapsed(), fuel.amount()) != patrol.fuel()) {
                 return "fuel:" + patrol.patrolId().value();
             }
         }
         return "NONE";
+    }
+
+    /**
+     * The simulator's fuel at the instant the search state describes.
+     *
+     * <p>PART 21 fixes a search state's fuel at the END OF ITS COMMITTED PREFIX, deliberately excluding fuel
+     * the trailing all-day WAIT would eventually collect. Under a mobile support root that exclusion is
+     * load-bearing and observable: a tanker that keeps driving after a PATROL has finished its last leg
+     * frequently rolls onto the cell the PATROL is parked on, and the simulator dutifully fills the tank. The
+     * end-of-day figure and the end-of-prefix figure are then both correct and different, so comparing the
+     * state against {@code finalAgents()} would report a mismatch where there is none.
+     *
+     * <p>Reconstructing the right instant is exact rather than approximate: a WAIT consumes no fuel, so after
+     * the prefix ends the tank only ever changes by refuelling. The fuel recorded BEFORE the earliest refuel
+     * that lands after the prefix therefore IS the fuel at the end of the prefix, and when no such refuel
+     * exists the end-of-day figure already is that fuel.
+     */
+    private static int fuelAtPrefixEnd(ValidDaySimulationResult valid, AgentId patrolId, int elapsed,
+            int finalFuel) {
+        return valid.events().stream().filter(RefueledEvent.class::isInstance).map(RefueledEvent.class::cast)
+                .filter(event -> event.patrolId().equals(patrolId) && event.step() > elapsed)
+                .min(Comparator.comparingInt(RefueledEvent::step)).map(RefueledEvent::before).orElse(finalFuel);
     }
 
     public record Result(int terminalsChecked, int parityMatches, int parityMismatches,

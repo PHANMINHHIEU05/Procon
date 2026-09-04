@@ -7,7 +7,8 @@ import java.util.Objects;
 public record V3Phase24FixtureReport(String fixture, int v2Own, int v2Hybrid4, int rawV3Own, int rawV3Hybrid4,
         int selectedOwn, int selectedHybrid4, boolean v2WitnessRepresentable, int forcedWitnessReplayOwn,
         V3FirstDivergence firstDivergence, int statesExpanded, int edgesExpanded, int trajectoryCacheEntries,
-        long searchMillis, boolean parityMatch, int searchPathfindingExecutions,
+        long searchMillis, boolean parityMatch, int searchPathfindingExecutions, boolean fallbackUsed,
+        String oracleCap, int oracleOwn, int oracleHybrid4,
         V2BaselineWitness witness, V2StrategicWitness strategic, V3BaselineRepresentability representability,
         V3AllocationReplay allocation, V3PrefixSurvivalTrace prefixSurvival, V3SearchCoverage coverage,
         V3ForcedWitnessReplayResult strictReplay, V3ForcedWitnessReplayResult supportGrantedReplay) {

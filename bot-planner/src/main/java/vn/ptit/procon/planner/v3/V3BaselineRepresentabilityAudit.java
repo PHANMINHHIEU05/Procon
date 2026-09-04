@@ -29,15 +29,34 @@ public final class V3BaselineRepresentabilityAudit {
     public V3BaselineRepresentability audit(DayState state, V2BaselineWitness witness,
             V2StrategicWitness strategic, StrategicOpportunityGraph graph,
             List<StrategicTerminalSnapshot> terminals) {
+        return audit(state, witness, strategic, graph, terminals, V3SupportRootContext.noRefuel());
+    }
+
+    /**
+     * PART 31: the same audit, evaluated under ONE selected existing R3 support root.
+     *
+     * <p>The tanker-free path below is left untouched, so the Phase 2.4 verdicts it produced remain
+     * reproducible. When a mobile root is supplied the two support-sensitive predicates change, and only
+     * those two: the set of cells where a refuel can happen comes from the root's authoritative
+     * trajectory instead of the tanker's parking spot, and fuel/time feasibility is decided by
+     * {@link SupportAwareTrajectoryScheduler} so that WHEN the tanker is at a cell matters.
+     */
+    public V3BaselineRepresentability audit(DayState state, V2BaselineWitness witness,
+            V2StrategicWitness strategic, StrategicOpportunityGraph graph,
+            List<StrategicTerminalSnapshot> terminals, V3SupportRootContext root) {
         Objects.requireNonNull(state);
+        Objects.requireNonNull(root, "Support root must not be null");
         Set<Position> v3RefuelPositions = state.agents().stream()
                 .filter(agent -> agent.kind() == AgentKind.REFUEL).map(AgentState::position)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Position> refuelCapable = root.present()
+                ? new LinkedHashSet<>(root.trajectory().refuelCapablePositions())
+                : v3RefuelPositions;
         Set<Position> opportunityPositions = graph.opportunities().stream()
                 .map(StrategicOpportunity::position).collect(Collectors.toCollection(LinkedHashSet::new));
         List<V3BaselineRepresentability.TransitionAudit> audits = new ArrayList<>();
         for (V2StrategicWitness.PatrolSkeleton patrol : strategic.patrols()) {
-            audits.addAll(auditPatrol(state, patrol, graph, opportunityPositions, v3RefuelPositions));
+            audits.addAll(auditPatrol(state, patrol, graph, opportunityPositions, refuelCapable, root));
         }
         int represented = (int) audits.stream()
                 .filter(V3BaselineRepresentability.TransitionAudit::represented).count();
@@ -53,14 +72,18 @@ public final class V3BaselineRepresentabilityAudit {
 
     private static List<V3BaselineRepresentability.TransitionAudit> auditPatrol(DayState state,
             V2StrategicWitness.PatrolSkeleton patrol, StrategicOpportunityGraph graph,
-            Set<Position> opportunityPositions, Set<Position> v3RefuelPositions) {
+            Set<Position> opportunityPositions, Set<Position> v3RefuelPositions,
+            V3SupportRootContext root) {
         List<V3BaselineRepresentability.TransitionAudit> result = new ArrayList<>();
+        SupportAwareTrajectoryScheduler scheduler = root.present()
+                ? SupportAwareTrajectoryScheduler.of(state, root.trajectory()) : null;
+        Position cursor = patrol.start();
         int fuel = patrol.startFuel();
         int elapsed = 0;
         for (V2StrategicWitness.StrategicStep step : patrol.transitions()) {
             boolean first = step.index() == 0;
             Route cached = first
-                    ? graph.agentRoutes().getOrDefault(patrol.patrolId(), Map.of()).get(step.to())
+                    ? graph.entryRoutes(root.present()).getOrDefault(patrol.patrolId(), Map.of()).get(step.to())
                     : graph.opportunityRoutes().getOrDefault(step.from(), Map.of()).get(step.to());
             boolean edgePresent = first ? cached != null
                     : graph.outgoing().getOrDefault(step.from(), List.of()).stream()
@@ -71,7 +94,18 @@ public final class V3BaselineRepresentabilityAudit {
             boolean supportCompatible = !step.supportDependent()
                     || v3RefuelPositions.containsAll(step.requiredRefuelPositions());
             boolean stateCompatible = false;
-            if (cached != null) {
+            if (cached != null && scheduler != null) {
+                // PART 13: the scheduler owns fuel AND timing, so a rendezvous that has not happened yet
+                // cannot be counted as fuel already in the tank.
+                CachedTrajectoryEffect effect = CachedTrajectoryEffect.from(state, patrol.patrolId(), cached);
+                SupportAwareSchedule schedule = scheduler.schedule(cursor, elapsed, fuel, effect);
+                stateCompatible = schedule.feasible();
+                if (stateCompatible) {
+                    fuel = schedule.fuelAfter();
+                    elapsed = schedule.scheduledEndStep();
+                    cursor = effect.goal();
+                }
+            } else if (cached != null) {
                 stateCompatible = elapsed + cached.stepsUsed() <= state.stepBudget()
                         && fuelFeasible(state, fuel, cached, v3RefuelPositions);
                 if (stateCompatible) {

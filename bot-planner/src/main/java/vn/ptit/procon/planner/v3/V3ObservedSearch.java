@@ -45,6 +45,20 @@ public final class V3ObservedSearch implements StrategicSearchObserver {
         return new Observation(result, observer);
     }
 
+    /**
+     * PART 31: the same recording, taken while the search may also choose an existing R3 support root.
+     *
+     * <p>The observer is still passive, so this changes nothing about the search — it only lets the Phase
+     * 2.5 prefix-survival trace be read off the run whose universe actually contains the support axis.
+     */
+    public static Observation run(DayState state, StrategicSearchConfig config, List<TeamPlan> seeds,
+            V3SupportRootUniverse universe) {
+        V3ObservedSearch observer = new V3ObservedSearch();
+        StrategicSearchResult result = new StrategicTeamSearch()
+                .solve(state, config, seeds, 0, 0, observer, universe);
+        return new Observation(result, observer);
+    }
+
     public record Observation(StrategicSearchResult result, V3ObservedSearch observed) { }
 
     @Override
