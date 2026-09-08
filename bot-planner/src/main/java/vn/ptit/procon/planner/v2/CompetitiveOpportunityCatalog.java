@@ -20,6 +20,11 @@ import vn.ptit.procon.planner.OpponentCollectionEligibility;
 
 /** Daily cached own/opponent arrival catalog; no route search occurs during beam expansion. */
 final class CompetitiveOpportunityCatalog {
+    public static final boolean STRICT_EARLIER_CLAIMS = Boolean.parseBoolean(
+            System.getProperty("procon.competitive.strict_earlier_claims",
+                    System.getenv("PROCON_COMPETITIVE_STRICT_EARLIER_CLAIMS") != null
+                            ? System.getenv("PROCON_COMPETITIVE_STRICT_EARLIER_CLAIMS")
+                            : "false"));
     private final DayState state;
     private final JointRouteCatalog routes;
     private final Map<Position, List<Integer>> opponentEtas;
@@ -61,7 +66,8 @@ final class CompetitiveOpportunityCatalog {
         int opponentEta = opponentArrivals.isEmpty() ? -1 : opponentArrivals.getFirst();
         int raceMargin = opponentEta < 0 ? Integer.MAX_VALUE : opponentEta - ownEta;
         int stock = current.timeline().remainingStock().getOrDefault(target.position(), 0);
-        int earlierClaims = (int) opponentArrivals.stream().filter(eta -> eta <= ownEta).count();
+        int earlierClaims = (int) opponentArrivals.stream()
+                .filter(eta -> STRICT_EARLIER_CLAIMS ? eta < ownEta : eta <= ownEta).count();
         int expected = Math.max(0, Math.min(stock, stock - earlierClaims));
         int bestOwnEta = Integer.MAX_VALUE;
         for (JointTeamSearchState.PatrolPrefix other : current.patrols().values()) {

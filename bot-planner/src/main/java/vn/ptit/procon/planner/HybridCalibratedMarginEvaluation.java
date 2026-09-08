@@ -8,8 +8,16 @@ public record HybridCalibratedMarginEvaluation(
         CoupledCompetitiveRolloutResult coupled,
         TeamNextDayHarvestCapacity nextDayHarvestCapacity) {
 
-    public static final int HYBRID_BASE_WEIGHT = 3;
-    public static final int HYBRID_COUPLED_WEIGHT = 1;
+    public static final int HYBRID_BASE_WEIGHT = Integer.parseInt(
+            System.getProperty("procon.hybrid.base_weight",
+                    System.getenv("PROCON_HYBRID_BASE_WEIGHT") != null
+                            ? System.getenv("PROCON_HYBRID_BASE_WEIGHT")
+                            : "3"));
+    public static final int HYBRID_COUPLED_WEIGHT = Integer.parseInt(
+            System.getProperty("procon.hybrid.coupled_weight",
+                    System.getenv("PROCON_HYBRID_COUPLED_WEIGHT") != null
+                            ? System.getenv("PROCON_HYBRID_COUPLED_WEIGHT")
+                            : "1"));
     public static final int HYBRID_SCALE = HYBRID_BASE_WEIGHT + HYBRID_COUPLED_WEIGHT;
 
     public HybridCalibratedMarginEvaluation {

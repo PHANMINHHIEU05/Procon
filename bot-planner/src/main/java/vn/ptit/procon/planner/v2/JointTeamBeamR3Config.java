@@ -50,8 +50,13 @@ public record JointTeamBeamR3Config(
     }
 
     public static JointTeamBeamR3Config defaults() {
-        return new JointTeamBeamR3Config(8_000, 750, 64, 16, 24, 24, 4, 216, 48, 24, 12,
-                R3RootFamilyAuditMode.OFF, CompetitiveTargetPolicy.CURRENT, StageBRecallAuditMode.OFF);
+        String policyName = System.getProperty("procon.v2.competitive_policy",
+                System.getenv("PROCON_V2_COMPETITIVE_POLICY") != null ? System.getenv("PROCON_V2_COMPETITIVE_POLICY") : "CURRENT");
+        CompetitiveTargetPolicy policy = CompetitiveTargetPolicy.valueOf(policyName.trim().toUpperCase());
+        int stageBLimit = Integer.getInteger("procon.v2.max_stage_b",
+                System.getenv("PROCON_V2_MAX_STAGE_B") != null ? Integer.parseInt(System.getenv("PROCON_V2_MAX_STAGE_B")) : 16);
+        return new JointTeamBeamR3Config(8_000, 750, 64, stageBLimit, 24, 24, 4, 216, 48, 24, 12,
+                R3RootFamilyAuditMode.OFF, policy, StageBRecallAuditMode.OFF);
     }
 
     public JointTeamBeamR3Config {

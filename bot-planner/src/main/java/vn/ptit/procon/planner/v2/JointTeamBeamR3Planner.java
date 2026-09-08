@@ -73,7 +73,15 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
             valid.forEach(value -> stats.family.initialRoot(value.services()));
         }
 
-        JointTeamBeamConfig beamConfig = new JointTeamBeamConfig(48, 64, 24, 4,
+        int beamWidth = Integer.getInteger("procon.v2.beam_width",
+                System.getenv("PROCON_V2_BEAM_WIDTH") != null ? Integer.parseInt(System.getenv("PROCON_V2_BEAM_WIDTH")) : 48);
+        int maxExpanded = Integer.getInteger("procon.v2.max_expanded_states",
+                System.getenv("PROCON_V2_MAX_EXPANDED_STATES") != null ? Integer.parseInt(System.getenv("PROCON_V2_MAX_EXPANDED_STATES")) : 64);
+        int maxChildren = Integer.getInteger("procon.v2.max_children",
+                System.getenv("PROCON_V2_MAX_CHILDREN") != null ? Integer.parseInt(System.getenv("PROCON_V2_MAX_CHILDREN")) : 24);
+        int maxTargets = Integer.getInteger("procon.v2.max_targets",
+                System.getenv("PROCON_V2_MAX_TARGETS") != null ? Integer.parseInt(System.getenv("PROCON_V2_MAX_TARGETS")) : 4);
+        JointTeamBeamConfig beamConfig = new JointTeamBeamConfig(beamWidth, maxExpanded, maxChildren, maxTargets,
                 config.maxFullTerminalEvaluations(), V2SearchPolicy.R1_CONTROL,
                 V2CollectionAuditMode.OFF, config.competitiveTargetPolicy(), config.stageBRecallAuditMode());
         R3RootFamilyAuditCollector auditCollector = new R3RootFamilyAuditCollector(config.rootFamilyAuditMode());
@@ -116,7 +124,8 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
                 + value.bestSemiCollections() + " bestHybridMarginScore4=" + value.bestHybridMarginScore4()
                 + " waitOnlyTerminalExists=" + value.waitOnlyTerminalExists()
                 + " waitOnlyWasBest=" + value.waitOnlyWasBest()));
-        return new JointTeamBeamR3Result(beam.plan(), beam, stats.freeze(), audit);
+        TeamPlan finalPlan = StrategicRepositioner.reposition(state, beam.plan());
+        return new JointTeamBeamR3Result(finalPlan, beam, stats.freeze(), audit);
     }
 
     /**

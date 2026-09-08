@@ -259,7 +259,7 @@ public final class StrategicTeamComposition {
      * team is reached in exactly as many expansions as there are PATROLs, and the remaining budget is spent on
      * alternatives instead of on re-deriving the same prefixes one layer at a time.
      */
-    static Comparator<TeamCompositionState> compositionOrder() {
+    public static Comparator<TeamCompositionState> compositionOrder() {
         return Comparator.comparingInt(TeamCompositionState::securedCollections).reversed()
                 .thenComparing(Comparator.comparingInt((TeamCompositionState value) -> value.brands().size())
                         .reversed())

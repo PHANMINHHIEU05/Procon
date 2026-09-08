@@ -18,7 +18,9 @@ public record RuntimeConfig(
         boolean r3RootFamilyAudit,
         boolean v3Shadow,
         long v3ShadowMaxMillis,
-        boolean v3ShadowVerbose) {
+        boolean v3ShadowVerbose,
+        boolean v3CaptureStates,
+        String v3CaptureDirectory) {
 
     public static final String DEFAULT_BASE_URL = "https://procon.ptit.edu.vn";
     public static final long DEFAULT_POLL_INTERVAL_MS = 250;
@@ -30,6 +32,17 @@ public record RuntimeConfig(
      * offline fixture (~1.8 s) and is NEVER a production planning deadline: V2/R3 never reads it.
      */
     public static final long DEFAULT_V3_SHADOW_MAX_MILLIS = 4000;
+
+    /**
+     * Where deferred live-state captures land. Outside the repository on purpose: the corpus is
+     * evidence, never source, and must never enter a diff.
+     *
+     * <p>ITERATION 6: no longer under {@code /tmp}. A mid-session {@code /tmp} wipe destroyed a complete
+     * captured corpus on this machine, which cost an entire iteration's evidence; captures now default to
+     * durable storage under {@code $HOME}. {@code PROCON_V3_CAPTURE_DIR} still overrides it.
+     */
+    public static final String DEFAULT_V3_CAPTURE_DIRECTORY =
+            System.getProperty("user.home") + "/.procon-autotune/corpus";
 
     public RuntimeConfig {
         if (baseUrl == null || baseUrl.isBlank()) {
@@ -54,6 +67,32 @@ public record RuntimeConfig(
         if (v3ShadowMaxMillis <= 0) {
             throw new IllegalArgumentException("PROCON_V3_SHADOW_MAX_MILLIS must be positive");
         }
+        if (v3CaptureDirectory == null || v3CaptureDirectory.isBlank()) {
+            throw new IllegalArgumentException("PROCON_V3_CAPTURE_DIR must not be blank");
+        }
+    }
+
+    /**
+     * Every historical caller keeps its exact meaning: state capture is OFF unless it is asked for,
+     * and the corpus directory falls back to the default location outside the repository.
+     */
+    public RuntimeConfig(
+            String baseUrl,
+            String matchId,
+            String token,
+            Duration pollInterval,
+            Duration httpTimeout,
+            PlannerMode plannerMode,
+            boolean othersShapeDiagnostics,
+            boolean othersValueDiagnostics,
+            boolean contentionDiagnostics,
+            boolean r3RootFamilyAudit,
+            boolean v3Shadow,
+            long v3ShadowMaxMillis,
+            boolean v3ShadowVerbose) {
+        this(baseUrl, matchId, token, pollInterval, httpTimeout, plannerMode, othersShapeDiagnostics,
+                othersValueDiagnostics, contentionDiagnostics, r3RootFamilyAudit, v3Shadow,
+                v3ShadowMaxMillis, v3ShadowVerbose, false, DEFAULT_V3_CAPTURE_DIRECTORY);
     }
 
     /** Every historical caller keeps its exact meaning: shadow is OFF unless it is asked for. */
@@ -140,7 +179,13 @@ public record RuntimeConfig(
                         "PROCON_V3_SHADOW_MAX_MILLIS"),
                 parseBoolean(
                         environment.get("PROCON_V3_SHADOW_VERBOSE"),
-                        "PROCON_V3_SHADOW_VERBOSE"));
+                        "PROCON_V3_SHADOW_VERBOSE"),
+                parseBoolean(
+                        environment.get("PROCON_V3_CAPTURE_STATES"),
+                        "PROCON_V3_CAPTURE_STATES"),
+                valueOrDefault(
+                        environment.get("PROCON_V3_CAPTURE_DIR"),
+                        DEFAULT_V3_CAPTURE_DIRECTORY));
     }
 
     public Duration connectTimeout() {
@@ -158,7 +203,9 @@ public record RuntimeConfig(
                 + ", r3RootFamilyAudit=" + r3RootFamilyAudit
                 + ", v3Shadow=" + v3Shadow
                 + ", v3ShadowMaxMillis=" + v3ShadowMaxMillis
-                + ", v3ShadowVerbose=" + v3ShadowVerbose + "]";
+                + ", v3ShadowVerbose=" + v3ShadowVerbose
+                + ", v3CaptureStates=" + v3CaptureStates
+                + ", v3CaptureDirectory=" + v3CaptureDirectory + "]";
     }
 
     private static String valueOrDefault(String value, String defaultValue) {

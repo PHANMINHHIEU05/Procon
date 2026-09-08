@@ -29,6 +29,17 @@ import vn.ptit.procon.planner.Route;
 
 /** Bounded joint-team beam search with catalog-only expansion and unchanged terminal objective. */
 public final class JointTeamBeamPlanner implements DayPlanner {
+    private static final boolean FAIR_FAMILY_EXPANSION = Boolean.parseBoolean(
+            System.getProperty("procon.v2.fair_family_expansion",
+                    System.getenv("PROCON_V2_FAIR_FAMILY_EXPANSION") != null
+                            ? System.getenv("PROCON_V2_FAIR_FAMILY_EXPANSION")
+                            : "false"));
+    private static final int STOCK_WEIGHT = Integer.parseInt(
+            System.getProperty("procon.v2.stock_weight",
+                    System.getenv("PROCON_V2_STOCK_WEIGHT") != null
+                            ? System.getenv("PROCON_V2_STOCK_WEIGHT")
+                            : "100"));
+
     private final JointTeamBeamConfig config;
     private final RefuelRouteFinder refuelRouteFinder;
 
@@ -139,10 +150,36 @@ public final class JointTeamBeamPlanner implements DayPlanner {
             trimFrontier(frontier, catalog, state.stepBudget(), stats, collectionAudit);
         }
 
+        Map<Integer, Integer> expansionsByFamily = new HashMap<>();
         while (!frontier.isEmpty() && stats.expandedStates < config.maxExpandedStates()
                 && !deadlineReached(deadlineNanos, clock)) {
-            frontier.sort(statePreference(catalog, state.stepBudget()));
-            JointTeamSearchState current = frontier.removeFirst();
+            JointTeamSearchState current;
+            if (FAIR_FAMILY_EXPANSION) {
+                Map<Integer, List<JointTeamSearchState>> byFamily = new LinkedHashMap<>();
+                for (JointTeamSearchState s : frontier) {
+                    int family = s.refuelRoot().map(r -> r.patrolSupports().size()).orElse(0);
+                    byFamily.computeIfAbsent(family, k -> new ArrayList<>()).add(s);
+                }
+                Comparator<JointTeamSearchState> pref = statePreference(catalog, state.stepBudget());
+                for (List<JointTeamSearchState> list : byFamily.values()) {
+                    list.sort(pref);
+                }
+                int minExpansions = Integer.MAX_VALUE;
+                int chosenFamily = -1;
+                for (int family : byFamily.keySet()) {
+                    int count = expansionsByFamily.getOrDefault(family, 0);
+                    if (count < minExpansions) {
+                        minExpansions = count;
+                        chosenFamily = family;
+                    }
+                }
+                current = byFamily.get(chosenFamily).getFirst();
+                frontier.remove(current);
+                expansionsByFamily.merge(chosenFamily, 1, Integer::sum);
+            } else {
+                frontier.sort(statePreference(catalog, state.stepBudget()));
+                current = frontier.removeFirst();
+            }
             expand(state, current, frontier, seen, dominance, terminalEvaluator, stageACandidates,
                     immediatelyEvaluated, catalog, stats, depths, deadlineNanos, clock, audit,
                     collectionAudit, opportunityCatalog, competitiveAudit);
@@ -305,10 +342,40 @@ public final class JointTeamBeamPlanner implements DayPlanner {
             uniquePlans.putIfAbsent(candidate.base().deterministicSignature(), candidate);
         }
         stats.stageBDuplicateCandidatesSkipped = ranked.size() - uniquePlans.size();
-        List<JointTerminalEvaluator.StageATerminalCandidate> shortlist = new ArrayList<>(uniquePlans.values());
-        if (shortlist.size() > terminalShortlistLimit) shortlist.subList(terminalShortlistLimit, shortlist.size()).clear();
-        int limit = config.fullTerminalEvaluationLimit();
-        if (limit > 0 && shortlist.size() > limit) shortlist.subList(limit, shortlist.size()).clear();
+        List<JointTerminalEvaluator.StageATerminalCandidate> shortlist;
+        boolean fairAllocation = Boolean.parseBoolean(System.getProperty("procon.v2.stage_b_fair_allocation",
+                System.getenv("PROCON_V2_STAGE_B_FAIR_ALLOCATION") != null ? System.getenv("PROCON_V2_STAGE_B_FAIR_ALLOCATION") : "false"));
+        if (!fairAllocation) {
+            shortlist = new ArrayList<>(uniquePlans.values());
+            if (shortlist.size() > terminalShortlistLimit) shortlist.subList(terminalShortlistLimit, shortlist.size()).clear();
+            int limit = config.fullTerminalEvaluationLimit();
+            if (limit > 0 && shortlist.size() > limit) shortlist.subList(limit, shortlist.size()).clear();
+        } else {
+            int limit = config.fullTerminalEvaluationLimit() > 0 ? config.fullTerminalEvaluationLimit() : terminalShortlistLimit;
+            if (limit <= 0) limit = terminalShortlistLimit;
+            Map<Integer, List<JointTerminalEvaluator.StageATerminalCandidate>> byFamily = new LinkedHashMap<>();
+            for (JointTerminalEvaluator.StageATerminalCandidate candidate : uniquePlans.values()) {
+                byFamily.computeIfAbsent(candidate.rootFamily(), k -> new ArrayList<>()).add(candidate);
+            }
+            shortlist = new ArrayList<>();
+            Set<String> admitted = new HashSet<>();
+            int quota = Math.max(2, limit / (byFamily.isEmpty() ? 1 : byFamily.size() * 2));
+            for (List<JointTerminalEvaluator.StageATerminalCandidate> familyList : byFamily.values()) {
+                int toTake = Math.min(quota, familyList.size());
+                for (int i = 0; i < toTake && shortlist.size() < limit; i++) {
+                    var c = familyList.get(i);
+                    if (admitted.add(c.base().deterministicSignature())) {
+                        shortlist.add(c);
+                    }
+                }
+            }
+            for (JointTerminalEvaluator.StageATerminalCandidate candidate : uniquePlans.values()) {
+                if (shortlist.size() >= limit) break;
+                if (admitted.add(candidate.base().deterministicSignature())) {
+                    shortlist.add(candidate);
+                }
+            }
+        }
         stats.stageBRequested = shortlist.size();
         List<EvaluatedTerminal> result = new ArrayList<>();
         for (JointTerminalEvaluator.StageATerminalCandidate candidate : shortlist) {
@@ -692,11 +759,42 @@ public final class JointTeamBeamPlanner implements DayPlanner {
 
     private void trimFrontier(List<JointTeamSearchState> frontier, JointRouteCatalog catalog, int stepBudget,
             MutableStats stats, V2CollectionAuditRecorder collectionAudit) {
-        frontier.sort(statePreference(catalog, stepBudget));
-        if (frontier.size() > config.beamWidth()) {
-            if (collectionAudit != null) frontier.subList(config.beamWidth(), frontier.size())
-                    .forEach(collectionAudit::beamPruned);
-            frontier.subList(config.beamWidth(), frontier.size()).clear();
+        if (!FAIR_FAMILY_EXPANSION) {
+            frontier.sort(statePreference(catalog, stepBudget));
+            if (frontier.size() > config.beamWidth()) {
+                if (collectionAudit != null) frontier.subList(config.beamWidth(), frontier.size())
+                        .forEach(collectionAudit::beamPruned);
+                frontier.subList(config.beamWidth(), frontier.size()).clear();
+            }
+        } else {
+            Map<Integer, List<JointTeamSearchState>> byFamily = new LinkedHashMap<>();
+            for (JointTeamSearchState s : frontier) {
+                int family = s.refuelRoot().map(r -> r.patrolSupports().size()).orElse(0);
+                byFamily.computeIfAbsent(family, k -> new ArrayList<>()).add(s);
+            }
+            Comparator<JointTeamSearchState> pref = statePreference(catalog, stepBudget);
+            for (List<JointTeamSearchState> list : byFamily.values()) {
+                list.sort(pref);
+            }
+            int activeFamilyCount = byFamily.size();
+            int familyQuota = Math.max(1, config.beamWidth() / Math.max(1, activeFamilyCount));
+            List<JointTeamSearchState> preserved = new ArrayList<>();
+            List<JointTeamSearchState> overflow = new ArrayList<>();
+            for (List<JointTeamSearchState> list : byFamily.values()) {
+                int take = Math.min(familyQuota, list.size());
+                preserved.addAll(list.subList(0, take));
+                if (list.size() > take) {
+                    overflow.addAll(list.subList(take, list.size()));
+                }
+            }
+            if (preserved.size() < config.beamWidth() && !overflow.isEmpty()) {
+                overflow.sort(pref);
+                int needed = config.beamWidth() - preserved.size();
+                preserved.addAll(overflow.subList(0, Math.min(needed, overflow.size())));
+            }
+            preserved.sort(pref);
+            frontier.clear();
+            frontier.addAll(preserved);
         }
         stats.frontierPeak = Math.max(stats.frontierPeak, frontier.size());
     }
@@ -722,6 +820,17 @@ public final class JointTeamBeamPlanner implements DayPlanner {
 
     private Comparator<JointTeamSearchState> r1StatePreference(
             JointRouteCatalog catalog, int stepBudget) {
+        if (FAIR_FAMILY_EXPANSION) {
+            return Comparator.comparingInt((JointTeamSearchState value) -> value.timeline().brands().size()).reversed()
+                    .thenComparing(Comparator.comparingInt((JointTeamSearchState value) ->
+                            value.timeline().successfulCollections()).reversed())
+                    .thenComparing(Comparator.comparingInt((JointTeamSearchState value) ->
+                            residualCapacityForPolicy(value, catalog, stepBudget)).reversed())
+                    .thenComparing(Comparator.comparingInt((JointTeamSearchState value) ->
+                            remainingSteps(value, stepBudget)).reversed())
+                    .thenComparing(Comparator.comparingInt(this::remainingFuel).reversed())
+                    .thenComparing(JointTeamSearchState::exactKey);
+        }
         return Comparator.comparingInt((JointTeamSearchState value) -> value.timeline().brands().size()).reversed()
                 .thenComparing(Comparator.comparingInt((JointTeamSearchState value) ->
                         value.timeline().successfulCollections()).reversed())
@@ -1082,12 +1191,18 @@ public final class JointTeamBeamPlanner implements DayPlanner {
     private record MoveTransition(AgentId patrolId, UdonSpot target, JointRouteCatalog.CatalogRoute route,
             boolean missingBrand, int stock, int opponentPressure, CompetitiveOpportunity opportunity,
             int portfolioPriority) implements Transition {
-        private static final Comparator<MoveTransition> PREFERENCE = Comparator.comparing(MoveTransition::missingBrand).reversed()
-                .thenComparingInt(MoveTransition::opponentPressure).reversed().thenComparingInt(MoveTransition::stock).reversed()
-                .thenComparingInt(value -> value.route.route().stepsUsed()).thenComparingInt(value -> value.route.route().fuelUsed())
-                .thenComparingInt(value -> value.target.position().value()).thenComparingInt(value -> value.patrolId.value());
+        private static final Comparator<MoveTransition> PREFERENCE = STOCK_WEIGHT > 1000
+                ? Comparator.comparing(MoveTransition::missingBrand).reversed()
+                        .thenComparingInt(MoveTransition::stock).reversed()
+                        .thenComparingInt(MoveTransition::opponentPressure).reversed()
+                        .thenComparingInt(value -> value.route.route().stepsUsed()).thenComparingInt(value -> value.route.route().fuelUsed())
+                        .thenComparingInt(value -> value.target.position().value()).thenComparingInt(value -> value.patrolId.value())
+                : Comparator.comparing(MoveTransition::missingBrand).reversed()
+                        .thenComparingInt(MoveTransition::opponentPressure).reversed().thenComparingInt(MoveTransition::stock).reversed()
+                        .thenComparingInt(value -> value.route.route().stepsUsed()).thenComparingInt(value -> value.route.route().fuelUsed())
+                        .thenComparingInt(value -> value.target.position().value()).thenComparingInt(value -> value.patrolId.value());
         @Override public int rank() { return (portfolioPriority > 0 ? portfolioPriority * 100_000_000 : 0)
-                    + (missingBrand ? 1_000_000 : 0) + opponentPressure * 10_000 + stock * 100
+                    + (missingBrand ? 1_000_000 : 0) + opponentPressure * 10_000 + stock * STOCK_WEIGHT
                     - route.route().stepsUsed() - route.route().fuelUsed(); }
         @Override public String signature() { return "M:" + patrolId.value() + ":" + target.position().value() + ":"
                     + route.route().stepsUsed() + ":" + route.route().fuelUsed(); }

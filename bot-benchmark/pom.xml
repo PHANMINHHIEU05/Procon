@@ -17,6 +17,22 @@
             <artifactId>bot-planner</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!--
+          Read-only protocol access for the offline live-state corpus replay: the captured payloads are
+          rebuilt into a DayState with the production SetupMapper/DayStateMapper and re-encoded with the
+          production ActionEncoder. This module contains no HTTP client and submits nothing.
+        -->
+        <dependency>
+            <groupId>vn.ptit.procon</groupId>
+            <artifactId>bot-protocol</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- The corpus loader, replay and scorecard are executable evidence, so they carry tests. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -30,6 +30,27 @@ import vn.ptit.procon.rules.MovementRules;
  * explicit optimistic {@link TrafficStatus#CLEAR} future assumption; fuel always uses official
  * source-terrain PATROL cost. Complete-plan evaluation performs no pathfinding: it reads cached
  * start-to-opportunity and opportunity-to-opportunity labels, then runs a sparse subset DP.</p>
+ *
+ * <p>The subset DP is label-driven: its work queue holds {@code (key, label)} pairs, so every accepted Pareto
+ * label is expanded exactly once. Queuing keys instead would re-expand a key's whole Pareto set on every
+ * accepted label, i.e. about {@code A(A+1)/2} expansions for a key that ends with {@code A} labels. The
+ * resulting Pareto front is identical either way — a displaced label can only produce dominated successors —
+ * so {@code dpStatesEvaluated} is the only reported figure the schedule changes.</p>
+ *
+ * <p>The DP result is memoized per calculator instance under the key {@code (startPosition, projectedFuel)}.
+ * That key is COMPLETE, not merely convenient: one invocation reads exactly the patrol's projected end
+ * position, its projected end fuel, and instance state that is final and immutable for the whole lifetime —
+ * {@link #opportunities} (positions and brands), {@link #costsByGoal}, {@link #nextDayStepBudget} and
+ * {@link #remainingFutureDays}, all fixed by the single {@link DayState} the instance was built from. The
+ * agent identity is deliberately NOT part of the key because the DP never reads it; it is re-attached to the
+ * returned record from the requesting agent, so two patrols that share a key still report their own ids.
+ * Nothing mutable of the day state (stock, other teams, the plan being scored) reaches the DP, and the memo
+ * is never shared between instances, so it cannot carry a value across day states.</p>
+ *
+ * <p>The memo is not synchronized. Every instance is created and consumed inside the evaluator that owns it
+ * ({@code JointTerminalEvaluator}, {@code FrozenObjectiveEvaluator}), and the only planner thread pool
+ * ({@code V3ShadowRunner}) builds its own evaluators, so an instance is confined to one thread — the same
+ * confinement the DP's own {@link HashMap} state already relies on.</p>
  */
 public final class NextDayHarvestCapacityCalculator {
 
@@ -43,6 +64,10 @@ public final class NextDayHarvestCapacityCalculator {
     private final Map<Position, Map<Position, List<RouteCost>>> costsByGoal;
     private final int routeCostCacheEntries;
     private final int pathfindingExecutions;
+    /** Lifetime-scoped memo: one entry per distinct {@code (startPosition, projectedFuel)} DP question. */
+    private final Map<CapacityKey, CapacityValue> capacityCache = new HashMap<>();
+    private int capacityCacheHits;
+    private int capacityCacheMisses;
 
     private NextDayHarvestCapacityCalculator(
             DayState state,
@@ -116,51 +141,80 @@ public final class NextDayHarvestCapacityCalculator {
         return opportunities.size();
     }
 
+    /** Diagnostics only: how many DP invocations this instance answered from its memo. */
+    public int capacityCacheHits() {
+        return capacityCacheHits;
+    }
+
+    /** Diagnostics only: how many DP invocations this instance actually ran the subset DP for. */
+    public int capacityCacheMisses() {
+        return capacityCacheMisses;
+    }
+
     private PatrolNextDayHarvestCapacity capacity(AgentState agent, int fuel) {
+        CapacityKey key = new CapacityKey(agent.position().value(), fuel);
+        CapacityValue cached = capacityCache.get(key);
+        if (cached == null) {
+            capacityCacheMisses++;
+            cached = computeCapacity(agent.position(), fuel);
+            capacityCache.put(key, cached);
+        } else {
+            capacityCacheHits++;
+        }
+        // Only the agent identity and its position/fuel come from the caller; everything the DP derives is
+        // shared, because the DP derived it from nothing else than this key and immutable instance state.
+        return new PatrolNextDayHarvestCapacity(
+                agent.id(), agent.position(), fuel, remainingFutureDays, cached.stationary(),
+                cached.maxSpots(), cached.maxBrands(), cached.bestRemainingFuel(),
+                cached.dpStatesEvaluated());
+    }
+
+    private CapacityValue computeCapacity(Position start, int fuel) {
         int count = opportunities.size();
         if (count == 0) {
-            return new PatrolNextDayHarvestCapacity(
-                    agent.id(), agent.position(), fuel, remainingFutureDays,
-                    false, 0, 0, fuel, 0);
+            return new CapacityValue(false, 0, 0, fuel, 0);
         }
         Map<DpKey, List<RouteCost>> states = new HashMap<>();
-        ArrayDeque<DpKey> work = new ArrayDeque<>();
+        ArrayDeque<DpLabel> work = new ArrayDeque<>();
         boolean stationary = false;
         for (int spotIndex = 0; spotIndex < count; spotIndex++) {
             UdonSpot spot = opportunities.get(spotIndex);
-            if (spot.position().equals(agent.position())) {
+            if (spot.position().equals(start)) {
                 stationary = true;
             }
-            for (RouteCost cost : costs(agent.position(), spot.position())) {
+            for (RouteCost cost : costs(start, spot.position())) {
                 if (cost.steps <= nextDayStepBudget && cost.fuel <= fuel) {
                     DpKey key = new DpKey(1 << spotIndex, spotIndex);
                     if (addPareto(states, key, cost)) {
-                        work.addLast(key);
+                        work.addLast(new DpLabel(key, cost));
                     }
                 }
             }
         }
         int stateVisits = 0;
         while (!work.isEmpty()) {
-            DpKey current = work.removeFirst();
-            List<RouteCost> labels = List.copyOf(states.getOrDefault(current, List.of()));
-            Position start = opportunities.get(current.lastSpot).position();
-            for (RouteCost prefix : labels) {
-                stateVisits++;
-                for (int next = 0; next < count; next++) {
-                    if ((current.visitedMask & 1 << next) != 0) {
+            DpLabel current = work.removeFirst();
+            // A label that a later, dominating label has already displaced can only produce dominated
+            // successors, so skipping it removes work without removing reachable Pareto labels. This is the
+            // same staleness guard the reverse route search below already applies.
+            if (!states.getOrDefault(current.key, List.of()).contains(current.label)) {
+                continue;
+            }
+            stateVisits++;
+            Position from = opportunities.get(current.key.lastSpot).position();
+            for (int next = 0; next < count; next++) {
+                if ((current.key.visitedMask & 1 << next) != 0) {
+                    continue;
+                }
+                for (RouteCost leg : costs(from, opportunities.get(next).position())) {
+                    RouteCost combined = new RouteCost(
+                            current.label.steps + leg.steps, current.label.fuel + leg.fuel);
+                    if (combined.steps > nextDayStepBudget || combined.fuel > fuel) {
                         continue;
                     }
-                    for (RouteCost leg : costs(start, opportunities.get(next).position())) {
-                        RouteCost combined = new RouteCost(
-                                prefix.steps + leg.steps, prefix.fuel + leg.fuel);
-                        if (combined.steps > nextDayStepBudget || combined.fuel > fuel) {
-                            continue;
-                        }
-                        DpKey key = new DpKey(current.visitedMask | 1 << next, next);
-                        if (addPareto(states, key, combined)) {
-                            work.addLast(key);
-                        }
+                    DpKey key = new DpKey(current.key.visitedMask | 1 << next, next);
+                    if (addPareto(states, key, combined)) {
+                        work.addLast(new DpLabel(key, combined));
                     }
                 }
             }
@@ -181,9 +235,7 @@ public final class NextDayHarvestCapacityCalculator {
             }
             maxBrands = Math.max(maxBrands, brands);
         }
-        return new PatrolNextDayHarvestCapacity(
-                agent.id(), agent.position(), fuel, remainingFutureDays, stationary,
-                maxSpots, maxBrands, bestRemainingFuel, stateVisits);
+        return new CapacityValue(stationary, maxSpots, maxBrands, bestRemainingFuel, stateVisits);
     }
 
     private int brandCount(int mask) {
@@ -259,7 +311,21 @@ public final class NextDayHarvestCapacityCalculator {
         return Map.copyOf(immutable);
     }
 
+    /**
+     * The complete question the subset DP answers: where the patrol ends the day and with how much fuel.
+     * Position is stored as its flat index so the key is two ints and needs no domain equality contract.
+     */
+    private record CapacityKey(int position, int fuel) { }
+
+    /** Every field {@link #computeCapacity} derives, i.e. everything that is shared by an identical key. */
+    private record CapacityValue(
+            boolean stationary, int maxSpots, int maxBrands, int bestRemainingFuel,
+            int dpStatesEvaluated) { }
+
     private record DpKey(int visitedMask, int lastSpot) { }
+
+    /** One Pareto label queued for exactly one expansion, so no label is ever expanded twice. */
+    private record DpLabel(DpKey key, RouteCost label) { }
 
     private record RouteCost(int steps, int fuel) {
         private boolean dominates(RouteCost other) {

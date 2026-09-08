@@ -1,13 +1,17 @@
 package vn.ptit.procon.planner;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
+import java.util.Set;
 import vn.ptit.procon.domain.agent.AgentState;
 import vn.ptit.procon.domain.agent.FiniteFuel;
 import vn.ptit.procon.domain.map.Direction;
@@ -20,23 +24,96 @@ import vn.ptit.procon.engine.DayState;
 import vn.ptit.procon.rules.FuelRules;
 import vn.ptit.procon.rules.MovementRules;
 
-/** Deterministic Dijkstra search with remaining PATROL fuel in the state. */
+/**
+ * Deterministic Dijkstra search with remaining PATROL fuel in the state.
+ *
+ * <p>The label order is <strong>goal-independent</strong>: {@link #labelComparator()} ranks by
+ * {@code (steps, fuelUsed, position, -fuel, moves)} and never mentions the goal, and there is no
+ * goal-directed heuristic. For a fixed {@code (start, initialFuel)} source the sequence of settled labels
+ * is therefore the same whatever the goal is; the goal only decides <em>when the traversal stops</em>.
+ * {@link #findAll} exploits exactly that: one traversal answers a whole goal set, and every answer it
+ * returns is the same {@link Route} the per-goal {@link #find} would have reconstructed.
+ */
 public class WeightedRouteFinder {
 
     public Optional<Route> find(DayState state, AgentState agent, Position goal) {
+        if (!V3WorkAuditProbe.isEnabled()) {
+            return search(state, agent, goal);
+        }
+        long started = System.nanoTime();
+        Optional<Route> route = search(state, agent, goal);
+        V3WorkAuditProbe.recordRouteQuery(state, agent.position(),
+                agent.fuel() instanceof FiniteFuel finite ? finite.amount() : -1, goal,
+                System.nanoTime() - started);
+        return route;
+    }
+
+    /**
+     * Every route from ONE {@code (position, fuel)} source to a whole goal set, in ONE traversal.
+     *
+     * <p>Goals that are absent from the map, non-traversable or unreachable within the step budget and the
+     * tank are simply absent from the returned map, which is precisely what {@link #find} reports as
+     * {@link Optional#empty()} for them. The traversal stops as soon as every reachable goal has been
+     * settled, so its cost is the cost of the single most distant goal rather than the sum over goals.
+     *
+     * <p>Probe accounting: one call is one single-source Dijkstra, so it is recorded once, keyed on its
+     * source rather than on any one goal.
+     */
+    public Map<Position, Route> findAll(DayState state, AgentState agent, Collection<Position> goals) {
+        if (!V3WorkAuditProbe.isEnabled()) {
+            return searchAll(state, agent, goals);
+        }
+        long started = System.nanoTime();
+        Map<Position, Route> routes = searchAll(state, agent, goals);
+        V3WorkAuditProbe.recordRouteQuery(state, agent.position(),
+                agent.fuel() instanceof FiniteFuel finite ? finite.amount() : -1, agent.position(),
+                System.nanoTime() - started);
+        return routes;
+    }
+
+    private Optional<Route> search(DayState state, AgentState agent, Position goal) {
         Objects.requireNonNull(state, "Day state must not be null");
         Objects.requireNonNull(agent, "Route agent must not be null");
         Objects.requireNonNull(goal, "Route goal must not be null");
+        return Optional.ofNullable(explore(state, agent, List.of(goal)).get(goal));
+    }
+
+    private Map<Position, Route> searchAll(DayState state, AgentState agent,
+            Collection<Position> goals) {
+        Objects.requireNonNull(state, "Day state must not be null");
+        Objects.requireNonNull(agent, "Route agent must not be null");
+        Objects.requireNonNull(goals, "Route goals must not be null");
+        return explore(state, agent, goals);
+    }
+
+    /**
+     * The one traversal both entry points share. It settles labels in the goal-independent order above and
+     * reconstructs a route for a wanted position at the moment that position is first settled — the same
+     * moment, and therefore the same predecessor chain and the same label, the single-goal search used.
+     */
+    private Map<Position, Route> explore(DayState state, AgentState agent, Collection<Position> goals) {
         Position start = agent.position();
 
         HexMap map = state.matchData().map();
-        if (!map.contains(start) || !map.contains(goal) || !map.isTraversable(start)
-                || !map.isTraversable(goal)) {
-            return Optional.empty();
+        if (!map.contains(start) || !map.isTraversable(start)) {
+            return Map.of();
         }
         if (!(agent.fuel() instanceof FiniteFuel finiteFuel)) {
-            return Optional.empty();
+            return Map.of();
         }
+        // The same per-goal admissibility guard the single-goal search applied up front, kept here so an
+        // unusable goal never makes the traversal run longer than it has to.
+        Set<Position> wanted = new LinkedHashSet<>();
+        for (Position goal : goals) {
+            Objects.requireNonNull(goal, "Route goal must not be null");
+            if (map.contains(goal) && map.isTraversable(goal)) {
+                wanted.add(goal);
+            }
+        }
+        if (wanted.isEmpty()) {
+            return Map.of();
+        }
+        Map<Position, Route> found = new LinkedHashMap<>();
         int initialFuel = finiteFuel.amount();
         SearchState initial = new SearchState(start, initialFuel);
         Map<SearchState, Label> best = new HashMap<>();
@@ -51,8 +128,12 @@ public class WeightedRouteFinder {
             if (best.get(current.state).compareTo(current) != 0) {
                 continue;
             }
-            if (current.state.position.equals(goal)) {
-                return Optional.of(reconstruct(start, goal, current.state, current, predecessors));
+            Position settled = current.state.position;
+            if (wanted.contains(settled) && !found.containsKey(settled)) {
+                found.put(settled, reconstruct(start, settled, current.state, current, predecessors));
+                if (found.size() == wanted.size()) {
+                    return found;
+                }
             }
 
             for (Direction direction : Direction.values()) {
@@ -98,7 +179,7 @@ public class WeightedRouteFinder {
                 }
             }
         }
-        return Optional.empty();
+        return found;
     }
 
     private Route reconstruct(

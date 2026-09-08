@@ -112,6 +112,12 @@ public final class MatchRuntime {
      */
     private final V3ShadowRunner shadow;
 
+    /**
+     * The deferred live-state corpus writer. OFF by default; when ON it writes match payloads to disk
+     * before the POST and never reads, alters or delays the plan, the encoded actions or the submission.
+     */
+    private final V3CorpusCapture capture;
+
     private int rateLimitOccurrences;
     private ParityObservation retainedObservation;
 
@@ -135,7 +141,8 @@ public final class MatchRuntime {
                 new ParityRecorder(),
                 config.othersShapeDiagnostics(),
                 config.othersValueDiagnostics(),
-                shadowRunnerFor(config));
+                shadowRunnerFor(config),
+                V3CorpusCapture.from(config));
     }
 
     /**
@@ -221,6 +228,28 @@ public final class MatchRuntime {
             boolean othersShapeDiagnostics,
             boolean othersValueDiagnostics,
             V3ShadowRunner shadow) {
+        this(matchId, http, pollInterval, sleeper, setupMapper, stateMapper, assignmentPolicy, validator,
+                simulator, planner, parityRecorder, othersShapeDiagnostics, othersValueDiagnostics,
+                shadow, V3CorpusCapture.disabled());
+    }
+
+    /** The capture injection seam. Every historical constructor reaches this one with capture OFF. */
+    MatchRuntime(
+            String matchId,
+            ProconHttpClient http,
+            Duration pollInterval,
+            Sleeper sleeper,
+            SetupMapper setupMapper,
+            DayStateMapper stateMapper,
+            SmokeAssignmentPolicy assignmentPolicy,
+            PlanValidator validator,
+            DaySimulator simulator,
+            DayPlanner planner,
+            ParityRecorder parityRecorder,
+            boolean othersShapeDiagnostics,
+            boolean othersValueDiagnostics,
+            V3ShadowRunner shadow,
+            V3CorpusCapture capture) {
         this.matchId = Objects.requireNonNull(matchId, "Match ID must not be null");
         this.http = Objects.requireNonNull(http, "HTTP client must not be null");
         this.pollInterval = Objects.requireNonNull(pollInterval, "Poll interval must not be null");
@@ -239,6 +268,7 @@ public final class MatchRuntime {
         this.othersShapeDiagnostics = othersShapeDiagnostics;
         this.othersValueObserver = new OthersValueObserver(othersValueDiagnostics, matchId);
         this.shadow = Objects.requireNonNull(shadow, "Shadow runner must not be null");
+        this.capture = Objects.requireNonNull(capture, "Corpus capture must not be null");
     }
 
     MatchRuntime(
@@ -515,6 +545,12 @@ public final class MatchRuntime {
 
                 SubmissionResult actionResult;
                 try {
+                    // Deferred corpus capture. It runs BEFORE the POST so the recorded payloads are
+                    // provably the ones V2/R3 planned from, writes only match data, and can neither
+                    // change `encodedActions` nor throw — a capture failure is a diagnostic, not a fault.
+                    capture.captureBeforeSubmission(matchId, observedDay, setupDto, stateDto, assignment,
+                            encodedActions, actionFingerprint, plannerAuthorityLabel(),
+                            state.agents().size(), dayBudget, this::log);
                     actionResult = http.postEncodedActions(encodedActions);
                     log("ACTIONS_SUBMITTED", "day", observedDay, "fingerprint", actionFingerprint);
                 } catch (HttpStatusException exception) {
@@ -586,6 +622,10 @@ public final class MatchRuntime {
                 parityRecorder.record(retainedObservation);
                 logUdonObservability(observedDay, validPrediction);
                 log("ACTIONS_ACCEPTED", "day", observedDay);
+
+                // Only an accepted day is admissible corpus evidence: the offline replay must never
+                // score a state whose V2/R3 actions the server did not take.
+                capture.markAccepted(matchId, observedDay, this::log);
 
                 // The one and only shadow hook. It sits after the POST, after action_result.valid, and
                 // after lastSubmittedDay has already been advanced by the V2/R3 submission — so nothing
@@ -1157,6 +1197,11 @@ public final class MatchRuntime {
     /** Test-only view of the shadow runner. Nothing on the action path reads this. */
     V3ShadowRunner shadowRunner() {
         return shadow;
+    }
+
+    /** Test-only view of the corpus capture. Nothing on the action path reads this. */
+    V3CorpusCapture corpusCapture() {
+        return capture;
     }
 
     private void log(String event, Object... fields) {
