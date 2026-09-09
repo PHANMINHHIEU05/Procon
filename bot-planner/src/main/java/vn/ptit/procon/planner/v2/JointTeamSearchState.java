@@ -207,6 +207,9 @@ final class JointTeamSearchState {
             Set<BrandId> brands = new LinkedHashSet<>();
             int collections = 0;
             for (PositionArrival event : events) {
+                if (event.step() == 0) {
+                    continue;
+                }
                 UdonSpot spot = spotsByPosition.get(event.position());
                 if (spot == null) {
                     continue;
@@ -436,6 +439,25 @@ final class JointTeamSearchState {
         if (remaining > 0) {
             actions.add(new WaitAction(remaining));
         }
+    }
+
+    static boolean hasTraversedRoad(DayState state, Position start, List<AgentAction> actions) {
+        Position p = start;
+        if (state.matchData().map().terrainAt(p) == Terrain.ROAD) {
+            return true;
+        }
+        for (AgentAction a : actions) {
+            if (a instanceof MoveAction move) {
+                Optional<Position> next = state.matchData().map().neighbor(p, move.direction());
+                if (next.isPresent()) {
+                    p = next.get();
+                    if (state.matchData().map().terrainAt(p) == Terrain.ROAD) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static String directionKey(List<Direction> directions) {

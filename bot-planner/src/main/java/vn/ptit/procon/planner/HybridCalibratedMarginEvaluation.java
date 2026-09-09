@@ -33,16 +33,24 @@ public record HybridCalibratedMarginEvaluation(
     public int opponentBaselineCollections() { return coupled.opponentBaselineCollections(); }
     public int coupledOpponentCollections() { return coupled.coupledOpponentCollections(); }
 
-    public int hybridOwnScore4() {
-        return HYBRID_BASE_WEIGHT * ownSemiCollections() + HYBRID_COUPLED_WEIGHT * coupledOwnCollections();
+    public int hybridOwnScore4() { return hybridOwnScore(HybridScoringConfig.defaults()); }
+
+    public int hybridOwnScore(HybridScoringConfig config) {
+        return config.baseWeight() * ownSemiCollections()
+                + config.coupledWeight() * coupledOwnCollections();
     }
 
-    public int hybridOpponentScore4() {
-        return HYBRID_BASE_WEIGHT * opponentBaselineCollections()
-                + HYBRID_COUPLED_WEIGHT * coupledOpponentCollections();
+    public int hybridOpponentScore4() { return hybridOpponentScore(HybridScoringConfig.defaults()); }
+
+    public int hybridOpponentScore(HybridScoringConfig config) {
+        return config.baseWeight() * opponentBaselineCollections()
+                + config.coupledWeight() * coupledOpponentCollections();
     }
 
-    public int hybridMarginScore4() { return hybridOwnScore4() - hybridOpponentScore4(); }
+    public int hybridMarginScore4() { return hybridMarginScore(HybridScoringConfig.defaults()); }
+    public int hybridMarginScore(HybridScoringConfig config) {
+        return hybridOwnScore(config) - hybridOpponentScore(config);
+    }
     public int plannedOwnOpportunityEvents() { return coupled.plannedOwnOpportunityEvents().size(); }
     public int opponentCollectionsRemovedVsBaseline() { return coupled.opponentCollectionsRemovedVsBaseline(); }
     public int ownPlannedEventsInvalidatedByOpponent() { return coupled.ownPlannedEventsInvalidatedByOpponent(); }
@@ -84,11 +92,43 @@ public record HybridCalibratedMarginEvaluation(
 
     public static int compare(HybridCalibratedMarginEvaluation left,
             HybridCalibratedMarginEvaluation right) {
+        return compare(left, right, HybridScoringConfig.defaults());
+    }
+
+    public static int compare(HybridCalibratedMarginEvaluation left,
+            HybridCalibratedMarginEvaluation right, HybridScoringConfig config) {
+        Objects.requireNonNull(config, "Hybrid scoring configuration must not be null");
         int compared = Integer.compare(right.ownSemiBrands(), left.ownSemiBrands());
         if (compared != 0) return compared;
-        compared = Integer.compare(right.hybridMarginScore4(), left.hybridMarginScore4());
+        if (config.prioritizeOwn()) {
+            compared = Integer.compare(right.ownSemiCollections(), left.ownSemiCollections());
+            if (compared != 0) return compared;
+            compared = Integer.compare(right.hybridOwnScore(config), left.hybridOwnScore(config));
+            if (compared != 0) return compared;
+            compared = Integer.compare(right.coupledOwnBrands(), left.coupledOwnBrands());
+            if (compared != 0) return compared;
+            if (hasFutureHorizon(left, right)) {
+                compared = Integer.compare(right.nextDayHarvestCapacity.minimumPatrolDistinctSpots(), left.nextDayHarvestCapacity.minimumPatrolDistinctSpots());
+                if (compared != 0) return compared;
+                compared = Integer.compare(right.nextDayHarvestCapacity.totalPatrolDistinctSpotCapacity(), left.nextDayHarvestCapacity.totalPatrolDistinctSpotCapacity());
+                if (compared != 0) return compared;
+                compared = Integer.compare(right.nextDayHarvestCapacity.totalPatrolDistinctBrandCapacity(), left.nextDayHarvestCapacity.totalPatrolDistinctBrandCapacity());
+                if (compared != 0) return compared;
+            }
+            compared = Integer.compare(right.hybridMarginScore(config), left.hybridMarginScore(config));
+            if (compared != 0) return compared;
+            compared = Integer.compare(right.coupledOwnCollections(), left.coupledOwnCollections());
+            if (compared != 0) return compared;
+            compared = Integer.compare(right.semiCommitment.base().udonTotal(), left.semiCommitment.base().udonTotal());
+            if (compared != 0) return compared;
+            compared = Integer.compare(right.semiCommitment.base().remainingFuelTotal(), left.semiCommitment.base().remainingFuelTotal());
+            if (compared != 0) return compared;
+            compared = Integer.compare(left.semiCommitment.base().movementSteps(), right.semiCommitment.base().movementSteps());
+            return compared != 0 ? compared : left.semiCommitment.base().deterministicSignature().compareTo(right.semiCommitment.base().deterministicSignature());
+        }
+        compared = Integer.compare(right.hybridMarginScore(config), left.hybridMarginScore(config));
         if (compared != 0) return compared;
-        compared = Integer.compare(right.hybridOwnScore4(), left.hybridOwnScore4());
+        compared = Integer.compare(right.hybridOwnScore(config), left.hybridOwnScore(config));
         if (compared != 0) return compared;
         compared = Integer.compare(right.coupledOwnBrands(), left.coupledOwnBrands());
         if (compared != 0) return compared;

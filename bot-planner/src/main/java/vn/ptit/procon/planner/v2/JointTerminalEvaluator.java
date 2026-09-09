@@ -21,6 +21,7 @@ import vn.ptit.procon.planner.CoupledCompetitiveMarginEvaluation;
 import vn.ptit.procon.planner.CoupledCompetitiveRollout;
 import vn.ptit.procon.planner.CoupledCompetitiveRolloutResult;
 import vn.ptit.procon.planner.HybridCalibratedMarginEvaluation;
+import vn.ptit.procon.planner.HybridScoringConfig;
 import vn.ptit.procon.planner.NextDayHarvestCapacityCalculator;
 import vn.ptit.procon.planner.OpponentCommitmentForecast;
 import vn.ptit.procon.planner.OpponentIntentConfig;
@@ -43,9 +44,16 @@ final class JointTerminalEvaluator {
     private final CoupledCompetitiveRollout coupledRollout;
     private final CoupledCompetitiveBaseline coupledBaseline;
     private final NextDayHarvestCapacityCalculator nextDayHarvestCapacity;
+    private final HybridScoringConfig scoring;
 
     JointTerminalEvaluator(DayState state) {
+        this(state, HybridScoringConfig.defaults());
+    }
+
+    JointTerminalEvaluator(DayState state, HybridScoringConfig scoring) {
         this.state = state;
+        this.scoring = java.util.Objects.requireNonNull(scoring,
+                "Hybrid scoring configuration must not be null");
         commitmentForecast = OpponentCommitmentForecast.annotate(
                 new OpponentIntentForecaster().forecast(state, OpponentIntentConfig.defaults()));
         coupledRollout = CoupledCompetitiveRollout.forState(state, OpponentIntentConfig.defaults());
@@ -93,7 +101,7 @@ final class JointTerminalEvaluator {
                 new HybridCalibratedMarginEvaluation(
                         coupledEvaluation.semiCommitment(),
                         coupledEvaluation.coupled(),
-                        coupledEvaluation.nextDayHarvestCapacity()));
+                        coupledEvaluation.nextDayHarvestCapacity()), scoring);
     }
 
     /** Cheap deterministic ranking used only to bound optional Stage-B evaluation. */

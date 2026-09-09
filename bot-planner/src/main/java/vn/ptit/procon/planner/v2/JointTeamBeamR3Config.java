@@ -55,7 +55,11 @@ public record JointTeamBeamR3Config(
         CompetitiveTargetPolicy policy = CompetitiveTargetPolicy.valueOf(policyName.trim().toUpperCase());
         int stageBLimit = Integer.getInteger("procon.v2.max_stage_b",
                 System.getenv("PROCON_V2_MAX_STAGE_B") != null ? Integer.parseInt(System.getenv("PROCON_V2_MAX_STAGE_B")) : 16);
-        return new JointTeamBeamR3Config(8_000, 750, 64, stageBLimit, 24, 24, 4, 216, 48, 24, 12,
+        long maxPlanningMillis = Long.getLong("procon.planner.max_millis",
+                System.getenv("PROCON_MAX_PLANNING_MILLIS") != null ? Long.parseLong(System.getenv("PROCON_MAX_PLANNING_MILLIS")) : 3_600L);
+        long safetyMargin = Long.getLong("procon.planner.safety_margin_millis",
+                System.getenv("PROCON_PLANNING_SAFETY_MARGIN_MILLIS") != null ? Long.parseLong(System.getenv("PROCON_PLANNING_SAFETY_MARGIN_MILLIS")) : 400L);
+        return new JointTeamBeamR3Config(maxPlanningMillis, safetyMargin, 64, stageBLimit, 24, 24, 4, 216, 48, 24, 12,
                 R3RootFamilyAuditMode.OFF, policy, StageBRecallAuditMode.OFF);
     }
 

@@ -25,6 +25,11 @@ final class CompetitiveOpportunityCatalog {
                     System.getenv("PROCON_COMPETITIVE_STRICT_EARLIER_CLAIMS") != null
                             ? System.getenv("PROCON_COMPETITIVE_STRICT_EARLIER_CLAIMS")
                             : "false"));
+    public static final boolean IGNORE_OPPONENT_CLAIMS = Boolean.parseBoolean(
+            System.getProperty("procon.competitive.ignore_opponent_claims",
+                    System.getenv("PROCON_COMPETITIVE_IGNORE_OPPONENT_CLAIMS") != null
+                            ? System.getenv("PROCON_COMPETITIVE_IGNORE_OPPONENT_CLAIMS")
+                            : "false"));
     private final DayState state;
     private final JointRouteCatalog routes;
     private final Map<Position, List<Integer>> opponentEtas;
@@ -68,7 +73,9 @@ final class CompetitiveOpportunityCatalog {
         int stock = current.timeline().remainingStock().getOrDefault(target.position(), 0);
         int earlierClaims = (int) opponentArrivals.stream()
                 .filter(eta -> STRICT_EARLIER_CLAIMS ? eta < ownEta : eta <= ownEta).count();
-        int expected = Math.max(0, Math.min(stock, stock - earlierClaims));
+        int expected = IGNORE_OPPONENT_CLAIMS
+                ? stock
+                : Math.max(0, Math.min(stock, stock - earlierClaims));
         int bestOwnEta = Integer.MAX_VALUE;
         for (JointTeamSearchState.PatrolPrefix other : current.patrols().values()) {
             if (other.stopped() || current.timeline().visitedBy(other.id()).contains(target.position())) continue;

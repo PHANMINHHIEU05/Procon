@@ -17,6 +17,8 @@ import vn.ptit.procon.planner.Route;
 
 /** Daily immutable route input for bounded R3 tour construction. */
 final class RefuelTourCatalog {
+    private static final int LOW_FUEL_THRESHOLD = 25;
+
     record PatrolMeeting(AgentId patrolId, Position position, Route route) { }
 
     private final Map<AgentId, List<PatrolMeeting>> meetings;
@@ -31,13 +33,19 @@ final class RefuelTourCatalog {
     }
 
     static RefuelTourCatalog forState(DayState state, RefuelRouteFinder finder) {
+        return forState(state, finder, false);
+    }
+
+    static RefuelTourCatalog forState(DayState state, RefuelRouteFinder finder,
+            boolean fuelNeedCheck) {
         JointRouteCatalog patrolCatalog = JointRouteCatalog.forState(state);
         Map<AgentId, List<PatrolMeeting>> meetings = new LinkedHashMap<>();
+        boolean suppressSpawnMeeting = Boolean.getBoolean("procon.refuel.suppress_spawn_meeting")
+                || "true".equalsIgnoreCase(System.getenv("PROCON_REFUEL_SUPPRESS_SPAWN_MEETING"));
         for (AgentState patrol : state.agents()) {
             if (patrol.kind() != AgentKind.PATROL) continue;
-            List<PatrolMeeting> values = new ArrayList<>();
-            values.add(new PatrolMeeting(patrol.id(), patrol.position(), emptyRoute(patrol.position())));
-            state.matchData().udonSpots().stream()
+            int currentFuel = currentFuel(patrol);
+            List<PatrolMeeting> spotMeetings = state.matchData().udonSpots().stream()
                     .sorted(Comparator.comparingInt(UdonSpot::stockCapacity).reversed()
                             .thenComparingInt(spot -> spot.position().value()))
                     .map(spot -> new PatrolMeeting(patrol.id(), spot.position(), patrolCatalog
@@ -45,7 +53,26 @@ final class RefuelTourCatalog {
                             .map(JointRouteCatalog.CatalogRoute::route).findFirst().orElse(null)))
                     .filter(value -> value.route() != null)
                     .filter(value -> value.route().stepsUsed() < state.stepBudget())
-                    .limit(2).forEach(values::add);
+                    .limit(2)
+                    .toList();
+
+            // A support root is useful only when the patrol cannot safely execute its best
+            // catalogued harvest leg with the fuel already onboard. In particular, do not create
+            // a spawn rendezvous for a full/healthy patrol: that rendezvous turns into a long WAIT
+            // prefix and steals the first half of the day from harvesting.
+            boolean routeExceedsFuel = spotMeetings.stream()
+                    .anyMatch(meeting -> meeting.route().fuelUsed() > currentFuel);
+            boolean fuelNeed = !fuelNeedCheck || currentFuel < LOW_FUEL_THRESHOLD || routeExceedsFuel;
+            List<PatrolMeeting> values = new ArrayList<>();
+            if (fuelNeed) {
+                // Keep the spawn meeting for a genuinely fuel-constrained route even when the
+                // legacy suppression flag is enabled: this is the only way to refuel before the
+                // patrol starts a route it otherwise cannot afford.
+                if (!fuelNeedCheck || !suppressSpawnMeeting || routeExceedsFuel) {
+                    values.add(new PatrolMeeting(patrol.id(), patrol.position(), emptyRoute(patrol.position())));
+                }
+                values.addAll(spotMeetings);
+            }
             meetings.put(patrol.id(), List.copyOf(values));
         }
         Map<String, Route> routes = new LinkedHashMap<>();
@@ -70,6 +97,15 @@ final class RefuelTourCatalog {
     List<PatrolMeeting> meetings(AgentId patrol) { return meetings.getOrDefault(patrol, List.of()); }
     Route refuelRoute(AgentId refuel, Position from, Position to) { return refuelRoutes.get(key(refuel, from, to)); }
     int pathfindingExecutions() { return pathfindingExecutions; }
+
+    static boolean needsFuel(AgentState patrol, PatrolMeeting meeting) {
+        return currentFuel(patrol) < LOW_FUEL_THRESHOLD
+                || meeting.route().fuelUsed() > currentFuel(patrol);
+    }
+
+    private static int currentFuel(AgentState patrol) {
+        return patrol.fuel() instanceof vn.ptit.procon.domain.agent.FiniteFuel fuel ? fuel.amount() : 60;
+    }
 
     private static String key(AgentId refuel, Position from, Position to) {
         return refuel.value() + ":" + from.value() + ">" + to.value();

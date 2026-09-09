@@ -53,14 +53,20 @@ UI_PRESETS = {8: (30, 4, 4), 12: (60, 6, 4), 16: (60, 6, 4), 24: (100, 8, 6), 32
 DEFAULT_RESPONSE_MS = 5000
 MAX_RESPONSE_MS = 15000
 
-# PART 1 match matrix. Deterministic cycle A -> B -> C, all "hard", 1 opponent, 4 days.
-# SUPER SESSION cohort taxonomy (section 8): A=SMALL, B=MEDIUM, C=LARGE.
+# Full adaptive matrix. Legacy aliases A/B/C remain accepted for existing scripts and ledgers.
 PROFILES = {
-    "A": {"label": "small-4-agent-30-step", "size": 8, "cohort": "SMALL"},
-    "B": {"label": "medium-6-agent-60-step", "size": 16, "cohort": "MEDIUM"},
-    "C": {"label": "large-8-agent-100-step", "size": 24, "cohort": "LARGE"},
+    "P08": {"label": "p08-4-agent-30-step", "size": 8, "cohort": "P08"},
+    "P12": {"label": "p12-6-agent-60-step", "size": 12, "cohort": "P12"},
+    "P16": {"label": "p16-6-agent-60-step", "size": 16, "cohort": "P16"},
+    "P24": {"label": "p24-8-agent-100-step", "size": 24, "cohort": "P24"},
+    "P32": {"label": "p32-8-agent-100-step", "size": 32, "cohort": "P32"},
 }
-PROFILE_CYCLE = ("A", "B", "C")
+PROFILE_ALIASES = {"A": "P08", "B": "P16", "C": "P24"}
+PROFILE_CYCLE = tuple(PROFILES)
+
+
+def canonical_profile(profile_key: str) -> str:
+    return PROFILE_ALIASES.get(profile_key, profile_key)
 
 
 def session_entries(state: dict) -> list[dict]:
@@ -120,6 +126,7 @@ def match_ids() -> list[str]:
 
 def body_for(profile_key: str, days: int, opponents: int, difficulty: str,
              response_ms: int = DEFAULT_RESPONSE_MS) -> dict:
+    profile_key = canonical_profile(profile_key)
     profile = PROFILES[profile_key]
     size = profile["size"]
     steps, agents, franchises = UI_PRESETS[size]
@@ -139,6 +146,7 @@ def body_for(profile_key: str, days: int, opponents: int, difficulty: str,
 
 
 def describe(profile_key: str, body: dict, match_id: str) -> str:
+    profile_key = canonical_profile(profile_key)
     return ("PRACTICE_MATCH_CREATED matchId=%s profile=%s cohort=%s label=%s difficulty=%s bots=%d days=%d"
             " mapSize=%dx%d stepsPerDay=%d agents=%d franchises=%d responseMs=%d") % (
         match_id, profile_key, PROFILES[profile_key]["cohort"], PROFILES[profile_key]["label"],
@@ -149,6 +157,7 @@ def describe(profile_key: str, body: dict, match_id: str) -> str:
 
 def create(profile_key: str, days: int, opponents: int, difficulty: str, dry_run: bool,
            response_ms: int = DEFAULT_RESPONSE_MS) -> int:
+    profile_key = canonical_profile(profile_key)
     state = load_state()
     mine = session_entries(state)
     if len(mine) >= MAX_MATCHES_PER_SESSION:
@@ -196,7 +205,8 @@ def create(profile_key: str, days: int, opponents: int, difficulty: str, dry_run
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Create one PTIT practice match.")
-    parser.add_argument("--profile", choices=sorted(PROFILES) + ["next"], default="next")
+    parser.add_argument("--profile", choices=sorted(PROFILES) + sorted(PROFILE_ALIASES) + ["next"],
+                        default="next")
     parser.add_argument("--days", type=int, default=4)
     parser.add_argument("--opponents", type=int, default=1, choices=OPPONENT_CHOICES)
     parser.add_argument("--difficulty", default="hard", choices=DIFFICULTIES)

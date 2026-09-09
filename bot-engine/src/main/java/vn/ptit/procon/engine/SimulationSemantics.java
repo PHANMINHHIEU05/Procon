@@ -11,7 +11,7 @@ import vn.ptit.procon.domain.map.Position;
  * occupy its retained source cell for REFUEL purposes. PATROL agents are
  * eligible to collect at their step-zero starting position.
  */
-final class SimulationSemantics {
+public final class SimulationSemantics {
 
     private SimulationSemantics() {
     }
@@ -21,7 +21,10 @@ final class SimulationSemantics {
         return remainingDurationAfterStep == 0 ? destination : source;
     }
 
-    static boolean collectAtStartOfDay() {
-        return true;
+    public static boolean collectAtStartOfDay() {
+        return Boolean.parseBoolean(System.getProperty("procon.collect_at_start_of_day",
+                System.getenv("PROCON_COLLECT_AT_START_OF_DAY") != null
+                        ? System.getenv("PROCON_COLLECT_AT_START_OF_DAY")
+                        : "true"));
     }
 }

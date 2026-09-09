@@ -216,11 +216,13 @@ public final class CoupledCompetitiveRollout {
             }
         }
         Map<String, Raw> earliest = new LinkedHashMap<>();
-        for (AgentState agent : state.agents()) {
-            if (agent.kind() == AgentKind.PATROL
-                    && spotIndexByPosition.containsKey(agent.position())) {
-                earliest.put(agent.id().value() + ":" + agent.position().value(),
-                        new Raw(agent.id(), agent.position(), 0));
+        if (vn.ptit.procon.engine.SimulationSemantics.collectAtStartOfDay()) {
+            for (AgentState agent : state.agents()) {
+                if (agent.kind() == AgentKind.PATROL
+                        && spotIndexByPosition.containsKey(agent.position())) {
+                    earliest.put(agent.id().value() + ":" + agent.position().value(),
+                            new Raw(agent.id(), agent.position(), 0));
+                }
             }
         }
         simulation.events().stream()

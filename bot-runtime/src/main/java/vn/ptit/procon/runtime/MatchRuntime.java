@@ -983,7 +983,7 @@ public final class MatchRuntime {
             case JOINT_TEAM_BEAM_V2 -> new vn.ptit.procon.planner.v2.JointTeamBeamPlanner(
                     vn.ptit.procon.planner.v2.JointTeamBeamConfig.defaults());
             case JOINT_TEAM_BEAM_V2_R3 -> new vn.ptit.procon.planner.v2.JointTeamBeamR3Planner(
-                    vn.ptit.procon.planner.v2.JointTeamBeamR3Config.defaults().withRootFamilyAuditMode(
+                    vn.ptit.procon.planner.v2.AdaptiveR3Policy.defaults().withRootFamilyAuditMode(
                             r3RootFamilyAudit
                                     ? vn.ptit.procon.planner.v2.R3RootFamilyAuditMode.BEST_STAGE_A_PER_FAMILY
                                     : vn.ptit.procon.planner.v2.R3RootFamilyAuditMode.OFF));
@@ -1065,7 +1065,8 @@ public final class MatchRuntime {
                 if (emitted++ == MAX_FORENSIC_TRACE_COMMANDS) {
                     break;
                 }
-                Integer patrolFuelCost = command.wireValue() < 0
+                Integer patrolFuelCost = (command.wireValue() < 0
+                        || (command.sourceTerrain() == vn.ptit.procon.domain.map.Terrain.ROAD && command.sourceTraffic() == null))
                         ? null
                         : vn.ptit.procon.rules.MovementRules.costFromSource(
                                         command.sourceTerrain(), command.sourceTraffic())

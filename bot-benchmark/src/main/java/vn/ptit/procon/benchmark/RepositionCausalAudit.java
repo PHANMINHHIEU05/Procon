@@ -36,7 +36,7 @@ import vn.ptit.procon.planner.WeightedRouteFinder;
 public final class RepositionCausalAudit {
 
     public static void main(String[] args) throws IOException {
-        String corpusPath = args.length > 0 ? args[0] : V3CorpusReplay.DEFAULT_CORPUS_DIRECTORY;
+        String corpusPath = args.length > 0 ? args[0] : System.getProperty("user.home") + "/.procon-autotune/corpus";
         runAudit(Path.of(corpusPath));
     }
 
@@ -183,6 +183,44 @@ public final class RepositionCausalAudit {
                     estNextDayArrival.put(p.id(), minArrivalSteps == Integer.MAX_VALUE ? -1 : minArrivalSteps);
                 }
 
+                Map<AgentId, Integer> arrivalBeforeMap = new LinkedHashMap<>();
+                Map<AgentId, Integer> arrivalAfterMap = new LinkedHashMap<>();
+                Map<AgentId, Integer> arrivalGainMap = new LinkedHashMap<>();
+
+                for (AgentState p : finalPatrols) {
+                    int tw = trailingWaitByPatrol.getOrDefault(p.id(), 0);
+                    int before = estNextDayArrival.getOrDefault(p.id(), -1);
+                    arrivalBeforeMap.put(p.id(), before);
+
+                    if (tw >= 3 && before > 0) {
+                        // Find best target spot
+                        UdonSpot bestSpot = null;
+                        int minSteps = Integer.MAX_VALUE;
+                        Route bestRoute = null;
+                        for (UdonSpot spot : activeSpots) {
+                            Optional<Route> route = router.find(state, p, spot.position());
+                            if (route.isPresent() && route.get().stepsUsed() < minSteps) {
+                                minSteps = route.get().stepsUsed();
+                                bestSpot = spot;
+                                bestRoute = route.get();
+                            }
+                        }
+                        if (bestRoute != null) {
+                            int advanceSteps = Math.min(tw, bestRoute.stepsUsed());
+                            int after = bestRoute.stepsUsed() - advanceSteps;
+                            int gain = before - after;
+                            arrivalAfterMap.put(p.id(), after);
+                            arrivalGainMap.put(p.id(), gain);
+                        } else {
+                            arrivalAfterMap.put(p.id(), before);
+                            arrivalGainMap.put(p.id(), 0);
+                        }
+                    } else {
+                        arrivalAfterMap.put(p.id(), before);
+                        arrivalGainMap.put(p.id(), 0);
+                    }
+                }
+
                 // Clumping impact per patrol
                 for (AgentState p : finalPatrols) {
                     totalPatrolsEvaluated++;
@@ -205,11 +243,11 @@ public final class RepositionCausalAudit {
                         "REPOSITION_CAUSAL_AUDIT matchId=%s day=%d patrolCount=%d patrolsWithTrailingWait>=3=%d "
                                 + "trailingWaitTotal=%d terminalUniqueCells=%d terminalClumpCount=%d largestTerminalClump=%d "
                                 + "meanPairwiseDistance=%.2f trailingWaitByPatrol=%s unusedFuelByPatrol=%s "
-                                + "nearestOppDist=%s estNextDayArrival=%s nextDayActualFirstCollection=%s%n",
+                                + "nearestOppDist=%s estNextDayArrival=%s arrivalGain=%s nextDayActualFirstCollection=%s%n",
                         matchId, day.day(), patrolCount, patrolsWithTrailingWait3,
                         trailingWaitTotal, terminalUniqueCells, terminalClumpCount, largestTerminalClump,
                         meanPairwiseDistance, trailingWaitByPatrol, unusedFuelByPatrol,
-                        nearestOppDist, estNextDayArrival, nextDayFirstCollection);
+                        nearestOppDist, estNextDayArrival, arrivalGainMap, nextDayFirstCollection);
             }
         }
 

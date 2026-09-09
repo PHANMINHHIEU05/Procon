@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
 import vn.ptit.procon.domain.agent.AgentKind;
@@ -148,6 +149,40 @@ final class JointRouteCatalog {
         Map<Position, List<CatalogRoute>> result = new LinkedHashMap<>();
         for (UdonSpot goal : goals) {
             if (goal.position().equals(start)) {
+                List<CatalogRoute> loopRoutes = new ArrayList<>();
+                for (Direction dir : Direction.values()) {
+                    Position neighbor = map.neighbor(start, dir).orElse(null);
+                    if (neighbor == null || map.terrainAt(neighbor) == Terrain.POND) continue;
+                    TrafficStatus sTraffic = map.terrainAt(start) == Terrain.ROAD
+                            ? state.roadTraffic().getOrDefault(start, TrafficStatus.CLEAR) : null;
+                    MoveCost costOut = MovementRules.costFromSource(map, start, sTraffic).orElse(null);
+                    if (costOut == null) continue;
+
+                    TrafficStatus nTraffic = map.terrainAt(neighbor) == Terrain.ROAD
+                            ? state.roadTraffic().getOrDefault(neighbor, TrafficStatus.CLEAR) : null;
+                    MoveCost costBack = MovementRules.costFromSource(map, neighbor, nTraffic).orElse(null);
+                    if (costBack == null) continue;
+
+                    Direction oppDir = Direction.fromCode((dir.code() + 3) % 6);
+                    int loopSteps = costOut.stepCost() + costBack.stepCost();
+                    int loopFuel = costOut.patrolFuelCost() + costBack.patrolFuelCost();
+                    if (loopSteps <= maxSteps && loopFuel <= maxFuel) {
+                        List<Direction> dirs = List.of(dir, oppDir);
+                        Route route = new Route(start, start, dirs, loopSteps, loopFuel);
+                        List<SpotArrival> arrivals = new ArrayList<>();
+                        if (spotsByPosition.containsKey(neighbor)) {
+                            arrivals.add(new SpotArrival(neighbor, costOut.stepCost()));
+                        }
+                        arrivals.add(new SpotArrival(start, loopSteps));
+                        loopRoutes.add(new CatalogRoute(route, arrivals));
+                    }
+                }
+                if (!loopRoutes.isEmpty()) {
+                    loopRoutes.sort(Comparator.comparingInt((CatalogRoute v) -> v.route().stepsUsed())
+                            .thenComparingInt(v -> v.route().fuelUsed())
+                            .thenComparing(v -> directionKey(v.route().directions())));
+                    result.put(goal.position(), loopRoutes);
+                }
                 continue;
             }
             List<CatalogRoute> routes = labelsByPosition.getOrDefault(goal.position(), List.of()).stream()

@@ -21,7 +21,7 @@ public record Route(
         if (stepsUsed < 0 || fuelUsed < 0) {
             throw new IllegalArgumentException("Route resource use must be non-negative");
         }
-        if (directions.isEmpty() != start.equals(goal)) {
+        if (directions.isEmpty() && !start.equals(goal)) {
             throw new IllegalArgumentException("Only a start-equals-goal route may contain no moves");
         }
     }

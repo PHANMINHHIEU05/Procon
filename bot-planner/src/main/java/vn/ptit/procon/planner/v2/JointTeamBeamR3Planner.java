@@ -32,17 +32,34 @@ import vn.ptit.procon.planner.Route;
  * R1_CONTROL collection beam to V2 with a finite coupled-terminal cap and a wall-clock deadline.
  */
 public final class JointTeamBeamR3Planner implements DayPlanner {
-    private final JointTeamBeamR3Config config;
+    private final JointTeamBeamR3Config fixedConfig;
+    private final AdaptiveR3Policy adaptivePolicy;
     private final LongSupplier clock;
     private final RefuelRouteFinder refuelRouteFinder;
 
+    /**
+     * Historical fixed planner used by benchmark and frozen-reference callers.
+     * Production opts into {@link AdaptiveR3Policy} explicitly from MatchRuntime.
+     */
     public JointTeamBeamR3Planner() { this(JointTeamBeamR3Config.defaults()); }
+    public JointTeamBeamR3Planner(AdaptiveR3Policy policy) {
+        this(null, policy, System::nanoTime, new RefuelRouteFinder());
+    }
     public JointTeamBeamR3Planner(JointTeamBeamR3Config config) {
-        this(config, System::nanoTime, new RefuelRouteFinder());
+        this(config, null, System::nanoTime, new RefuelRouteFinder());
     }
 
     JointTeamBeamR3Planner(JointTeamBeamR3Config config, LongSupplier clock, RefuelRouteFinder finder) {
-        this.config = java.util.Objects.requireNonNull(config, "R3 configuration must not be null");
+        this(config, null, clock, finder);
+    }
+
+    private JointTeamBeamR3Planner(JointTeamBeamR3Config config, AdaptiveR3Policy policy,
+            LongSupplier clock, RefuelRouteFinder finder) {
+        if ((config == null) == (policy == null)) {
+            throw new IllegalArgumentException("Exactly one fixed configuration or adaptive policy is required");
+        }
+        this.fixedConfig = config;
+        this.adaptivePolicy = policy;
         this.clock = java.util.Objects.requireNonNull(clock, "Clock must not be null");
         this.refuelRouteFinder = java.util.Objects.requireNonNull(finder, "Route finder must not be null");
     }
@@ -50,18 +67,22 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
     @Override public TeamPlan plan(DayState state) { return planWithStats(state).plan(); }
 
     public JointTeamBeamR3Result planWithStats(DayState state) {
+        MatchShape shape = MatchShape.from(state);
+        R3PlannerProfile profile = effectiveProfile(shape);
+        JointTeamBeamR3Config config = profile.support();
+        boolean fuelNeedCheck = adaptivePolicy != null;
         long started = clock.getAsLong();
         long deadline = started + config.usablePlanningMillis() * 1_000_000L;
         Mutable stats = new Mutable();
         TeamPlan fallback = SafePlanFactory.waitAll(state);
-        RefuelTourCatalog catalog = RefuelTourCatalog.forState(state, refuelRouteFinder);
+        RefuelTourCatalog catalog = RefuelTourCatalog.forState(state, refuelRouteFinder, fuelNeedCheck);
         stats.tourCatalogPathfindingExecutions = catalog.pathfindingExecutions();
         List<SupportCandidate> valid;
         if (deadlineReached(deadline)) {
             stats.deadline("TOUR_CATALOG");
             valid = List.of();
         } else {
-            valid = buildSupportCandidates(state, catalog, deadline, stats);
+            valid = buildSupportCandidates(state, catalog, deadline, stats, config, fuelNeedCheck);
             if (deadlineReached(deadline)) stats.deadline("TOUR_CONSTRUCTION");
         }
         List<R3RootInput> roots = new ArrayList<>();
@@ -73,19 +94,17 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
             valid.forEach(value -> stats.family.initialRoot(value.services()));
         }
 
-        int beamWidth = Integer.getInteger("procon.v2.beam_width",
-                System.getenv("PROCON_V2_BEAM_WIDTH") != null ? Integer.parseInt(System.getenv("PROCON_V2_BEAM_WIDTH")) : 48);
-        int maxExpanded = Integer.getInteger("procon.v2.max_expanded_states",
-                System.getenv("PROCON_V2_MAX_EXPANDED_STATES") != null ? Integer.parseInt(System.getenv("PROCON_V2_MAX_EXPANDED_STATES")) : 64);
-        int maxChildren = Integer.getInteger("procon.v2.max_children",
-                System.getenv("PROCON_V2_MAX_CHILDREN") != null ? Integer.parseInt(System.getenv("PROCON_V2_MAX_CHILDREN")) : 24);
-        int maxTargets = Integer.getInteger("procon.v2.max_targets",
-                System.getenv("PROCON_V2_MAX_TARGETS") != null ? Integer.parseInt(System.getenv("PROCON_V2_MAX_TARGETS")) : 4);
-        JointTeamBeamConfig beamConfig = new JointTeamBeamConfig(beamWidth, maxExpanded, maxChildren, maxTargets,
+        JointTeamBeamConfig beamConfig = new JointTeamBeamConfig(profile.beamWidth(),
+                profile.maxExpandedStates(), profile.maxChildren(), profile.maxTargets(),
                 config.maxFullTerminalEvaluations(), V2SearchPolicy.R1_CONTROL,
                 V2CollectionAuditMode.OFF, config.competitiveTargetPolicy(), config.stageBRecallAuditMode());
         R3RootFamilyAuditCollector auditCollector = new R3RootFamilyAuditCollector(config.rootFamilyAuditMode());
-        JointTeamBeamResult beam = new JointTeamBeamPlanner(beamConfig)
+        System.out.println("R3_ADAPTIVE_PROFILE day=" + state.day().value()
+                + " profile=" + profile.name() + " tier=" + profile.tier()
+                + " map=" + shape.width() + "x" + shape.height()
+                + " steps=" + shape.stepBudget() + " agents=" + shape.agentCount()
+                + " opponents=" + shape.opponentGroups() + " fingerprint=" + profile.fingerprint());
+        JointTeamBeamResult beam = new JointTeamBeamPlanner(beamConfig, profile.tuning())
                 .planWithAudit(state, roots, deadline, config.terminalShortlistLimit(), clock, auditCollector, true);
         R3RootFamilyAudit audit = auditCollector.snapshot();
         stats.rootsSurvivingAfterMerge = audit.families().stream()
@@ -138,11 +157,14 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
      */
     public R3SupportRootExportSet exportRetainedSupportRoots(DayState state) {
         java.util.Objects.requireNonNull(state, "Day state must not be null");
+        JointTeamBeamR3Config config = effectiveProfile(MatchShape.from(state)).support();
+        boolean fuelNeedCheck = adaptivePolicy != null;
         Mutable stats = new Mutable();
-        RefuelTourCatalog catalog = RefuelTourCatalog.forState(state, refuelRouteFinder);
+        RefuelTourCatalog catalog = RefuelTourCatalog.forState(state, refuelRouteFinder, fuelNeedCheck);
         stats.tourCatalogPathfindingExecutions = catalog.pathfindingExecutions();
         long deadline = clock.getAsLong() + config.usablePlanningMillis() * 1_000_000L;
-        List<SupportCandidate> retained = buildSupportCandidates(state, catalog, deadline, stats);
+        List<SupportCandidate> retained = buildSupportCandidates(state, catalog, deadline, stats, config,
+                fuelNeedCheck);
         Map<AgentId, Position> starts = new LinkedHashMap<>();
         state.agents().forEach(agent -> starts.put(agent.id(), agent.position()));
         List<R3SupportRootExport> roots = new ArrayList<>();
@@ -167,14 +189,26 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
     }
 
     private List<SupportCandidate> buildSupportCandidates(DayState state, RefuelTourCatalog catalog, long deadline,
-            Mutable stats) {
+            Mutable stats, JointTeamBeamR3Config config, boolean fuelNeedCheck) {
+        // Keep NO_REFUEL as the only root when every patrol has enough fuel for the best
+        // catalogued harvest legs. This check is intentionally repeated here (in addition to
+        // catalog filtering) so future meeting sources cannot silently reintroduce a support
+        // skeleton for a healthy patrol.
+        boolean anyFuelNeed = !fuelNeedCheck || state.agents().stream()
+                .filter(agent -> agent.kind() == AgentKind.PATROL)
+                .anyMatch(patrol -> catalog.meetings(patrol.id()).stream()
+                        .anyMatch(meeting -> RefuelTourCatalog.needsFuel(patrol, meeting)));
+        if (!anyFuelNeed) {
+            return List.of();
+        }
         List<PartialTour> retained = new ArrayList<>();
         List<PartialTour> finalists = new ArrayList<>();
         for (AgentState refuel : state.agents()) if (refuel.kind() == AgentKind.REFUEL) {
             for (AgentState patrol : state.agents()) for (RefuelTourCatalog.PatrolMeeting meeting : catalog.meetings(patrol.id())) {
                 if (retained.size() >= config.maxDepth1Candidates() || stats.partialToursGenerated >= config.maxPartialToursGenerated()
                         || deadlineReached(deadline)) break;
-                PartialTour initial = PartialTour.start(refuel, patrol, meeting, catalog, state.stepBudget());
+                PartialTour initial = PartialTour.start(refuel, patrol, meeting, catalog, state.stepBudget(),
+                        fuelNeedCheck);
                 if (initial == null) { stats.partialToursPruned++; stats.family.pruned(1); continue; }
                 retained.add(initial); stats.partialToursGenerated++; stats.family.generated(1);
             }
@@ -221,6 +255,13 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
         List<SupportCandidate> retainedRoots = retainByFamily(valid, config.maxSkeletonsRetained(), stats);
         stats.skeletonsRetained = retainedRoots.size();
         return List.copyOf(retainedRoots);
+    }
+
+    private R3PlannerProfile effectiveProfile(MatchShape shape) {
+        if (adaptivePolicy != null) return adaptivePolicy.select(shape);
+        R3PlannerProfile fixed = new R3PlannerProfile("FIXED_CONFIG", shape.tier(), fixedConfig,
+                48, 64, 24, 4, JointBeamTuning.defaults());
+        return fixed.withEnvironmentOverrides();
     }
 
     private static void accountDepthDiscard(List<PartialTour> candidates, int limit, Mutable stats) {
@@ -464,12 +505,18 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
                 List<ServiceEvent> events) { this.refuel = refuel; this.refuelPosition = refuelPosition; this.elapsed = elapsed;
             this.refuelActions = List.copyOf(refuelActions); this.events = List.copyOf(events); }
         static PartialTour start(AgentState refuel, AgentState patrol, RefuelTourCatalog.PatrolMeeting meeting,
-                RefuelTourCatalog catalog, int budget) { return add(null, refuel, patrol, meeting, catalog, budget); }
+                RefuelTourCatalog catalog, int budget, boolean fuelNeedCheck) {
+            if (fuelNeedCheck && !RefuelTourCatalog.needsFuel(patrol, meeting)) return null;
+            return add(null, refuel, patrol, meeting, catalog, budget);
+        }
         private static PartialTour add(PartialTour prior, AgentState refuel, AgentState patrol,
                 RefuelTourCatalog.PatrolMeeting meeting, RefuelTourCatalog catalog, int budget) {
             Position from = prior == null ? refuel.position() : prior.refuelPosition;
             int elapsed = prior == null ? 0 : prior.elapsed;
             Route refuelLeg = catalog.refuelRoute(refuel.id(), from, meeting.position());
+            // Preserve the historical prefix-feasibility rule for fuel-constrained
+            // patrols. FuelNeed decides whether support is considered at all; once it
+            // is, the meeting prefix must still fit the patrol's current budget.
             if (refuelLeg == null || meeting.route().stepsUsed() > ((FiniteFuel) patrol.fuel()).amount()) return null;
             int service = Math.max(elapsed + refuelLeg.stepsUsed(), meeting.route().stepsUsed());
             if (service <= 0 || service >= budget) return null;
@@ -494,7 +541,9 @@ public final class JointTeamBeamR3Planner implements DayPlanner {
             for (AgentState agent : state.agents()) {
                 List<AgentAction> prefix = agent.id().equals(refuel.id()) ? refuelActions : events.stream()
                         .filter(event -> event.patrol.id().equals(agent.id())).map(ServiceEvent::patrolActions).findFirst().orElse(List.of());
-                List<AgentAction> full = new ArrayList<>(prefix); appendWait(full, state.stepBudget() - actionSteps(state, agent.position(), full)); actions.put(agent.id(), List.copyOf(full));
+                List<AgentAction> full = new ArrayList<>(prefix);
+                appendWait(full, state.stepBudget() - actionSteps(state, agent.position(), full));
+                actions.put(agent.id(), List.copyOf(full));
             }
             return new TeamPlan(actions);
         }

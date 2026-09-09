@@ -322,11 +322,40 @@ class JointTeamBeamR3PlannerTest {
         assertFalse(result.plan().actionsByAgent().isEmpty());
     }
 
+    @Test
+    void refuelRootIsRejectedWhenGainOverNoRefuelIsZero() {
+        DayState state = state(16, 8, List.of(
+                AgentState.patrol(P0, new Position(0), 5),
+                AgentState.refuel(R0, new Position(3))), List.of(
+                spot("A", 2, 1)));
+        JointTeamBeamR3Result result = new JointTeamBeamR3Planner(AdaptiveR3Policy.defaults()).planWithStats(state);
+        assertEquals(0, result.stats().selectedSupportServiceCount());
+    }
+
+    @Test
+    void abundantFuelSuppressesSupportPortfolioAndKeepsNoRefuelRoot() {
+        DayState state = state(16, 8, 60, List.of(
+                AgentState.patrol(P0, new Position(0), 60),
+                AgentState.refuel(R0, new Position(3))), List.of(
+                spot("A", 2, 1)));
+
+        JointTeamBeamR3Result result = new JointTeamBeamR3Planner(AdaptiveR3Policy.defaults()).planWithStats(state);
+
+        assertEquals(1, result.stats().rootCandidates());
+        assertEquals(0, result.stats().partialToursGenerated());
+        assertEquals(0, result.stats().selectedSupportServiceCount());
+        assertEquals("NO_REFUEL", result.stats().selectedSupportSkeletonSignature());
+    }
+
     private static DayState state(int steps, int width, List<AgentState> agents, List<UdonSpot> spots) {
+        return state(steps, width, 10, agents, spots);
+    }
+
+    private static DayState state(int steps, int width, int fuelCapacity, List<AgentState> agents, List<UdonSpot> spots) {
         Terrain[] terrain = new Terrain[width]; Arrays.fill(terrain, Terrain.PLAIN);
         Map<Position, Integer> stock = new LinkedHashMap<>(); spots.forEach(spot -> stock.put(spot.position(), spot.stockCapacity()));
         StaticMatchData data = new StaticMatchData(new HexMap(width, 1, terrain), new DayStepBudgets(new int[] {steps}),
-                List.of(), new FuelCapacity(10), spots);
+                List.of(), new FuelCapacity(fuelCapacity), spots);
         return new DayState(data, new DayIndex(0), agents, Map.of(), stock);
     }
     private static UdonSpot spot(String brand, int position, int stock) {
