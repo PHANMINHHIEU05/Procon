@@ -44,8 +44,9 @@ DIFFICULTIES = ("easy", "medium", "hard")
 MAP_SIZES = (8, 12, 16, 24, 32)
 OPPONENT_CHOICES = (1, 2, 3)
 
-# The UI's own map-size presets: size -> (steps_per_day, agent_count, franchises).
-UI_PRESETS = {8: (30, 4, 4), 12: (60, 6, 4), 16: (60, 6, 4), 24: (100, 8, 6), 32: (100, 8, 6)}
+# Production calibration presets: size -> (steps_per_day, agent_count, franchises).
+# The rebuilt bot is calibrated for six agents on the three competition-priority maps.
+UI_PRESETS = {8: (30, 6, 4), 12: (60, 6, 4), 16: (60, 6, 4), 24: (100, 8, 6), 32: (100, 8, 6)}
 
 # The UI's own default per-day answer window. Bigger maps need a wider one: the production V2/R3 planner
 # spends more wall-clock on 24x24/8-agent days, and a day the server rejects for lateness produces no
@@ -55,7 +56,7 @@ MAX_RESPONSE_MS = 15000
 
 # Full adaptive matrix. Legacy aliases A/B/C remain accepted for existing scripts and ledgers.
 PROFILES = {
-    "P08": {"label": "p08-4-agent-30-step", "size": 8, "cohort": "P08"},
+    "P08": {"label": "p08-6-agent-30-step", "size": 8, "cohort": "P08"},
     "P12": {"label": "p12-6-agent-60-step", "size": 12, "cohort": "P12"},
     "P16": {"label": "p16-6-agent-60-step", "size": 16, "cohort": "P16"},
     "P24": {"label": "p24-8-agent-100-step", "size": 24, "cohort": "P24"},
@@ -125,11 +126,17 @@ def match_ids() -> list[str]:
 
 
 def body_for(profile_key: str, days: int, opponents: int, difficulty: str,
-             response_ms: int = DEFAULT_RESPONSE_MS) -> dict:
+             response_ms: int = DEFAULT_RESPONSE_MS, size: int | None = None,
+             steps: int | None = None, agents: int | None = None,
+             brands: int | None = None, spots: int | None = None,
+             fuel_mult: int | None = None) -> dict:
     profile_key = canonical_profile(profile_key)
     profile = PROFILES[profile_key]
-    size = profile["size"]
-    steps, agents, franchises = UI_PRESETS[size]
+    size = profile["size"] if size is None else size
+    preset_steps, preset_agents, preset_franchises = UI_PRESETS[size]
+    steps = preset_steps if steps is None else steps
+    agents = preset_agents if agents is None else agents
+    franchises = preset_franchises if brands is None else brands
     return {
         "difficulty": difficulty,
         "opponents": opponents,
@@ -140,8 +147,8 @@ def body_for(profile_key: str, days: int, opponents: int, difficulty: str,
         "height": size,
         "agent_count": agents,
         "franchises": franchises,
-        "spots": 0,
-        "fuel_mult": 0,
+        "spots": 0 if spots is None else spots,
+        "fuel_mult": 0 if fuel_mult is None else fuel_mult,
     }
 
 
@@ -156,18 +163,24 @@ def describe(profile_key: str, body: dict, match_id: str) -> str:
 
 
 def create(profile_key: str, days: int, opponents: int, difficulty: str, dry_run: bool,
-           response_ms: int = DEFAULT_RESPONSE_MS) -> int:
+           response_ms: int = DEFAULT_RESPONSE_MS, size: int | None = None,
+           steps: int | None = None, agents: int | None = None,
+           brands: int | None = None, spots: int | None = None,
+           fuel_mult: int | None = None) -> int:
     profile_key = canonical_profile(profile_key)
     state = load_state()
-    mine = session_entries(state)
-    if len(mine) >= MAX_MATCHES_PER_SESSION:
-        fail("AUTOTUNE_MATCH_BUDGET_EXHAUSTED",
-             "%d practice matches already created in session=%s" % (len(mine), SESSION_TAG))
-    body = body_for(profile_key, days, opponents, difficulty, response_ms)
+    body = body_for(profile_key, days, opponents, difficulty, response_ms,
+                    size=size, steps=steps, agents=agents, brands=brands,
+                    spots=spots, fuel_mult=fuel_mult)
     if dry_run:
         print("PRACTICE_MATCH_DRY_RUN profile=%s endpoint=POST %s/practice body=%s"
               % (profile_key, HOST, json.dumps(body, sort_keys=True)))
         return 0
+
+    mine = session_entries(state)
+    if len(mine) >= MAX_MATCHES_PER_SESSION:
+        fail("AUTOTUNE_MATCH_BUDGET_EXHAUSTED",
+             "%d practice matches already created in session=%s" % (len(mine), SESSION_TAG))
 
     last = state.get("lastCreatedEpoch", 0)
     waited = time.time() - last
@@ -211,8 +224,16 @@ def main() -> int:
     parser.add_argument("--opponents", type=int, default=1, choices=OPPONENT_CHOICES)
     parser.add_argument("--difficulty", default="hard", choices=DIFFICULTIES)
     parser.add_argument("--response-ms", type=int, default=DEFAULT_RESPONSE_MS,
-                        help="per-day answer window the server grants (%d..%d)"
-                             % (DEFAULT_RESPONSE_MS, MAX_RESPONSE_MS))
+                        help="per-day answer window the server grants (200..%d)"
+                             % MAX_RESPONSE_MS)
+    parser.add_argument("--size", type=int, choices=MAP_SIZES,
+                        help="override map width/height while retaining the selected profile label")
+    parser.add_argument("--steps", type=int, help="override steps per day")
+    parser.add_argument("--agents", type=int, help="override number of agents")
+    parser.add_argument("--brands", type=int, help="override number of udon brands")
+    parser.add_argument("--spots", type=int, help="override spot count; 0 delegates to the server")
+    parser.add_argument("--fuel-mult", type=int, choices=(0, 1, 2, 3),
+                        help="override fuel multiplier")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--list", action="store_true", help="print the session's created matches")
     parser.add_argument("--verify-session", action="store_true")
@@ -220,9 +241,17 @@ def main() -> int:
 
     if not 4 <= args.days <= 10:
         fail("PRACTICE_MATCH_BAD_OPTION", "days must be 4..10 (website bound)")
-    if not DEFAULT_RESPONSE_MS <= args.response_ms <= MAX_RESPONSE_MS:
+    if not 200 <= args.response_ms <= MAX_RESPONSE_MS:
         fail("PRACTICE_MATCH_BAD_OPTION",
-             "response-ms must be %d..%d" % (DEFAULT_RESPONSE_MS, MAX_RESPONSE_MS))
+             "response-ms must be 200..%d" % MAX_RESPONSE_MS)
+    if args.steps is not None and not 1 <= args.steps <= 200:
+        fail("PRACTICE_MATCH_BAD_OPTION", "steps must be 1..200")
+    if args.agents is not None and not 1 <= args.agents <= 8:
+        fail("PRACTICE_MATCH_BAD_OPTION", "agents must be 1..8")
+    if args.brands is not None and not 1 <= args.brands <= 32:
+        fail("PRACTICE_MATCH_BAD_OPTION", "brands must be 1..32")
+    if args.spots is not None and not 0 <= args.spots <= 64:
+        fail("PRACTICE_MATCH_BAD_OPTION", "spots must be 0..64")
 
     if args.list:
         state = load_state()
@@ -253,7 +282,9 @@ def main() -> int:
     if profile_key == "next":
         profile_key = PROFILE_CYCLE[load_state().get("cycleIndex", 0) % len(PROFILE_CYCLE)]
     return create(profile_key, args.days, args.opponents, args.difficulty, args.dry_run,
-                  args.response_ms)
+                  args.response_ms, size=args.size, steps=args.steps,
+                  agents=args.agents, brands=args.brands, spots=args.spots,
+                  fuel_mult=args.fuel_mult)
 
 
 if __name__ == "__main__":
